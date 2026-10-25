@@ -58,6 +58,14 @@ Mỗi hành vi cần được phân tích theo ba nhóm:
 Không cần tạo một test riêng cho mọi dòng code. Chỉ tạo test cho các trường hợp có khả năng bảo
 vệ một hành vi hoặc ràng buộc có ý nghĩa.
 
+### 2.4. Test tăng cùng hành vi
+
+- Chỉ tạo test khi hành vi, contract, boundary hoặc invariant tương ứng đã xuất hiện trong phạm vi đang làm.
+- Không tạo test rỗng, disabled/ignored test, fixture, container hoặc test package chỉ để giữ chỗ cho tính năng tương lai.
+- Không ghi pass cho architecture rule không có source subject hoặc migration assertion cho table chưa tồn tại.
+- Khi một artifact mới được kích hoạt, bổ sung test nhỏ nhất bảo vệ hành vi có ý nghĩa và đưa nó vào luồng kiểm tra hiện tại.
+- Full test suite là hợp của các kiểm tra đã được kích hoạt qua các lát cắt, không phải bộ khung phải dựng hoàn chỉnh từ đầu.
+
 ## 3. Phân loại và tách luồng chạy test
 
 Build bắt buộc tách Unit Test và Integration Test thành hai luồng chạy độc lập.
@@ -281,7 +289,22 @@ Coverage chỉ là tín hiệu hỗ trợ, không phải mục tiêu chất lư�
 
 Không viết test không có giá trị chỉ để tăng tỷ lệ coverage.
 
-## 12. Checklist
+## 12. Xác nhận hoàn thành và lưu kết quả
+
+- Phải thực sự chạy đầy đủ các test, build, migration và kiểm tra thủ công bắt buộc của phạm vi
+  đang nghiệm thu.
+- Chỉ xác nhận hoàn thành khi tất cả kiểm tra bắt buộc đã pass. Kiểm tra chưa chạy là `NOT_RUN`,
+  không được suy ra là pass.
+- Không tạo hoặc commit file evidence riêng, bản chép log, ảnh chụp hay báo cáo tường thuật chỉ
+  để chứng minh đã chạy kiểm tra.
+- Log và report do công cụ sinh có thể chỉ tồn tại tạm thời trên máy local hoặc CI. Không đưa chúng
+  vào Git nếu bản thân chúng không phải deliverable kỹ thuật đã được yêu cầu rõ.
+- Test, migration, script kiểm tra, dataset/config có version và báo cáo đánh giá chuyên môn bắt
+  buộc vẫn được lưu khi chính chúng là deliverable có thể chạy lại hoặc dùng để ra quyết định.
+- Khi kiểm tra fail hoặc bị chặn, báo đúng lỗi và xử lý trước khi hoàn thành; không cần tạo một tài
+  liệu evidence riêng để kể lại kết quả đó.
+
+## 13. Checklist
 
 - Test đang bảo vệ hành vi hoặc ràng buộc nào?
 - Happy path và failure path quan trọng đã được kiểm tra chưa?
