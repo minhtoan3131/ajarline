@@ -5,6 +5,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+import java.util.Objects;
 import java.util.UUID;
 
 @Entity
@@ -23,5 +24,26 @@ public class ArticleEntity {
      */
     protected ArticleEntity() {
 
+    }
+
+    public ArticleEntity(UUID contentId, String bodyMarkdown) {
+        this.contentId = contentId;
+        this.bodyMarkdown = bodyMarkdown;
+    }
+
+    public boolean hasSameBody(String bodyMarkdown) {
+        return Objects.equals(this.bodyMarkdown, bodyMarkdown);
+    }
+
+    public void replaceBody(String bodyMarkdown) {
+        this.bodyMarkdown = bodyMarkdown;
+    }
+
+    public UUID getContentId() {
+        return contentId;
+    }
+
+    public String getBodyMarkdown() {
+        return bodyMarkdown;
     }
 }
