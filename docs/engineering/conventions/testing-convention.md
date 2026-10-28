@@ -1,133 +1,127 @@
 # Testing Convention
 
-## 1. Mục đích
+## 1. Mục đích và phạm vi
 
-Tài liệu này quy định các nguyên tắc chung để thiết kế, tổ chức và viết test.
+Tài liệu này quy định cách đặt tên, tổ chức và trình bày test trong các dự án Java.
 
-Mục tiêu của bộ test là:
+Tài liệu chỉ quy định hình thức thống nhất. Việc lựa chọn test case, test level, test double, môi
+trường kiểm thử và chiến lược kiểm thử thuộc các tài liệu hướng dẫn riêng.
 
-- Phát hiện khi hành vi đúng của hệ thống bị phá vỡ.
-- Không bị lỗi chỉ vì implementation nội bộ được refactor.
-- Dễ đọc, dễ chạy và dễ xác định nguyên nhân khi thất bại.
-- Bảo vệ các business rule, contract và invariant quan trọng.
-- Tránh test trùng lặp hoặc phụ thuộc quá mức vào chi tiết triển khai.
+Các tài liệu hướng dẫn liên quan:
 
-## 2. Nguyên tắc thiết kế
+- 1-test-design-and-implementation-guide.md.
+- 2-integration-testing-environment-guide.md.
+- 3-concurrency-testing-environment-guide.md.
 
-### 2.1. Test hành vi, không test chi tiết triển khai
+## 2. Phân loại và hậu tố
 
-Test nên kiểm tra những gì có thể quan sát được:
+Chỉ sử dụng hai hậu tố cho test class và test file:
 
-- Giá trị trả về.
-- Exception hoặc lỗi được công bố.
-- Trạng thái dữ liệu sau xử lý.
-- State transition.
-- Dữ liệu được lưu.
-- Event hoặc request gửi ra bên ngoài.
-- Contract của API.
-- Invariant phải luôn được bảo toàn.
-
-Không nên mặc định kiểm tra:
-
-- Private method.
-- Thứ tự gọi các method nội bộ.
-- Một dependency được gọi chính xác bao nhiêu lần.
-- Cách thuật toán được chia thành các class.
-- Vòng lặp, stream hoặc design pattern được sử dụng bên trong.
-
-Chỉ kiểm tra interaction khi chính interaction đó là một phần quan trọng của contract.
-
-### 2.2. Test phải chịu được refactor
-
-Nếu hành vi bên ngoài vẫn đúng thì test không nên thất bại chỉ vì:
-
-- Class hoặc method được đổi tên.
-- Một class được tách hoặc gộp.
-- Thuật toán bên trong thay đổi.
-- Dependency nội bộ được tổ chức lại.
-- Implementation thay đổi nhưng contract không đổi.
-
-### 2.3. Phân tích theo ràng buộc
-
-Mỗi hành vi cần được phân tích theo ba nhóm:
-
-- **Pre-condition**: điều kiện phải đúng trước khi thực hiện.
-- **Post-condition**: kết quả phải đúng sau khi thực hiện thành công.
-- **Invariant**: điều kiện luôn phải đúng dù xử lý thành công hay thất bại.
-
-Không cần tạo một test riêng cho mọi dòng code. Chỉ tạo test cho các trường hợp có khả năng bảo
-vệ một hành vi hoặc ràng buộc có ý nghĩa.
-
-### 2.4. Test tăng cùng hành vi
-
-- Chỉ tạo test khi hành vi, contract, boundary hoặc invariant tương ứng đã xuất hiện trong phạm vi đang làm.
-- Không tạo test rỗng, disabled/ignored test, fixture, container hoặc test package chỉ để giữ chỗ cho tính năng tương lai.
-- Không ghi pass cho architecture rule không có source subject hoặc migration assertion cho table chưa tồn tại.
-- Khi một artifact mới được kích hoạt, bổ sung test nhỏ nhất bảo vệ hành vi có ý nghĩa và đưa nó vào luồng kiểm tra hiện tại.
-- Full test suite là hợp của các kiểm tra đã được kích hoạt qua các lát cắt, không phải bộ khung phải dựng hoàn chỉnh từ đầu.
-
-## 3. Phân loại và tách luồng chạy test
-
-Build bắt buộc tách Unit Test và Integration Test thành hai luồng chạy độc lập.
-
-| Loại test | Hậu tố bắt buộc | Luồng chạy |
+| Loại | Hậu tố bắt buộc | Ví dụ |
 | --- | --- | --- |
-| Unit Test | `*Test` | Luồng unit test nhanh |
-| Integration Test | `*IT` | Luồng integration test |
+| Unit Test | `*Test` | `PriceCalculatorTest` |
+| Integration Test | `*IT` | `OrderPersistenceAdapterIT` |
 
-Chỉ sử dụng hai hậu tố `*Test` và `*IT`. Không tạo thêm hậu tố riêng cho API test, component test,
-system test hoặc end-to-end test. Các test có sử dụng hạ tầng thật, application context, database,
-network hoặc nhiều thành phần tích hợp phải dùng hậu tố `*IT`.
+Không tạo thêm hậu tố riêng như:
+
+```text
+*IntegrationTest
+*ComponentTest
+*ApiTest
+*E2ETest
+*SystemTest
+```
+
+API test, component test, end-to-end test và system test sử dụng hậu tố `*IT` khi chúng thuộc luồng
+Integration Test.
+
+## 3. Tách luồng build
+
+Build bắt buộc tách Unit Test và Integration Test thành hai luồng độc lập:
+
+```text
+Unit Test         → chỉ chạy *Test
+Integration Test  → chỉ chạy *IT
+Full verification → chạy cả hai luồng
+```
 
 Build phải bảo đảm:
 
-- Luồng unit test chỉ chạy các file hoặc class kết thúc bằng `Test`.
-- Luồng integration test chỉ chạy các file hoặc class kết thúc bằng `IT`.
-- Integration Test không bị chạy lẫn trong luồng unit test.
-- Có thể chạy riêng từng luồng và chạy cả hai luồng trong quá trình xác minh đầy đủ.
-- Build đầy đủ phải thất bại nếu một trong hai luồng có test thất bại.
+- `*IT` không chạy lẫn trong luồng Unit Test.
+- Có thể chạy riêng từng luồng.
+- Full verification thất bại nếu một trong hai luồng có test thất bại.
+- Hậu tố class hoặc file là nguồn phân loại chính.
 
-### 3.1. Unit Test
+Công cụ build cụ thể phải được cấu hình theo quy ước này. Cách cấu hình Maven, Gradle hoặc công cụ
+khác thuộc tài liệu hướng dẫn của từng hệ sinh thái.
 
-Unit Test kiểm tra một đơn vị hành vi nhỏ, chạy nhanh và không sử dụng tài nguyên bên ngoài thật.
+## 4. Vị trí và package
 
-Một unit không nhất thiết tương ứng với một class. Nó có thể bao gồm nhiều class cùng thực hiện một
-hành vi.
+Test code phải nằm trong test source set của dự án, ví dụ:
 
-### 3.2. Integration Test
+```text
+src/test/java
+src/test/resources
+```
 
-Integration Test kiểm tra sự tích hợp với thành phần thật hoặc gần với môi trường thật, ví dụ:
+Package của test phải phản ánh package hoặc boundary đang được kiểm tra:
 
-- Database.
-- Message broker.
-- HTTP server.
-- Serialization.
-- Dependency injection container.
-- Transaction.
-- Persistence mapping.
-- Luồng hoàn chỉnh qua nhiều thành phần của hệ thống.
+```text
+Production:
+src/main/java/com/example/order/application/OrderService.java
 
-Không mock thành phần đang là mục tiêu chính của Integration Test.
+Test:
+src/test/java/com/example/order/application/OrderServiceTest.java
+```
 
-## 4. Quy ước đặt tên
+Test support dùng chung phải nằm trong package có tên rõ ràng:
 
-### 4.1. Tên class hoặc file
+```text
+testsupport
+fixture
+```
+
+Không đặt test utility vào package production.
+
+## 5. Tên test class
+
+### 5.1. Unit Test
+
+Sử dụng cấu trúc:
 
 ```text
 <ProductionTypeOrBehavior>Test
-<BehaviorOrBoundary>IT
 ```
 
 Ví dụ:
 
 ```java
 PriceCalculatorTest
+EmailAddressTest
+OrderCancellationPolicyTest
+```
+
+### 5.2. Integration Test
+
+Sử dụng cấu trúc:
+
+```text
+<BehaviorOrBoundary>IT
+```
+
+Ví dụ:
+
+```java
 OrderPersistenceAdapterIT
 CheckoutApiIT
+PaymentTransactionIT
 CheckoutFlowIT
 ```
 
-### 4.2. Tên test method
+Tên class phải thể hiện đối tượng, behavior hoặc boundary được kiểm tra. Không dùng tên theo số thứ
+tự, work package, sprint hoặc tên người thực hiện.
+
+## 6. Tên test method
 
 Sử dụng cấu trúc:
 
@@ -135,27 +129,42 @@ Sử dụng cấu trúc:
 <operation>_Should<ExpectedResult>_When<Condition>
 ```
 
-Ví dụ:
+Quy tắc:
+
+- `<operation>` bắt đầu bằng chữ thường.
+- `Should`, `When` và các thành phần tiếp theo dùng PascalCase.
+- Tên phải dùng tiếng Anh đơn giản và rõ nghĩa.
+- Không thêm tiền tố `test`.
+- Không kết thúc tên bằng số thứ tự.
+- Không mô tả private method hoặc lời gọi nội bộ.
+
+Ví dụ đúng:
 
 ```java
 calculate_ShouldReturnDiscountedPrice_WhenCustomerIsEligible()
 create_ShouldRejectRequest_WhenEmailIsInvalid()
-save_ShouldRollbackChanges_WhenTransactionFails()
+save_ShouldRollback_WhenTransactionFails()
+findById_ShouldReturnEmpty_WhenRecordDoesNotExist()
 ```
 
-Tên test phải mô tả hành vi quan sát được, không mô tả implementation:
+Ví dụ không đúng:
 
 ```java
-// Avoid
-create_ShouldCallRepositoryOnce_WhenRequestIsValid()
-
-// Prefer
-create_ShouldPersistOrder_WhenRequestIsValid()
+testCalculate()
+testCase1()
+shouldCallRepositoryOnce()
+create_WhenRequestIsValid_ShouldPersistOrder()
 ```
 
-## 5. Cấu trúc test
+## 7. Bố cục Given-When-Then
 
-Mỗi test nên có một hành động chính và tuân theo bố cục Given-When-Then:
+Test method phải trình bày theo thứ tự:
+
+```text
+Given → When → Then
+```
+
+Mỗi phần được phân tách bằng một dòng trống:
 
 ```java
 @Test
@@ -172,30 +181,106 @@ void calculate_ShouldReturnDiscountedPrice_WhenCustomerIsEligible() {
 }
 ```
 
-Quy tắc:
+Quy ước comment phân đoạn:
 
-- `Given`: chuẩn bị dữ liệu và trạng thái cần thiết.
-- `When`: thực hiện một hành động chính.
-- `Then`: kiểm tra kết quả và các side effect quan trọng.
-- Không đặt logic điều kiện hoặc vòng lặp phức tạp trong test.
-- Không gom nhiều kịch bản không liên quan vào cùng một test.
+```java
+// Given
+// When
+// Then
+```
 
-## 6. Test double
+Khi hành động được thực hiện trực tiếp trong assertion, sử dụng:
 
-Ưu tiên lựa chọn theo thứ tự:
+```java
+// When / Then
+```
 
-1. Giá trị hoặc object thật.
-2. Fake.
-3. Stub.
-4. Mock.
+Ví dụ:
 
-Sử dụng:
+```java
+@Test
+void create_ShouldRejectRequest_WhenEmailIsInvalid() {
+    // Given
+    CreateCustomerCommand command = commandWithEmail("invalid");
 
-- **Fake** khi cần implementation đơn giản có trạng thái, ví dụ repository trong bộ nhớ.
-- **Stub** khi dependency chỉ cần trả về dữ liệu đã xác định.
-- **Mock** khi interaction với dependency chính là contract cần kiểm tra.
+    // When / Then
+    assertThatThrownBy(() -> service.create(command))
+            .isInstanceOf(InvalidEmailException.class)
+            .hasMessage("Email format is invalid");
+}
+```
 
-Tên test double nên thể hiện đúng vai trò:
+## 8. Assertion
+
+Trong cùng một dự án, test phải sử dụng thống nhất một assertion library. Đối với dự án Java, mặc
+định sử dụng AssertJ trừ khi dự án đã quy định công cụ khác.
+
+Ưu tiên assertion trực tiếp trên object, collection và kiểu dữ liệu có cấu trúc:
+
+```java
+assertThat(result.status()).isEqualTo(OrderStatus.CONFIRMED);
+
+assertThat(results)
+        .extracting(OrderResult::id)
+        .containsExactly(expectedId);
+```
+
+Exception assertion phải thể hiện ít nhất loại exception:
+
+```java
+assertThatThrownBy(() -> service.execute(command))
+        .isInstanceOf(InvalidCommandException.class);
+```
+
+Không trộn nhiều assertion style trong cùng một test class nếu không có lý do bắt buộc từ framework.
+
+## 9. Tên test data
+
+Test data class sử dụng cấu trúc:
+
+```text
+<DomainType>TestData
+<DomainType>Fixture
+<DomainType>TestBuilder
+```
+
+Ví dụ:
+
+```java
+CustomerTestData
+OrderFixture
+PaymentTestBuilder
+```
+
+Factory method phải mô tả trạng thái dữ liệu:
+
+```java
+validCustomer()
+activeOrder()
+expiredPayment()
+commandWithEmail(String email)
+```
+
+Không dùng tên chung chung:
+
+```java
+createData()
+getObject()
+buildTest1()
+sample()
+```
+
+## 10. Tên test double
+
+Tên test double phải thể hiện vai trò:
+
+```text
+Fake<Type>
+Stub<Type>
+Recording<Type>
+```
+
+Ví dụ:
 
 ```java
 FakeOrderRepository
@@ -203,119 +288,85 @@ StubExchangeRateProvider
 RecordingEventPublisher
 ```
 
-Không lạm dụng mock để kiểm tra mọi lời gọi nội bộ. Việc verify quá nhiều interaction làm test dễ
-vỡ khi refactor.
+Chỉ sử dụng tiền tố `Mock` khi object thực sự là mock hoặc được tạo để đại diện cho mock được chia sẻ.
 
-## 7. Assertion
+## 11. Tên Integration Test support
 
-Assertion phải tập trung vào kết quả có ý nghĩa:
+Base class cho Integration Test sử dụng cấu trúc:
 
-```java
-assertThat(result.status()).isEqualTo(OrderStatus.CONFIRMED);
-assertThat(savedOrder.total()).isEqualTo(expectedTotal);
+```text
+Abstract<ContextOrBoundary>IT
 ```
 
-Khi kiểm tra lỗi, nên kiểm tra cả loại lỗi và thông tin quan trọng:
+Ví dụ:
 
 ```java
-assertThatThrownBy(() -> service.create(command))
-        .isInstanceOf(InvalidOrderException.class)
-        .hasMessageContaining("quantity");
+AbstractDatabaseIT
+AbstractWebIT
+AbstractApplicationIT
 ```
 
-Ưu tiên assertion trên object, collection hoặc kiểu dữ liệu có cấu trúc thay vì so sánh chuỗi thô.
-Thông báo thất bại phải giúp xác định ràng buộc nào đã bị phá vỡ.
-
-## 8. Quy tắc cho Integration Test
-
-Integration Test phải:
-
-- Sử dụng dependency thật hoặc gần với môi trường thật.
-- Chạy độc lập với thứ tự test.
-- Không phụ thuộc dữ liệu còn lại từ test trước.
-- Chuẩn bị và dọn dữ liệu một cách rõ ràng.
-- Không dùng chung trạng thái có thể thay đổi nếu chưa có cơ chế cô lập.
-- Không mặc định dùng transaction rollback nếu cần kiểm tra commit, lock hoặc transaction thật.
-
-Với database, ưu tiên database cùng loại với production khi SQL, transaction hoặc mapping có ý
-nghĩa. Có thể sử dụng container để tạo môi trường tái lập.
-
-## 9. Dữ liệu test
-
-Dữ liệu test phải:
-
-- Chỉ chứa thông tin cần thiết cho kịch bản.
-- Thể hiện rõ giá trị nào quan trọng đối với hành vi đang kiểm tra.
-- Không phụ thuộc thời gian, ID ngẫu nhiên hoặc môi trường nếu chưa kiểm soát được.
-- Không sử dụng fixture quá lớn cho mọi test.
-
-Có thể dùng factory hoặc builder:
+Helper dành riêng cho test phải dùng tên mô tả trách nhiệm:
 
 ```java
-Order order = OrderTestData.validOrder()
-        .withQuantity(2)
-        .build();
+DatabaseCleaner
+TestClock
+TestIdGenerator
+HttpResponseRecorder
 ```
 
-Các dependency không ổn định như clock, ID generator và random generator nên được đưa vào qua
-abstraction để test có thể kiểm soát.
+Tránh các tên chung chung như `TestUtils`, `CommonTestHelper` hoặc `BaseTest`.
 
-## 10. Tính độc lập và ổn định
+## 12. Parameterized Test
 
-Mỗi test phải có thể:
+Parameterized Test vẫn sử dụng quy ước tên method thông thường:
 
-- Chạy riêng lẻ.
-- Chạy cùng toàn bộ test suite.
-- Chạy lặp lại và cho cùng kết quả.
-- Chạy theo thứ tự bất kỳ.
-- Chạy song song nếu dự án hỗ trợ.
+```java
+@ParameterizedTest
+@ValueSource(strings = {"", "invalid", "example@"})
+void parse_ShouldRejectValue_WhenEmailIsInvalid(String value) {
+    // When / Then
+    assertThatThrownBy(() -> EmailAddress.parse(value))
+            .isInstanceOf(InvalidEmailException.class);
+}
+```
 
-Không khắc phục flaky test bằng cách retry vô điều kiện. Phải tìm nguyên nhân như shared state,
-thời gian, race condition, network hoặc dữ liệu không được dọn sạch.
+Khi khai báo display name, nội dung phải ngắn và dùng tiếng Anh:
 
-## 11. Coverage
+```java
+@ParameterizedTest(name = "[{index}] rejects {0}")
+```
 
-Coverage chỉ là tín hiệu hỗ trợ, không phải mục tiêu chất lượng độc lập.
+Không dùng display name để thay thế một tên method không rõ nghĩa.
 
-Ưu tiên coverage cho:
+## 13. Các tên bị cấm
 
-- Business rule quan trọng.
-- Nhánh lỗi có ý nghĩa.
-- State transition.
-- Transaction và rollback.
-- Security rule.
-- Contract với hệ thống bên ngoài.
-- Các lỗi đã từng xảy ra.
+Không sử dụng:
 
-Không viết test không có giá trị chỉ để tăng tỷ lệ coverage.
+```text
+Test1
+TestClass
+BaseTest
+CommonTest
+TestUtils
+testMethod1
+shouldWork
+shouldPass
+happyPath
+w1Test
+sprint2Test
+```
 
-## 12. Xác nhận hoàn thành và lưu kết quả
+Tên test phải giữ được ý nghĩa sau khi task, sprint hoặc giai đoạn triển khai kết thúc.
 
-- Phải thực sự chạy đầy đủ các test, build, migration và kiểm tra thủ công bắt buộc của phạm vi
-  đang nghiệm thu.
-- Chỉ xác nhận hoàn thành khi tất cả kiểm tra bắt buộc đã pass. Kiểm tra chưa chạy là `NOT_RUN`,
-  không được suy ra là pass.
-- Không tạo hoặc commit file evidence riêng, bản chép log, ảnh chụp hay báo cáo tường thuật chỉ
-  để chứng minh đã chạy kiểm tra.
-- Log và report do công cụ sinh có thể chỉ tồn tại tạm thời trên máy local hoặc CI. Không đưa chúng
-  vào Git nếu bản thân chúng không phải deliverable kỹ thuật đã được yêu cầu rõ.
-- Test, migration, script kiểm tra, dataset/config có version và báo cáo đánh giá chuyên môn bắt
-  buộc vẫn được lưu khi chính chúng là deliverable có thể chạy lại hoặc dùng để ra quyết định.
-- Khi kiểm tra fail hoặc bị chặn, báo đúng lỗi và xử lý trước khi hoàn thành; không cần tạo một tài
-  liệu evidence riêng để kể lại kết quả đó.
+## 14. Checklist
 
-## 13. Checklist
-
-- Test đang bảo vệ hành vi hoặc ràng buộc nào?
-- Happy path và failure path quan trọng đã được kiểm tra chưa?
-- Giá trị biên có ảnh hưởng đến kết quả không?
-- Test có phụ thuộc implementation detail không?
-- Test có còn đúng sau khi refactor nội bộ không?
-- Mỗi test có đúng một hành động chính không?
-- Tên test có thể hiện operation, kết quả và điều kiện không?
-- Test có dùng đúng hậu tố `*Test` hoặc `*IT` không?
-- Test có được chạy trong đúng luồng build không?
-- Test có chạy độc lập và lặp lại ổn định không?
-- Test double có được sử dụng đúng mục đích không?
-- Integration Test có sử dụng dependency phù hợp với mục tiêu kiểm tra không?
-- Khi test thất bại, nguyên nhân có dễ nhận biết không?
+- Class hoặc file có dùng đúng hậu tố `*Test` hoặc `*IT` không?
+- Test có chạy trong đúng luồng build không?
+- Package test có phản ánh production package hoặc boundary không?
+- Tên class có nói rõ đối tượng hoặc behavior được kiểm tra không?
+- Tên method có đúng mẫu `<operation>_Should<ExpectedResult>_When<Condition>` không?
+- Test có được trình bày theo Given-When-Then không?
+- Assertion style có thống nhất không?
+- Test data và test double có tên thể hiện đúng vai trò không?
+- Có tên chung chung, tên theo số thứ tự hoặc tên theo task không?
