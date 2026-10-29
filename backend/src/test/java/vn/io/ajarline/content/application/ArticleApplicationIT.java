@@ -11,7 +11,6 @@ import vn.io.ajarline.support.ContentApplicationTestConfiguration;
 import vn.io.ajarline.support.MutableClock;
 import vn.io.ajarline.support.PostgreSqlTestConfiguration;
 
-import java.time.Clock;
 import java.time.Instant;
 import java.time.OffsetDateTime;
 import java.time.ZoneOffset;
@@ -26,13 +25,16 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
                 ContentApplicationTestConfiguration.class}
 )
 public class ArticleApplicationIT {
-    private static final Instant CREATE_AT = Instant.parse("2026-10-26T00:00:00Z");
+    private static final Instant CREATED_AT = Instant.parse("2026-10-26T00:00:00Z");
 
     @Autowired
     private ArticleCreator articleCreator;
 
     @Autowired
     private ArticleReader articleReader;
+
+    @Autowired
+    private ArticleEditor articleEditor;
 
     @Autowired
     private MutableClock clock;
@@ -43,7 +45,7 @@ public class ArticleApplicationIT {
     @BeforeEach
     void resetDatabaseAndClock() {
         jdbcTemplate.update("DELETE FROM content_item");
-        clock.set(CREATE_AT);
+        clock.set(CREATED_AT);
     }
 
     @Test
@@ -58,8 +60,8 @@ public class ArticleApplicationIT {
         assertThat(created.revision()).isEqualTo(1);
         assertThat(created.publishedAt()).isNull();
         assertThat(created.unpublishedAt()).isNull();
-        assertThat(created.createdAt()).isEqualTo(CREATE_AT);
-        assertThat(created.updatedAt()).isEqualTo(CREATE_AT);
+        assertThat(created.createdAt()).isEqualTo(CREATED_AT);
+        assertThat(created.updatedAt()).isEqualTo(CREATED_AT);
         assertThat(rowCount("content_item")).isEqualTo(1);
         assertThat(rowCount("article")).isEqualTo(1);
     }
@@ -106,13 +108,91 @@ public class ArticleApplicationIT {
                 UPDATE content_item
                 SET status = 'PUBLISHED', published_at = ?
                 WHERE id = ?
-                """, OffsetDateTime.ofInstant(CREATE_AT, ZoneOffset.UTC), createdArticle.id());
+                """, OffsetDateTime.ofInstant(CREATED_AT, ZoneOffset.UTC), createdArticle.id());
 
         ArticleView found = articleReader.findPublishedBySlug("published-article").orElseThrow();
 
         assertThat(found.status()).isEqualTo(PublicationStatus.PUBLISHED);
         assertThat(found.bodyMarkdown()).isEqualTo("# body");
     }
+
+    @Test
+    void replace_ShouldAdvanceRevisionOne_WhenContentChanges() {
+        ArticleView oldArticle = articleCreator.create(input("java-threads", "# Old body"));
+        Instant changedAt = Instant.parse("2026-10-26T01:00:00Z");
+        clock.set(changedAt);
+
+        ArticleView newArticle = articleEditor.replace(oldArticle.id(), 1,
+                input("java-threads", "# New body"));
+
+        assertThat(newArticle.revision()).isEqualTo(2);
+        assertThat(newArticle.bodyMarkdown()).isEqualTo("# New body");
+        assertThat(newArticle.updatedAt()).isEqualTo(changedAt);
+    }
+
+    @Test
+    void replace_ShouldKeepRevisionAndTime_WhenContentIsEffectiveNoOp() {
+        ArticleView created = articleCreator.create(input("java-threads", "Same body"));
+        Instant changedAt = Instant.parse("2026-10-26T01:00:00Z");
+        clock.set(changedAt);
+
+        ArticleView unchanged = articleEditor.replace(created.id(), 1,
+                input("java-threads", "Same body"));
+
+        assertThat(unchanged.revision()).isEqualTo(1);
+        assertThat(unchanged.updatedAt()).isEqualTo(CREATED_AT);
+
+    }
+
+    @Test
+    void replace_ShouldRejectMutation_WhenRevisionIsStale() {
+        ArticleView created = articleCreator.create(input("java-threads", "Old body"));
+        articleEditor.replace(created.id(), 1, input("java-threads", "New body"));
+
+        assertThatThrownBy(() -> articleEditor.replace(created.id(), 1,
+                input("java-threads", "Body xyz")))
+                .isInstanceOfSatisfying(ContentOperationException.class,
+                        e -> assertThat(e.code()).isEqualTo(ContentFailureCode.REVISION_CONFLICT));
+
+        assertThat(articleReader.get(created.id()).bodyMarkdown()).isEqualTo("New body");
+    }
+
+    @Test
+    void replace_ShouldRejectSlugChange_WhenArticleWasPublishedBefore() {
+        ArticleView created = articleCreator.create(input("java-threads", "Body"));
+        jdbcTemplate.update("""
+                UPDATE content_item
+                SET status = 'UNPUBLISHED', published_at = ?
+                WHERE id = ?
+                """, OffsetDateTime.ofInstant(CREATED_AT, ZoneOffset.UTC), created.id());
+
+        assertThatThrownBy(() -> articleEditor.replace(created.id(), 1,
+                input("new-slug", "Body")))
+                .isInstanceOfSatisfying(ContentOperationException.class,
+                        e -> assertThat(e.code())
+                                .isEqualTo(ContentFailureCode.SLUG_IMMUTABLE_AFTER_PUBLICATION));
+    }
+
+    @Test
+    void replace_ShouldRollbackContent_WhenSlugConflicts() {
+        articleCreator.create(input("exist-slug", "Body"));
+        ArticleView target = articleCreator.create(input("target-slug", "Original Body"));
+        clock.set(Instant.parse("2026-10-26T03:00:00Z"));
+
+        assertThatThrownBy(() -> articleEditor.replace(
+                target.id(), 1, input(
+                        "exist-slug", "Change Body"
+                )
+        )).isInstanceOfSatisfying(ContentOperationException.class,
+                e -> assertThat(e.code()).isEqualTo(ContentFailureCode.SLUG_CONFLICT));
+
+        ArticleView persisted = articleReader.get(target.id());
+        assertThat(persisted.slug()).isEqualTo("target-slug");
+        assertThat(persisted.bodyMarkdown()).isEqualTo("Original Body");
+        assertThat(persisted.revision()).isEqualTo(1);
+        assertThat(persisted.updatedAt()).isEqualTo(CREATED_AT);
+    }
+
 
     private ArticleContentInput input(String slug, String bodyMarkdown) {
         return new ArticleContentInput("Java threads", slug, null, bodyMarkdown);

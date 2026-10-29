@@ -16,7 +16,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Service
-public class ArticleService implements ArticleCreator, ArticleReader {
+public class ArticleService implements ArticleCreator, ArticleReader, ArticleEditor {
     private static final String SLUG_CONSTRAINT = "uk_content_item_type_slug";
     private final ContentItemJpaRepository contentRepository;
     private final ArticleJpaRepository articleRepository;
@@ -44,7 +44,7 @@ public class ArticleService implements ArticleCreator, ArticleReader {
 
         contentRepository.save(contentItemEntity);
         articleRepository.save(articleEntity);
-        flushCanonicalWrite(contentRepository, articleRepository);
+        flushCanonicalWrite();
         return toView(contentItemEntity, articleEntity);
     }
 
@@ -83,8 +83,7 @@ public class ArticleService implements ArticleCreator, ArticleReader {
      * Flushes Article changes to detect database errors before commit.
      * Converts slug conflicts into content errors.
      */
-    private void flushCanonicalWrite(ContentItemJpaRepository contentRepository,
-                                     ArticleJpaRepository articleRepository) {
+    private void flushCanonicalWrite() {
         try {
             contentRepository.flush();
             articleRepository.flush();
@@ -133,5 +132,53 @@ public class ArticleService implements ArticleCreator, ArticleReader {
     private ContentOperationException notFound(UUID id) {
         return new ContentOperationException(ContentFailureCode.CONTENT_NOT_FOUND,
                 "Article was not found: " + id);
+    }
+
+    @Override
+    @Transactional
+    public ArticleView replace(UUID id, long expectedRevision, ArticleContentInput input) {
+        ArticleContentInput normalizedInput = policy.normalizeAndValidate(input);
+        ContentItemEntity contentItemEntity = contentRepository.findByIdForUpdate(id)
+                .filter(contentItem -> contentItem.getType() == ContentType.ARTICLE)
+                .orElseThrow(() -> notFound(id));
+        ArticleEntity articleEntity = requireArticle(id);
+
+        if (contentItemEntity.getRevision() != expectedRevision) {
+            throw new ContentOperationException(
+                    ContentFailureCode.REVISION_CONFLICT,
+                    "Article revision does not match the expected revision."
+            );
+        }
+
+        boolean hasSlugChanged = !contentItemEntity.getSlug().equals(normalizedInput.slug());
+        if (contentItemEntity.hasEverBeenPublished() && hasSlugChanged) {
+            throw new ContentOperationException(
+                    ContentFailureCode.SLUG_IMMUTABLE_AFTER_PUBLICATION,
+                    "Slug cannot change after the first publication."
+            );
+        }
+
+        boolean hasCommonChanged = !contentItemEntity.hasSameEditableContent(
+                normalizedInput.title(),
+                normalizedInput.slug(),
+                normalizedInput.summary()
+        );
+
+        boolean hasBodyChanged = !articleEntity.hasSameBody(normalizedInput.bodyMarkdown());
+        if (!hasCommonChanged && !hasBodyChanged) {
+            return toView(contentItemEntity, articleEntity);
+        }
+
+        Instant now = clock.instant();
+        contentItemEntity.replaceEditTableContent(
+                normalizedInput.title(),
+                normalizedInput.slug(),
+                normalizedInput.summary(),
+                now
+        );
+
+        articleEntity.replaceBody(normalizedInput.bodyMarkdown());
+        flushCanonicalWrite();
+        return toView(contentItemEntity, articleEntity);
     }
 }
