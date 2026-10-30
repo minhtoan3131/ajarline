@@ -9,3 +9,28 @@ spring:
   sql:
     init:
       mode: never
+
+server:
+  servlet:
+    session:
+      timeout: 2h
+      tracking-modes: cookie
+      cookie:
+        name: AJARLINE_SESSION
+        path: /api
+        secure: true
+        http-only: true
+        same-site: lax
+
+---
+
+spring:
+  config:
+    activate:
+      on-profile: local
+
+server:
+  servlet:
+    session:
+      cookie:
+        secure: false
