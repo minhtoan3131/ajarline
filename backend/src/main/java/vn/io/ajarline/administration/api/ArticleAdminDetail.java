@@ -1,0 +1,50 @@
+package vn.io.ajarline.administration.api;
+
+import vn.io.ajarline.content.contract.ArticleView;
+import vn.io.ajarline.content.contract.PublicationStatus;
+
+import java.time.Instant;
+import java.util.List;
+import java.util.UUID;
+
+/**
+ * Represents the Article data returned by the Admin API.
+ */
+public record ArticleAdminDetail(
+        UUID id,
+        String type,
+        String title,
+        String slug,
+        String summary,
+        String bodyMarkdown,
+        UUID moduleId,
+        Integer position,
+        List<UUID> topicIds,
+        PublicationStatus status,
+        long revision,
+        Instant publishedAt,
+        Instant unpublishedAt,
+        Instant createdAt,
+        Instant updatedAt
+) {
+    static ArticleAdminDetail from(ArticleView view) {
+        //TODO: Compose relationship fields from the owning capabilities
+        return new ArticleAdminDetail(
+                view.id(),
+                "article",
+                view.title(),
+                view.slug(),
+                view.summary(),
+                view.bodyMarkdown(),
+                null,
+                null,
+                List.of(),
+                view.status(),
+                view.revision(),
+                view.publishedAt(),
+                view.unpublishedAt(),
+                view.createdAt(),
+                view.updatedAt()
+        );
+    }
+}
