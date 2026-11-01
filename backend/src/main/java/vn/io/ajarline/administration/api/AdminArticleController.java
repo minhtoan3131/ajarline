@@ -1,5 +1,6 @@
 package vn.io.ajarline.administration.api;
 
+import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.CacheControl;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
@@ -19,10 +20,12 @@ public class AdminArticleController {
     private static final String BASE_PATH = "/api/admin/v1/articles";
     private final ArticleCreator creator;
     private final ArticleReader reader;
+    private final ArticleEditor editor;
 
-    public AdminArticleController(ArticleCreator creator, ArticleReader reader) {
+    public AdminArticleController(ArticleCreator creator, ArticleReader reader, ArticleEditor editor) {
         this.creator = creator;
         this.reader = reader;
+        this.editor = editor;
     }
 
     @PostMapping(
@@ -48,5 +51,25 @@ public class AdminArticleController {
                 .cacheControl(CacheControl.noStore())
                 .body(ArticleAdminDetail.from(article));
 
+    }
+
+    @PutMapping(
+            value = "/{id}",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public ResponseEntity<ArticleAdminDetail> update(
+            @PathVariable UUID id,
+            @RequestBody(required = false) JsonNode body,
+            HttpServletRequest request
+    ) {
+        long expectedRevision = RevisionHttpHeaders.requiredExpectedRevision(request);
+        ArticleEditable editable = ArticleEditable.parse(body);
+        // TODO: Coordinate Module membership and Topic assignment through their owners.
+        ArticleView updated = editor.replace(id, expectedRevision, editable.toContentInput());
+        return ResponseEntity.ok()
+                .eTag(RevisionHttpHeaders.etag(updated.revision()))
+                .cacheControl(CacheControl.noStore())
+                .body(ArticleAdminDetail.from(updated));
     }
 }

@@ -42,10 +42,9 @@ public class AdminArticleApiException extends RuntimeException {
 
     static AdminArticleApiException preconditionRequired() {
         return new AdminArticleApiException(
-                418,
-                "REVISION_PRECONDITION_REQURIRED",
-                "If-Match revision precondition is required.",
-                "If-Match revision precondition is required."
-        );
+                428,
+                "REVISION_PRECONDITION_REQUIRED",
+                "If-Match revision precondition is required",
+                "If-Match revision precondition is required.");
     }
 }

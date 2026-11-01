@@ -185,9 +185,20 @@ abstract class AbstractAdminAuthenticationIT {
                     body == null ? null : "application/json");
         }
 
+        protected HttpResponse<String> put(
+                String path, String body, String token, String ifMatch) throws Exception {
+            return send("PUT", path, body, token, "application/json", ifMatch);
+        }
+
         protected HttpResponse<String> send(
                 String method, String path, String body, String token, String contentType)
                 throws Exception {
+            return send(method, path, body, token, contentType, null);
+        }
+
+        protected HttpResponse<String> send(
+                String method, String path, String body, String token,
+                String contentType, String ifMatch) throws Exception {
             HttpRequest.Builder request = HttpRequest.newBuilder()
                     .uri(URI.create("http://127.0.0.1:" + port + path))
                     .timeout(Duration.ofSeconds(10));
@@ -199,6 +210,9 @@ abstract class AbstractAdminAuthenticationIT {
             }
             if (contentType != null) {
                 request.header("Content-Type", contentType);
+            }
+            if (ifMatch != null) {
+                request.header("If-Match", ifMatch);
             }
             request.method(method, body == null
                     ? HttpRequest.BodyPublishers.noBody()
