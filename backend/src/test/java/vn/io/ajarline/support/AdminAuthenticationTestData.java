@@ -2,7 +2,7 @@ package vn.io.ajarline.support;
 
 import java.util.UUID;
 import org.springframework.security.crypto.password.Pbkdf2PasswordEncoder;
-import vn.io.ajarline.platform.security.AdminCredentials;
+import vn.io.ajarline.platform.security.authentication.AdminCredentials;
 
 /** Creates an ephemeral test identity without storing a usable password in source. */
 public final class AdminAuthenticationTestData {

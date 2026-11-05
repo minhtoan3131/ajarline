@@ -9,7 +9,7 @@ import org.springframework.security.core.AuthenticationException;
 import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
-import vn.io.ajarline.platform.security.AdminLoginLockedException;
+import vn.io.ajarline.platform.security.authentication.AdminLoginLockedException;
 import vn.io.ajarline.platform.web.ApiProblemWriter;
 
 @RestControllerAdvice

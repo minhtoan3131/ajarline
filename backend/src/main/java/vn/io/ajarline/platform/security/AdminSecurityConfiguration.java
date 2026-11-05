@@ -31,6 +31,8 @@ import org.springframework.security.web.csrf.CsrfTokenRequestHandler;
 import org.springframework.security.web.csrf.HttpSessionCsrfTokenRepository;
 import org.springframework.security.web.csrf.XorCsrfTokenRequestAttributeHandler;
 import org.springframework.security.web.savedrequest.NullRequestCache;
+import vn.io.ajarline.platform.security.authentication.AdminAuthenticationProvider;
+import vn.io.ajarline.platform.security.authentication.AdminCredentials;
 import vn.io.ajarline.platform.web.ApiProblemWriter;
 
 @Configuration(proxyBeanMethods = false)

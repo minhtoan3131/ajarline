@@ -32,7 +32,7 @@ import org.springframework.web.bind.annotation.RestController;
 import tools.jackson.databind.JsonNode;
 import tools.jackson.databind.ObjectMapper;
 import tools.jackson.databind.json.JsonMapper;
-import vn.io.ajarline.platform.security.AdminAuthenticationProvider;
+import vn.io.ajarline.platform.security.authentication.AdminAuthenticationProvider;
 import vn.io.ajarline.support.AdminAuthenticationTestData;
 import vn.io.ajarline.support.MutableClock;
 

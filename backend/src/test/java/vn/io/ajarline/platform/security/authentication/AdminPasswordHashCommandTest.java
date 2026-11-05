@@ -1,4 +1,4 @@
-package vn.io.ajarline.platform.security;
+package vn.io.ajarline.platform.security.authentication;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;

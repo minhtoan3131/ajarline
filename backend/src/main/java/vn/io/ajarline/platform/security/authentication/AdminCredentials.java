@@ -1,4 +1,4 @@
-package vn.io.ajarline.platform.security;
+package vn.io.ajarline.platform.security.authentication;
 
 public record AdminCredentials(
         String username,

@@ -1,4 +1,4 @@
-package vn.io.ajarline.platform.security;
+package vn.io.ajarline.platform.security.authentication;
 
 import org.springframework.security.authentication.AuthenticationProvider;
 import org.springframework.security.authentication.BadCredentialsException;
