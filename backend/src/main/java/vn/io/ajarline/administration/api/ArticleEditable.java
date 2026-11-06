@@ -5,12 +5,20 @@ import java.util.HashSet;
 import java.util.List;
 import java.util.Set;
 import java.util.UUID;
+
+import io.swagger.v3.oas.annotations.media.Schema;
 import tools.jackson.databind.JsonNode;
 import vn.io.ajarline.content.contract.ArticleContentInput;
 
 /**
  * Represents the complete editable Article payload at the Admin HTTP boundary.
  */
+@Schema(
+        description = "Complete editable Article payload. moduleId and position must both be null or both be present.",
+        requiredProperties = {
+                "title", "slug", "summary", "bodyMarkdown", "moduleId", "position", "topicIds"
+        }
+)
 public record ArticleEditable(
         String title,
         String slug,

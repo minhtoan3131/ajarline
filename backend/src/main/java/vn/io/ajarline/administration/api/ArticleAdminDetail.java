@@ -1,5 +1,6 @@
 package vn.io.ajarline.administration.api;
 
+import io.swagger.v3.oas.annotations.media.Schema;
 import vn.io.ajarline.content.contract.ArticleView;
 import vn.io.ajarline.content.contract.PublicationStatus;
 
@@ -10,6 +11,11 @@ import java.util.UUID;
 /**
  * Represents the Article data returned by the Admin API.
  */
+@Schema(requiredProperties = {
+        "id", "type", "title", "slug", "summary", "bodyMarkdown",
+        "moduleId", "position", "topicIds", "status", "revision",
+        "publishedAt", "unpublishedAt", "createdAt", "updatedAt"
+})
 public record ArticleAdminDetail(
         UUID id,
         String type,
