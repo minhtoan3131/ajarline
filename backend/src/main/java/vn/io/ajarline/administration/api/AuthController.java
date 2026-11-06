@@ -60,15 +60,10 @@ public class AuthController {
     public SessionResponse login(
             @RequestBody(required = false) JsonNode body,
             HttpServletRequest request, HttpServletResponse response) {
-        if (body == null || !body.isObject() || body.size() != 2
-                || !text(body.get("username"), 1, 200)
-                || body.get("username").asText().isBlank()
-                || !text(body.get("password"), 1, 1024)) {
-            throw new InvalidAuthRequestException();
-        }
+        AdminLoginRequest credentials = AdminLoginRequest.parse(body);
         Authentication authentication = manager.authenticate(
                 UsernamePasswordAuthenticationToken.unauthenticated(
-                        body.get("username").asText(), body.get("password").asText()));
+                        credentials.username(), credentials.password()));
 
         sessions.onAuthentication(authentication, request, response);
         SecurityContext context = SecurityContextHolder.createEmptyContext();
@@ -88,15 +83,6 @@ public class AuthController {
         }
         csrfLogout.logout(request, response, authentication);
         securityLogout.logout(request, response, authentication);
-    }
-
-    private static boolean text(JsonNode node, int min, int max) {
-        if (node == null || !node.isTextual()) {
-            return false;
-        }
-        String value = node.asText();
-        int length = value.codePointCount(0, value.length());
-        return length >= min && length <= max;
     }
 
     public record CsrfResponse(String token, String headerName) {

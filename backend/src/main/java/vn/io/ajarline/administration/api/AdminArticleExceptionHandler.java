@@ -12,6 +12,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import vn.io.ajarline.content.contract.ContentFailureCode;
 import vn.io.ajarline.content.contract.ContentOperationException;
+import vn.io.ajarline.platform.web.ApiProblem;
 import vn.io.ajarline.platform.web.ApiProblemWriter;
 
 import java.util.Map;
@@ -27,7 +28,7 @@ public class AdminArticleExceptionHandler {
     }
 
     @ExceptionHandler(AdminArticleApiException.class)
-    ResponseEntity<Map<String, Object>> boundary(AdminArticleApiException exception, HttpServletRequest request) {
+    ResponseEntity<ApiProblem> boundary(AdminArticleApiException exception, HttpServletRequest request) {
         return problems.response(
                 request,
                 exception.status(),
@@ -38,7 +39,7 @@ public class AdminArticleExceptionHandler {
     }
 
     @ExceptionHandler(ContentOperationException.class)
-    ResponseEntity<Map<String, Object>> content(ContentOperationException exception, HttpServletRequest request) {
+    ResponseEntity<ApiProblem> content(ContentOperationException exception, HttpServletRequest request) {
         ProblemMapping mapping = mapping(exception.code());
         return problems.response(
                 request,
@@ -50,28 +51,28 @@ public class AdminArticleExceptionHandler {
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
-    ResponseEntity<Map<String, Object>> malformedJson(HttpServletRequest request) {
+    ResponseEntity<ApiProblem> malformedJson(HttpServletRequest request) {
         return problems.response(
                 request, 400, "MALFORMED_JSON",
                 "Request JSON is malformed", "Request JSON is malformed.");
     }
 
     @ExceptionHandler(HttpMediaTypeNotSupportedException.class)
-    ResponseEntity<Map<String, Object>> unsupportedMediaType(HttpServletRequest request) {
+    ResponseEntity<ApiProblem> unsupportedMediaType(HttpServletRequest request) {
         return problems.response(
                 request, 415, "UNSUPPORTED_MEDIA_TYPE",
                 "Unsupported media type", "Use application/json.");
     }
 
     @ExceptionHandler(MethodArgumentTypeMismatchException.class)
-    ResponseEntity<Map<String, Object>> invalidUuid(HttpServletRequest request) {
+    ResponseEntity<ApiProblem> invalidUuid(HttpServletRequest request) {
         return problems.response(
                 request, 400, "INVALID_UUID",
                 "UUID is invalid", "id must be a valid UUID.");
     }
 
     @ExceptionHandler(Exception.class)
-    ResponseEntity<Map<String, Object>> unexpected(HttpServletRequest request) {
+    ResponseEntity<ApiProblem> unexpected(HttpServletRequest request) {
         return problems.response(
                 request, 500, "INTERNAL_ERROR",
                 "Unexpected internal failure", "Unexpected internal failure.");
