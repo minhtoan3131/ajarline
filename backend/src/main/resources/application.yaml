@@ -34,3 +34,21 @@ server:
     session:
       cookie:
         secure: false
+
+---
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  packages-to-scan:
+    - vn.io.ajarline.administration.api
+  paths-to-match:
+    - /api/auth/v1/**
+    - /api/admin/v1/articles
+    - /api/admin/v1/articles/**
+  swagger-ui:
+    path: /swagger-ui.html
+    disable-swagger-default-url: true
+    operations-sorter: method
+    tags-sorter: alpha
+

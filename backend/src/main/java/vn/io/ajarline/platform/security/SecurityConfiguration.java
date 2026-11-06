@@ -130,6 +130,11 @@ public class SecurityConfiguration {
                         .dispatcherTypeMatchers(DispatcherType.ERROR).permitAll()
                         .requestMatchers(
                                 HttpMethod.GET,
+                                "/v3/api-docs/**",
+                                "/swagger-ui.html",
+                                "/swagger-ui/**").permitAll()
+                        .requestMatchers(
+                                HttpMethod.GET,
                                 "/api/auth/v1/csrf",
                                 "/api/auth/v1/session").permitAll()
                         .requestMatchers(
