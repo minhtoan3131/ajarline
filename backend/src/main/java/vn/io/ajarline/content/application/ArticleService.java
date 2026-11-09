@@ -2,6 +2,7 @@ package vn.io.ajarline.content.application;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import vn.io.ajarline.content.contract.*;
 import vn.io.ajarline.content.infrastructure.persistence.ArticleEntity;
@@ -16,7 +17,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Service
-public class ArticleService implements ArticleCreator, ArticleReader, ArticleEditor {
+public class ArticleService implements ArticleCreator, ArticleReader, ArticleEditor, ArticlePublicationAccess {
     private static final String SLUG_CONSTRAINT = "uk_content_item_type_slug";
     private final ContentItemJpaRepository contentRepository;
     private final ArticleJpaRepository articleRepository;
@@ -138,10 +139,9 @@ public class ArticleService implements ArticleCreator, ArticleReader, ArticleEdi
     @Transactional
     public ArticleView replace(UUID id, long expectedRevision, ArticleContentInput input) {
         ArticleContentInput normalizedInput = policy.normalizeAndValidate(input);
-        ContentItemEntity contentItemEntity = contentRepository.findByIdForUpdate(id)
-                .filter(contentItem -> contentItem.getType() == ContentType.ARTICLE)
-                .orElseThrow(() -> notFound(id));
-        ArticleEntity articleEntity = requireArticle(id);
+        LockedArticle locked = lockArticle(id, expectedRevision);
+        ContentItemEntity contentItemEntity = locked.content();
+        ArticleEntity articleEntity = locked.article();
 
         if (contentItemEntity.getRevision() != expectedRevision) {
             throw new ContentOperationException(
@@ -181,4 +181,59 @@ public class ArticleService implements ArticleCreator, ArticleReader, ArticleEdi
         flushCanonicalWrite();
         return toView(contentItemEntity, articleEntity);
     }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public ArticleView lockForPublication(UUID id, long expectedRevision) {
+        LockedArticle locked = lockArticle(id, expectedRevision);
+        return toView(locked.content(), locked.article());
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public ArticleView markPublished(
+            UUID id,
+            long expectedRevision,
+            Instant changedAt
+    ) {
+        LockedArticle locked = lockArticle(id, expectedRevision);
+        locked.content().markPublished(changedAt);
+        flushCanonicalWrite();
+        return toView(locked.content(), locked.article());
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public ArticleView markUnpublished(
+            UUID id,
+            long expectedRevision,
+            Instant changedAt
+    ) {
+        LockedArticle locked = lockArticle(id, expectedRevision);
+        locked.content().markUnpublished(changedAt);
+        flushCanonicalWrite();
+        return toView(locked.content(), locked.article());
+    }
+
+
+    private LockedArticle lockArticle(UUID id, long expectedRevision) {
+        ContentItemEntity content = contentRepository.findByIdForUpdate(id)
+                .filter(item -> item.getType() == ContentType.ARTICLE)
+                .orElseThrow(() -> notFound(id));
+        ArticleEntity article = requireArticle(id);
+        requireExpectedRevision(content, expectedRevision);
+        return new LockedArticle(content, article);
+    }
+
+    private void requireExpectedRevision(
+            ContentItemEntity content,
+            long expectedRevision
+    ) {
+        if (content.getRevision() != expectedRevision) {
+            throw new ContentOperationException(
+                    ContentFailureCode.REVISION_CONFLICT,
+                    "Article revision does not match the expected revision.");
+        }
+    }
+    private record LockedArticle(ContentItemEntity content, ArticleEntity article) {}
 }

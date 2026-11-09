@@ -97,6 +97,33 @@ public class ContentItemEntity {
         return this.publishedAt != null;
     }
 
+    public void markPublished(Instant now) {
+        Objects.requireNonNull(now, "now");
+        if (status == PublicationStatus.PUBLISHED) {
+            throw new IllegalStateException(
+                    "An effective publish transition requires a non-published state.");
+        }
+        status = PublicationStatus.PUBLISHED;
+        if (publishedAt == null) {
+            publishedAt = now;
+        }
+        updatedAt = now;
+        revision++;
+    }
+
+    public void markUnpublished(Instant now) {
+        Objects.requireNonNull(now, "now");
+        if (status != PublicationStatus.PUBLISHED) {
+            throw new IllegalStateException(
+                    "An effective unpublish transition requires PUBLISHED state.");
+        }
+        status = PublicationStatus.UNPUBLISHED;
+        unpublishedAt = now;
+        updatedAt = now;
+        revision++;
+    }
+
+
     public UUID getId() {
         return id;
     }
