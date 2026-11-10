@@ -1,11 +1,18 @@
+import { BrowserRouter } from 'react-router'
+
+import { HttpClient } from '../shared/api/httpClient'
+import { HttpClientProvider } from '../shared/api/HttpClientContext'
+import { AppRoutes } from './AppRoutes'
+
+// One client for the whole tab, so the CSRF token is shared by all features.
+const httpClient = new HttpClient()
+
 export function App() {
   return (
-    <main className="baseline-shell">
-      <section className="baseline-card" aria-labelledby="baseline-title">
-        <p className="baseline-label">SPM1 · V00</p>
-        <h1 id="baseline-title">Ajarline</h1>
-        <p>The technical baseline is running.</p>
-      </section>
-    </main>
+    <HttpClientProvider client={httpClient}>
+      <BrowserRouter>
+        <AppRoutes />
+      </BrowserRouter>
+    </HttpClientProvider>
   )
 }

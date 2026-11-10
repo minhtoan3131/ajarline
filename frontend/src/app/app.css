@@ -18,13 +18,6 @@ body {
   margin: 0;
 }
 
-.baseline-shell {
-  display: grid;
-  min-height: 100vh;
-  place-items: center;
-  padding: 24px;
-}
-
 .baseline-card {
   width: min(100%, 560px);
   padding: 32px;
@@ -50,4 +43,102 @@ body {
   font-weight: 700;
   letter-spacing: 0.12em;
   text-transform: uppercase;
+}
+
+/* Reader scope: tokens of the Reader design. Admin styles never use these. */
+.reader-scope {
+  --reader-bg: #f8f4ec;
+  --reader-paper: #ffffff;
+  --reader-ink: #19272b;
+  --reader-muted: #69767a;
+  --reader-line: #d8d4c8;
+  --reader-focus: #b58e48;
+
+  min-height: 100vh;
+  background: var(--reader-bg);
+  color: var(--reader-ink);
+}
+
+.reader-scope :focus-visible {
+  outline: 2px solid var(--reader-focus);
+  outline-offset: 3px;
+}
+
+.reader-header {
+  display: flex;
+  align-items: center;
+  width: min(1180px, 100% - 40px);
+  height: 68px;
+  margin: 0 auto;
+  border-bottom: 1px solid var(--reader-line);
+}
+
+.reader-brand {
+  color: var(--reader-ink);
+  font-weight: 650;
+  text-decoration: none;
+}
+
+.reader-main {
+  width: min(760px, 100% - 40px);
+  margin: 0 auto;
+  padding: 40px 0 64px;
+}
+
+.reader-article-header h1 {
+  margin: 0 0 16px;
+  font-size: clamp(30px, 3.8vw, 46px);
+  font-weight: 605;
+  line-height: 1.22;
+  overflow-wrap: anywhere;
+}
+
+.reader-article-summary {
+  margin: 0 0 16px;
+  color: #34484c;
+  font-size: 1.0625rem;
+  line-height: 1.7;
+}
+
+.reader-article-meta,
+.reader-attribution {
+  margin: 0 0 8px;
+  color: var(--reader-muted);
+  font-size: 0.875rem;
+}
+
+.reader-article-body {
+  margin-top: 32px;
+  padding: 43px 48px;
+  border-top: 1px solid var(--reader-line);
+  background: var(--reader-paper);
+}
+
+.reader-state {
+  padding: 48px 0;
+}
+
+.reader-button {
+  min-height: 44px;
+  padding: 0 16px;
+  border: 1px solid var(--reader-line);
+  background: var(--reader-paper);
+  color: var(--reader-ink);
+  font: inherit;
+  cursor: pointer;
+}
+
+@media (max-width: 640px) {
+  .reader-header,
+  .reader-main {
+    width: calc(100% - 26px);
+  }
+
+  .reader-article-body {
+    padding: 29px 21px;
+  }
+
+  .reader-article-body .md-content {
+    font-size: 0.96875rem;
+  }
 }

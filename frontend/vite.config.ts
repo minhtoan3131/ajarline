@@ -20,5 +20,7 @@ export default defineConfig({
     exclude: ['src/**/*IT.{ts,tsx}'],
     // Spies created with vi.spyOn are restored after every test.
     restoreMocks: true,
+    // Globals replaced with vi.stubGlobal (for example fetch) are restored too.
+    unstubGlobals: true,
   },
 })
