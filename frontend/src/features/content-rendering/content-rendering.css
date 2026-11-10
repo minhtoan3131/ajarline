@@ -1,0 +1,127 @@
+/*
+ * Shared Markdown styles for the Reader page and the Admin Preview.
+ * Colors follow the Reader design tokens so both places look the same.
+ */
+.md-content {
+  --md-ink: #19272b;
+  --md-muted: #69767a;
+  --md-line: #d8d4c8;
+  --md-link: #315f58;
+  --md-code-bg: #eef2ee;
+  --md-code-line: #dbe2db;
+  --md-mono: ui-monospace, SFMono-Regular, Menlo, Consolas, monospace;
+
+  min-width: 0;
+  color: var(--md-ink);
+  font-size: 1rem;
+  line-height: 1.86;
+  /* Long URLs and tokens wrap instead of widening the page. */
+  overflow-wrap: anywhere;
+}
+
+.md-content :where(h1, h2, h3, h4, h5, h6) {
+  margin: 2em 0 0.6em;
+  font-weight: 620;
+  line-height: 1.3;
+}
+
+.md-content h1 { font-size: 1.75rem; }
+.md-content h2 { font-size: 1.4rem; }
+.md-content h3 { font-size: 1.1rem; }
+
+.md-content :where(p, ul, ol, blockquote) {
+  margin: 0 0 1.1em;
+}
+
+.md-content a {
+  color: var(--md-link);
+  text-decoration: underline;
+  text-underline-offset: 0.18em;
+}
+
+.md-content .md-link-disabled {
+  color: var(--md-muted);
+}
+
+.md-content blockquote {
+  margin-inline: 0;
+  padding: 0.2em 0 0.2em 1em;
+  border-left: 3px solid var(--md-line);
+  color: #34484c;
+}
+
+.md-content hr {
+  margin: 2.25rem 0;
+  border: 0;
+  border-top: 1px solid var(--md-line);
+}
+
+.md-content img {
+  display: block;
+  max-width: 100%;
+  height: auto;
+}
+
+.md-content .md-image-fallback {
+  display: inline-block;
+  padding: 0.75em 1em;
+  border: 1px dashed var(--md-line);
+  color: var(--md-muted);
+  font-size: 0.875rem;
+}
+
+.md-content .contains-task-list {
+  padding-left: 1.2em;
+  list-style: none;
+}
+
+.md-content .md-table-scroll {
+  max-width: 100%;
+  margin: 0 0 1.1em;
+  overflow-x: auto;
+}
+
+.md-content table {
+  border-collapse: collapse;
+  overflow-wrap: normal;
+}
+
+.md-content :where(th, td) {
+  padding: 0.6em 0.9em;
+  border: 1px solid var(--md-line);
+  text-align: left;
+  vertical-align: top;
+}
+
+.md-content th {
+  background: #f3f0e8;
+  font-weight: 600;
+}
+
+.md-content code {
+  font-family: var(--md-mono);
+  font-size: 0.9em;
+}
+
+.md-content :not(pre) > code {
+  padding: 0.1em 0.35em;
+  border-radius: 4px;
+  background: var(--md-code-bg);
+}
+
+.md-content pre {
+  margin: 0 0 1.1em;
+  padding: 1em;
+  overflow-x: auto;
+  border: 1px solid var(--md-code-line);
+  border-radius: 4px;
+  background: var(--md-code-bg);
+  line-height: 1.6;
+  white-space: pre;
+  overflow-wrap: normal;
+}
+
+.md-content :focus-visible {
+  outline: 2px solid #b58e48;
+  outline-offset: 3px;
+}
