@@ -1,11 +1,11 @@
 package vn.io.ajarline.administration.api;
 
-public class AdminArticleApiException extends RuntimeException {
+public class AdminApiException extends RuntimeException {
     private final int status;
     private final String code;
     private final String title;
 
-    AdminArticleApiException(int status, String code, String title, String detail) {
+    AdminApiException(int status, String code, String title, String detail) {
         super(detail);
         this.status = status;
         this.code = code;
@@ -24,24 +24,24 @@ public class AdminArticleApiException extends RuntimeException {
         return this.title;
     }
 
-    static AdminArticleApiException invalidRequest(String detail) {
-        return new AdminArticleApiException(
+    static AdminApiException invalidRequest(String detail) {
+        return new AdminApiException(
                 400, "INVALID_REQUEST", "Request is invalid", detail
         );
     }
 
-    static AdminArticleApiException invalidUuid(String field) {
-        return new AdminArticleApiException(
+    static AdminApiException invalidUuid(String field) {
+        return new AdminApiException(
                 400, "INVALID_UUID", "UUID is invalid", field + " must be a valid UUID."
         );
     }
 
-    static AdminArticleApiException unprocessable(String code, String title, String detail) {
-        return new AdminArticleApiException(422, code, title, detail);
+    static AdminApiException unprocessable(String code, String title, String detail) {
+        return new AdminApiException(422, code, title, detail);
     }
 
-    static AdminArticleApiException preconditionRequired() {
-        return new AdminArticleApiException(
+    static AdminApiException preconditionRequired() {
+        return new AdminApiException(
                 428,
                 "REVISION_PRECONDITION_REQUIRED",
                 "If-Match revision precondition is required",

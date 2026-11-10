@@ -39,19 +39,19 @@ public record ArticleEditable(
 
     static ArticleEditable parse(JsonNode body) {
         if (body == null || !body.isObject()) {
-            throw AdminArticleApiException.invalidRequest(
+            throw AdminApiException.invalidRequest(
                     "Request body must be a JSON object.");
         }
 
         Set<String> actualFields = Set.copyOf(body.propertyNames());
         if (!actualFields.equals(FIELD_NAMES)) {
-            throw AdminArticleApiException.invalidRequest(
+            throw AdminApiException.invalidRequest(
                     "Request body must contain exactly the Article editable fields.");
         }
 
         List<UUID> topicIds = topicIds(body.get("topicIds"));
         if (new HashSet<>(topicIds).size() != topicIds.size()) {
-            throw AdminArticleApiException.unprocessable(
+            throw AdminApiException.unprocessable(
                     "VALIDATION_FAILED",
                     "Request validation failed",
                     "topicIds must not contain duplicate values.");
@@ -75,7 +75,7 @@ public record ArticleEditable(
 
     private void validateRelationships() {
         if ((moduleId == null) != (position == null)) {
-            throw AdminArticleApiException.unprocessable(
+            throw AdminApiException.unprocessable(
                     "INVALID_POSITION",
                     "Article position is invalid",
                     "moduleId and position must either both be present or both be null.");
@@ -84,7 +84,7 @@ public record ArticleEditable(
 
     private static String requiredText(JsonNode value, String field) {
         if (value == null || !value.isString()) {
-            throw AdminArticleApiException.invalidRequest(
+            throw AdminApiException.invalidRequest(
                     field + " must be a JSON string.");
         }
         return value.asString();
@@ -92,7 +92,7 @@ public record ArticleEditable(
 
     private static String nullableText(JsonNode value, String field) {
         if (value == null) {
-            throw AdminArticleApiException.invalidRequest(field + " is required.");
+            throw AdminApiException.invalidRequest(field + " is required.");
         }
         if (value.isNull()) {
             return null;
@@ -102,7 +102,7 @@ public record ArticleEditable(
 
     private static UUID nullableUuid(JsonNode value, String field) {
         if (value == null) {
-            throw AdminArticleApiException.invalidRequest(field + " is required.");
+            throw AdminApiException.invalidRequest(field + " is required.");
         }
         if (value.isNull()) {
             return null;
@@ -112,18 +112,18 @@ public record ArticleEditable(
 
     private static Integer nullablePosition(JsonNode value) {
         if (value == null) {
-            throw AdminArticleApiException.invalidRequest("position is required.");
+            throw AdminApiException.invalidRequest("position is required.");
         }
         if (value.isNull()) {
             return null;
         }
         if (!value.isIntegralNumber() || !value.canConvertToInt()) {
-            throw AdminArticleApiException.invalidRequest(
+            throw AdminApiException.invalidRequest(
                     "position must be an integer or null.");
         }
         int position = value.asInt();
         if (position < 1) {
-            throw AdminArticleApiException.unprocessable(
+            throw AdminApiException.unprocessable(
                     "INVALID_POSITION",
                     "Article position is invalid",
                     "position must be at least 1.");
@@ -133,7 +133,7 @@ public record ArticleEditable(
 
     private static List<UUID> topicIds(JsonNode value) {
         if (value == null || !value.isArray()) {
-            throw AdminArticleApiException.invalidRequest(
+            throw AdminApiException.invalidRequest(
                     "topicIds must be a JSON array.");
         }
         List<UUID> result = new ArrayList<>();
@@ -146,12 +146,12 @@ public record ArticleEditable(
     private static UUID uuid(JsonNode value, String field) {
         if (value == null || !value.isString()
                 || value.asString().length() != 36) {
-            throw AdminArticleApiException.invalidUuid(field);
+            throw AdminApiException.invalidUuid(field);
         }
         try {
             return UUID.fromString(value.asString());
         } catch (IllegalArgumentException exception) {
-            throw AdminArticleApiException.invalidUuid(field);
+            throw AdminApiException.invalidUuid(field);
         }
     }
 }

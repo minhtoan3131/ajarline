@@ -35,12 +35,12 @@ final class RevisionHttpHeaders {
      *
      * @param request the HTTP request
      * @return the expected Article revision
-     * @throws AdminArticleApiException if the If-Match header is missing or invalid
+     * @throws AdminApiException if the If-Match header is missing or invalid
      */
     static long requiredExpectedRevision(HttpServletRequest request) {
         List<String> values = Collections.list(request.getHeaders(HttpHeaders.IF_MATCH));
         if (values.isEmpty()) {
-            throw AdminArticleApiException.preconditionRequired();
+            throw AdminApiException.preconditionRequired();
         }
         if (values.size() != 1) {
             throw invalidIfMatch();
@@ -60,7 +60,7 @@ final class RevisionHttpHeaders {
         }
     }
 
-    private static AdminArticleApiException invalidIfMatch() {
-        return AdminArticleApiException.invalidRequest("If-Match must contain exactly one strong decimal ETag.");
+    private static AdminApiException invalidIfMatch() {
+        return AdminApiException.invalidRequest("If-Match must contain exactly one strong decimal ETag.");
     }
 }

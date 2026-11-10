@@ -1,7 +1,6 @@
 package vn.io.ajarline.administration.api;
 
 import jakarta.servlet.http.HttpServletRequest;
-import jakarta.servlet.http.HttpServletResponse;
 import org.springframework.core.Ordered;
 import org.springframework.core.annotation.Order;
 import org.springframework.http.ResponseEntity;
@@ -15,8 +14,6 @@ import vn.io.ajarline.content.contract.ContentOperationException;
 import vn.io.ajarline.platform.web.ApiProblem;
 import vn.io.ajarline.platform.web.ApiProblemWriter;
 
-import java.util.Map;
-
 @Order(Ordered.HIGHEST_PRECEDENCE)
 @RestControllerAdvice(assignableTypes = AdminArticleController.class)
 public class AdminArticleExceptionHandler {
@@ -27,8 +24,8 @@ public class AdminArticleExceptionHandler {
         this.problems = problems;
     }
 
-    @ExceptionHandler(AdminArticleApiException.class)
-    ResponseEntity<ApiProblem> boundary(AdminArticleApiException exception, HttpServletRequest request) {
+    @ExceptionHandler(AdminApiException.class)
+    ResponseEntity<ApiProblem> boundary(AdminApiException exception, HttpServletRequest request) {
         return problems.response(
                 request,
                 exception.status(),

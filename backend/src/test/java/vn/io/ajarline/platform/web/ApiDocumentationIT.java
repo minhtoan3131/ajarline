@@ -33,7 +33,11 @@ class ApiDocumentationIT {
             "/api/admin/v1/articles", Map.of("post", "createArticle"),
             "/api/admin/v1/articles/{id}", Map.of(
                     "get", "getAdminArticle",
-                    "put", "updateArticle"));
+                    "put", "updateArticle"),
+            "/api/admin/v1/content/{id}/publish", Map.of(
+                    "post", "publishContent"),
+            "/api/admin/v1/content/{id}/unpublish", Map.of(
+                    "post", "unpublishContent"));
 
     @LocalServerPort
     private int port;
@@ -141,6 +145,32 @@ class ApiDocumentationIT {
     }
 
     @Test
+    void openApi_ShouldExposePublicationMetadata_WhenDocumentIsGenerated()
+            throws Exception {
+        JsonNode document = openApiDocument();
+        JsonNode paths = document.get("paths");
+        JsonNode publish = operation(paths,
+                "/api/admin/v1/content/{id}/publish", "post");
+        JsonNode unpublish = operation(paths,
+                "/api/admin/v1/content/{id}/unpublish", "post");
+
+        for (JsonNode publication : new JsonNode[]{publish, unpublish}) {
+            assertThat(hasSecurity(
+                    publication,
+                    OpenApiConfiguration.ADMIN_SESSION)).isTrue();
+            assertThat(parameterNames(publication))
+                    .contains("X-CSRF-TOKEN", "If-Match");
+            assertThat(publication.get("responses").get("200")
+                    .get("headers").has("ETag")).isTrue();
+            assertThat(responseSchemaRef(publication, "200"))
+                    .endsWith("/PublicationStateResponse");
+        }
+
+        assertThat(publish.get("responses").has("422")).isTrue();
+        assertThat(unpublish.get("responses").has("409")).isTrue();
+    }
+
+    @Test
     void swaggerUi_ShouldReturnPage_WhenRequestedWithoutAuthentication()
             throws Exception {
         
@@ -191,6 +221,17 @@ class ApiDocumentationIT {
 
     private static String requestSchemaRef(JsonNode operation) {
         return operation.get("requestBody")
+                .get("content")
+                .get("application/json")
+                .get("schema")
+                .get("$ref")
+                .asString();
+    }
+
+    private static String responseSchemaRef(
+            JsonNode operation, String responseCode) {
+        return operation.get("responses")
+                .get(responseCode)
                 .get("content")
                 .get("application/json")
                 .get("schema")

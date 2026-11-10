@@ -185,6 +185,21 @@ abstract class AbstractAdminAuthenticationIT {
                     body == null ? null : "application/json");
         }
 
+        protected HttpResponse<String> post(
+                String path,
+                String body,
+                String token,
+                String ifMatch
+        ) throws Exception {
+            return send(
+                    "POST",
+                    path,
+                    body,
+                    token,
+                    body == null ? null : "application/json",
+                    ifMatch);
+        }
+
         protected HttpResponse<String> put(
                 String path, String body, String token, String ifMatch) throws Exception {
             return send("PUT", path, body, token, "application/json", ifMatch);

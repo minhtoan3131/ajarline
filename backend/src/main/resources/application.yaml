@@ -46,6 +46,7 @@ springdoc:
     - /api/auth/v1/**
     - /api/admin/v1/articles
     - /api/admin/v1/articles/**
+    - /api/admin/v1/content/**
   swagger-ui:
     path: /swagger-ui.html
     disable-swagger-default-url: true

@@ -12,7 +12,7 @@ import org.springframework.web.bind.annotation.RestControllerAdvice;
 import vn.io.ajarline.platform.security.authentication.AdminLoginLockedException;
 import vn.io.ajarline.platform.web.ApiProblemWriter;
 
-@RestControllerAdvice
+@RestControllerAdvice(assignableTypes = AuthController.class)
 public class AuthExceptionHandler {
 
     private final ApiProblemWriter problems;
