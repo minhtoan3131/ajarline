@@ -39,7 +39,7 @@ import vn.io.ajarline.support.MutableClock;
 /**
  * Shared HTTP fixture for Admin authentication boundary tests.
  */
-abstract class AbstractAdminAuthenticationIT {
+public abstract class AbstractAdminAuthenticationIT {
 
     protected static final String AUTH = "/api/auth/v1";
     protected static final String ADMIN_PROBE = "/api/admin/v1/security-probe";
@@ -69,7 +69,7 @@ abstract class AbstractAdminAuthenticationIT {
     }
 
     @BeforeEach
-    void prepareAccountAndProbe() {
+    protected void prepareAccountAndProbe() {
         LOGIN_CLOCK.set(LOGIN_CLOCK.instant().plus(Duration.ofDays(1)));
         provider.authenticate(UsernamePasswordAuthenticationToken.unauthenticated(
                 AdminAuthenticationTestData.username(),
@@ -78,7 +78,7 @@ abstract class AbstractAdminAuthenticationIT {
     }
 
     @AfterEach
-    void closeHttpClients() {
+    protected void closeHttpClients() {
         clients.forEach(HttpClient::close);
     }
 
@@ -159,15 +159,15 @@ abstract class AbstractAdminAuthenticationIT {
      * Replays the session cookie explicitly on loopback HTTP. Cookie attributes
      * are tested separately; this helper does not model browser HTTPS rules.
      */
-    protected final class Browser {
+    public final class Browser {
 
         private final HttpClient client = httpClient();
         private String cookie;
 
-        protected Browser() {
+        public Browser() {
         }
 
-        protected Browser(String cookie) {
+        public Browser(String cookie) {
             this.cookie = cookie;
         }
 
@@ -175,17 +175,17 @@ abstract class AbstractAdminAuthenticationIT {
             return cookie;
         }
 
-        protected HttpResponse<String> get(String path) throws Exception {
+        public HttpResponse<String> get(String path) throws Exception {
             return send("GET", path, null, null, null);
         }
 
-        protected HttpResponse<String> post(
+        public HttpResponse<String> post(
                 String path, String body, String token) throws Exception {
             return send("POST", path, body, token,
                     body == null ? null : "application/json");
         }
 
-        protected HttpResponse<String> post(
+        public HttpResponse<String> post(
                 String path,
                 String body,
                 String token,
@@ -244,7 +244,7 @@ abstract class AbstractAdminAuthenticationIT {
     }
 
     @TestConfiguration(proxyBeanMethods = false)
-    static class ProbeConfiguration {
+    public static class ProbeConfiguration {
 
         @Bean
         ProbeController probeController() {

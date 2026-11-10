@@ -10,6 +10,7 @@ import io.swagger.v3.oas.models.media.Schema;
 import io.swagger.v3.oas.models.media.StringSchema;
 import io.swagger.v3.oas.models.responses.ApiResponse;
 import io.swagger.v3.oas.models.security.SecurityScheme;
+import org.springdoc.core.customizers.OpenApiCustomizer;
 import org.springdoc.core.customizers.OperationCustomizer;
 import org.springframework.context.annotation.Bean;
 import org.springframework.context.annotation.Configuration;
@@ -30,9 +31,6 @@ public class OpenApiConfiguration {
 
         Components components = new Components()
                 .addSecuritySchemes(ADMIN_SESSION, adminSession);
-        ModelConverters.getInstance()
-                .read(ApiProblem.class)
-                .forEach(components::addSchemas);
 
         return new OpenAPI()
                 .info(new Info()
@@ -43,24 +41,36 @@ public class OpenApiConfiguration {
     }
 
     @Bean
-    OperationCustomizer apiResponsePolicyDocumentation() {
-        return (operation, ignored) -> {
-            operation.getResponses().putIfAbsent(
-                    "500",
-                    internalServerErrorResponse());
-            operation.getResponses().forEach((status, response) -> {
-                boolean errorResponse = status.startsWith("4") || status.startsWith("5");
-                boolean missingProblemContent = response.getContent() == null
-                        || !response.getContent().containsKey(
-                        MediaType.APPLICATION_PROBLEM_JSON_VALUE);
-                if (errorResponse && missingProblemContent) {
-                    response.content(problemContent());
-                }
-                response.addHeaderObject(
-                        "Cache-Control",
-                        noStoreHeader());
-            });
-            return operation;
+    OpenApiCustomizer apiResponsePolicyDocumentation() {
+        return openApi -> {
+            ModelConverters.getInstance()
+                    .read(ApiProblem.class)
+                    .forEach(openApi.getComponents()::addSchemas);
+
+            openApi.getPaths().forEach((path, pathItem) ->
+                    pathItem.readOperations().forEach(operation -> {
+                        operation.getResponses().putIfAbsent(
+                                "500",
+                                internalServerErrorResponse());
+                        operation.getResponses().forEach((status, response) -> {
+                            boolean errorResponse = status.startsWith("4")
+                                    || status.startsWith("5");
+                            boolean missingProblemContent = response.getContent() == null
+                                    || !response.getContent().containsKey(
+                                    MediaType.APPLICATION_PROBLEM_JSON_VALUE);
+                            if (errorResponse && missingProblemContent) {
+                                response.content(problemContent());
+                            }
+
+                            boolean adminOrAuth = path.startsWith("/api/admin/")
+                                    || path.startsWith("/api/auth/");
+                            if (adminOrAuth || errorResponse) {
+                                response.addHeaderObject(
+                                        "Cache-Control",
+                                        noStoreHeader());
+                            }
+                        });
+                    }));
         };
     }
 

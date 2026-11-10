@@ -37,7 +37,9 @@ class ApiDocumentationIT {
             "/api/admin/v1/content/{id}/publish", Map.of(
                     "post", "publishContent"),
             "/api/admin/v1/content/{id}/unpublish", Map.of(
-                    "post", "unpublishContent"));
+                    "post", "unpublishContent"),
+            "/api/v1/articles/{slug}", Map.of(
+                    "get", "getPublicArticle"));
 
     @LocalServerPort
     private int port;
@@ -64,26 +66,35 @@ class ApiDocumentationIT {
     @Test
     void openApi_ShouldExposeCrossCuttingResponses_WhenDocumentIsGenerated()
             throws Exception {
-        
         JsonNode paths = openApiDocument().get("paths");
 
         OPERATIONS.forEach((path, methods) -> methods.keySet().forEach(method -> {
             JsonNode documentedOperation = operation(paths, path, method);
             JsonNode responses = documentedOperation.get("responses");
+            boolean adminOrAuth = path.startsWith("/api/admin/")
+                    || path.startsWith("/api/auth/");
 
             assertThat(problemSchemaRef(documentedOperation, "500"))
                     .endsWith("/ApiProblem");
             responses.properties().forEach(response -> {
-                assertThat(response.getValue().get("headers")
-                        .has("Cache-Control")).isTrue();
-                if (response.getKey().startsWith("4")
-                        || response.getKey().startsWith("5")) {
+                boolean errorResponse = response.getKey().startsWith("4")
+                        || response.getKey().startsWith("5");
+                if (errorResponse) {
                     assertThat(problemSchemaRef(
                             documentedOperation, response.getKey()))
                             .endsWith("/ApiProblem");
                 }
+                if (adminOrAuth || errorResponse) {
+                    assertThat(hasResponseHeader(
+                            response.getValue(), "Cache-Control")).isTrue();
+                }
             });
         }));
+
+        JsonNode publicSuccess = operation(
+                paths, "/api/v1/articles/{slug}", "get")
+                .get("responses").get("200");
+        assertThat(hasResponseHeader(publicSuccess, "Cache-Control")).isFalse();
     }
 
     @Test
@@ -184,6 +195,37 @@ class ApiDocumentationIT {
         assertThat(response.body()).containsIgnoringCase("swagger ui");
     }
 
+    @Test
+    void openApi_ShouldExposePublicArticleMetadata_WhenDocumentIsGenerated()
+            throws Exception {
+        JsonNode document = openApiDocument();
+        JsonNode publicArticle = operation(
+                document.get("paths"),
+                "/api/v1/articles/{slug}",
+                "get");
+
+        assertThat(hasSecurity(
+                publicArticle,
+                OpenApiConfiguration.ADMIN_SESSION)).isFalse();
+        assertThat(responseSchemaRef(publicArticle, "200"))
+                .endsWith("/PublicArticleResponse");
+        assertThat(problemSchemaRef(publicArticle, "404"))
+                .endsWith("/ApiProblem");
+
+        JsonNode properties = document.get("components")
+                .get("schemas")
+                .get("PublicArticleResponse")
+                .get("properties");
+        assertThat(properties.propertyNames()).containsExactlyInAnyOrder(
+                "id", "type", "slug", "title", "summary", "bodyMarkdown",
+                "topics", "series", "module", "previousArticle",
+                "nextArticle", "publishedAt", "updatedAt");
+        assertThat(properties.has("status")).isFalse();
+        assertThat(properties.has("revision")).isFalse();
+        assertThat(properties.has("unpublishedAt")).isFalse();
+    }
+
+
     private JsonNode openApiDocument() throws Exception {
         HttpResponse<String> response = send(get("/v3/api-docs"));
         assertThat(response.statusCode()).isEqualTo(200);
@@ -265,5 +307,13 @@ class ApiDocumentationIT {
                 .build()) {
             return client.send(request, HttpResponse.BodyHandlers.ofString());
         }
+    }
+
+    private static boolean hasResponseHeader(
+            JsonNode response,
+            String headerName
+    ) {
+        JsonNode headers = response.get("headers");
+        return headers != null && headers.has(headerName);
     }
 }

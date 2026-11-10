@@ -65,13 +65,13 @@ public class ArticleService implements ArticleCreator, ArticleReader, ArticleEdi
         if (slug == null) {
             return Optional.empty();
         }
-        String normalizedSlug = slug.strip().toLowerCase(Locale.ROOT);
         return contentRepository.findByTypeAndSlugAndStatus(
-                ContentType.ARTICLE,
-                normalizedSlug,
-                PublicationStatus.PUBLISHED
-        ).map(contentItem -> toView(contentItem, requireArticle(contentItem.getId())));
-
+                        ContentType.ARTICLE,
+                        slug,
+                        PublicationStatus.PUBLISHED)
+                .map(content -> toView(
+                        content,
+                        requireArticle(content.getId())));
     }
 
     private ArticleEntity requireArticle(UUID uuid) {
