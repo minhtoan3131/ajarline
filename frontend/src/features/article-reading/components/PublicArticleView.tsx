@@ -40,7 +40,7 @@ export function PublicArticleView({ article }: { article: PublicArticle }) {
       </header>
       {article.bodyMarkdown && (
         <div className="reader-article-body">
-          <MarkdownRenderer markdown={article.bodyMarkdown} />
+          <MarkdownRenderer markdown={article.bodyMarkdown} linkBehavior="navigate" />
         </div>
       )}
     </article>

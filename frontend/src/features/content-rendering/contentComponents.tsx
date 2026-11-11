@@ -1,5 +1,5 @@
 import type { Element, ElementContent } from 'hast'
-import { useState, type ComponentProps } from 'react'
+import { useState, type ComponentProps, type MouseEvent } from 'react'
 import type { Components, ExtraProps } from 'react-markdown'
 
 import { CodeBlock } from './CodeBlock'
@@ -24,6 +24,55 @@ function ArticleLink({ node, href, children, ...attributes }: ComponentProps<'a'
       {children}
     </a>
   )
+}
+
+/**
+ * Link used inside Preview.
+ *
+ * Preview shows text that may not be saved. Following a link in the same tab
+ * would leave the editor and lose that text, and Preview must not change the
+ * URL or history. The markup stays the same as ArticleLink, so Preview and the
+ * public page still render the same HTML; only the click is handled here.
+ */
+function PreviewArticleLink(props: ComponentProps<'a'> & ExtraProps) {
+  return <ArticleLink {...props} onClick={keepPreviewInPlace} />
+}
+
+function keepPreviewInPlace(event: MouseEvent<HTMLAnchorElement>) {
+  const anchor = event.currentTarget
+  const href = anchor.getAttribute('href')
+  if (href === null || anchor.protocol === 'mailto:') {
+    // A mail link opens the mail app. The page itself does not change.
+    return
+  }
+  event.preventDefault()
+  if (href.startsWith('#')) {
+    scrollToAnchor(anchor, href.slice(1))
+    return
+  }
+  // anchor.href is the absolute URL, so relative site links work too.
+  window.open(anchor.href, '_blank', 'noopener,noreferrer')
+}
+
+function scrollToAnchor(anchor: HTMLAnchorElement, fragment: string) {
+  // The editor can show the same content twice (inline and full screen), so
+  // an id is not unique on the page. Search only in this rendered content.
+  const content = anchor.closest('.md-content')
+  if (content === null) {
+    return
+  }
+  const id = decodeFragment(fragment)
+  const target = Array.from(content.querySelectorAll('[id]')).find((element) => element.id === id)
+  target?.scrollIntoView({ block: 'start' })
+}
+
+function decodeFragment(fragment: string): string {
+  try {
+    return decodeURIComponent(fragment)
+  } catch {
+    // A broken escape such as "%E0" cannot be decoded. Use the raw text.
+    return fragment
+  }
 }
 
 function ArticleImage({ src, alt, title }: ComponentProps<'img'> & ExtraProps) {
@@ -112,4 +161,10 @@ export const contentComponents: Components = {
   table: ArticleTable,
   pre: ArticlePre,
   code: InlineCode,
+}
+
+/** Same components as contentComponents, with links that keep Preview in place. */
+export const previewContentComponents: Components = {
+  ...contentComponents,
+  a: PreviewArticleLink,
 }

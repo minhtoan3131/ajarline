@@ -1,6 +1,6 @@
-import { screen, within } from '@testing-library/react'
+import { fireEvent, screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
-import { describe, expect, it } from 'vitest'
+import { afterEach, describe, expect, it, vi } from 'vitest'
 
 import { renderAppRoute } from '../../app/testsupport/renderAppRoute'
 import { givenSignedInAdmin } from '../../features/admin-auth/fixture/adminSessionFixture'
@@ -20,6 +20,10 @@ function givenLoadedDraft(): StubApiServer {
     .on('GET', ARTICLE_PATH, jsonResponse(200, article, revisionHeaders(article)))
     .install()
 }
+
+afterEach(() => {
+  vi.restoreAllMocks()
+})
 
 describe('Article editor preview', () => {
   it('render_ShouldUpdateInlinePreview_WhenBodyChangesWithoutSaving', async () => {
@@ -127,5 +131,25 @@ describe('Article editor preview', () => {
 
     // Then
     expect(dialog).toContainElement(document.activeElement as HTMLElement)
+  })
+
+  it('clickPreviewLink_ShouldKeepEditorAndUnsavedText_WhenLinkPointsToSitePage', async () => {
+    const api = givenLoadedDraft()
+    const open = vi.spyOn(window, 'open').mockReturnValue(null)
+    const user = userEvent.setup()
+    renderAppRoute(EDIT_ROUTE)
+    const body = await screen.findByLabelText('Nội dung Markdown')
+    await user.clear(body)
+    await user.paste('[Bài khác](/articles/bai-khac)')
+    const preview = screen.getByRole('region', { name: 'Xem trước trực tiếp' })
+
+    const followed = fireEvent.click(await within(preview).findByRole('link', { name: 'Bài khác' }))
+
+    expect(followed).toBe(false)
+    expect(open).toHaveBeenCalledTimes(1)
+    expect(screen.getByTestId('location')).toHaveTextContent(EDIT_ROUTE)
+    expect(screen.getByLabelText('Nội dung Markdown')).toHaveValue('[Bài khác](/articles/bai-khac)')
+    expect(screen.getByText('Có thay đổi chưa lưu')).toBeInTheDocument()
+    expect(api.requests.filter((request) => request.method !== 'GET')).toHaveLength(0)
   })
 })
