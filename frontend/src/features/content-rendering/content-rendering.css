@@ -125,3 +125,70 @@
   outline: 2px solid #b58e48;
   outline-offset: 3px;
 }
+
+.md-content .md-code-block {
+  margin: 0 0 1.1em;
+}
+
+.md-content .md-code-toolbar {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.75rem;
+  padding: 0.25rem 0.5rem;
+  border: 1px solid var(--md-code-line);
+  border-bottom: 0;
+  border-radius: 4px 4px 0 0;
+  background: #f6f8f6;
+  font-size: 0.75rem;
+}
+
+.md-content .md-code-language {
+  margin-right: auto;
+  color: var(--md-muted);
+  font-family: var(--md-mono);
+}
+
+.md-content .md-code-copy {
+  min-height: 32px;
+  padding: 0 0.6rem;
+  border: 1px solid var(--md-code-line);
+  border-radius: 4px;
+  background: #ffffff;
+  color: var(--md-ink);
+  font: inherit;
+  cursor: pointer;
+}
+
+.md-content .md-code-block pre {
+  margin: 0;
+  border-radius: 0 0 4px 4px;
+}
+
+.md-content .md-visually-hidden {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  overflow: hidden;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
+
+/* Syntax colors use classes only (CSP). Palette follows the Reader design. */
+.md-content .token.comment,
+.md-content .token.prolog { color: #7f8a8c; font-style: italic; }
+.md-content .token.keyword { color: #7a3e9d; font-weight: 650; }
+.md-content .token.string,
+.md-content .token.char,
+.md-content .token.url,
+.md-content .token.attr-value { color: #2f7d32; }
+.md-content .token.class-name,
+.md-content .token.builtin { color: #9a6500; font-weight: 600; }
+.md-content .token.function { color: #006b80; }
+.md-content .token.number,
+.md-content .token.boolean { color: #b45500; }
+.md-content .token.operator { color: #006477; }
+.md-content .token.tag,
+.md-content .token.selector { color: #6944a0; }
+.md-content .token.variable,
+.md-content .token.property { color: #34484c; }
