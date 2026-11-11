@@ -1,4 +1,5 @@
 import { useDeferredValue, useId, useState, type ChangeEvent } from 'react'
+import { Link } from 'react-router'
 
 import { ArticlePreview } from './ArticlePreview'
 import { FullPreviewOverlay } from './FullPreviewOverlay'
@@ -31,6 +32,9 @@ export function ArticleEditor({ initial, initialNotice, onCreated }: ArticleEdit
   const [previewOpen, setPreviewOpen] = useState(false)
   // Typing stays responsive; the preview catches up when React is idle.
   const previewFields = useDeferredValue(state.fields)
+  const publishHintId = `${idPrefix}-publish-hint`
+  const canPublish = article !== null && article.status !== 'PUBLISHED'
+  const canUnpublish = article !== null && article.status === 'PUBLISHED'
 
   function fieldProps(field: keyof ArticleFields) {
     const failure = state.failure
@@ -63,8 +67,39 @@ export function ArticleEditor({ initial, initialNotice, onCreated }: ArticleEdit
             <button type="button" className="admin-button" onClick={() => setPreviewOpen(true)}>
               Xem trước toàn màn hình
             </button>
+            {canPublish && (
+              <button
+                type="button"
+                className="admin-button"
+                disabled={state.pending !== null || dirty}
+                aria-describedby={dirty ? publishHintId : undefined}
+                onClick={() => void editor.publish()}
+              >
+                {state.pending === 'publishing' ? 'Đang xuất bản…' : 'Xuất bản'}
+              </button>
+            )}
+            {canUnpublish && (
+              <button
+                type="button"
+                className="admin-button"
+                disabled={state.pending !== null}
+                onClick={() => void editor.unpublish()}
+              >
+                {state.pending === 'unpublishing' ? 'Đang gỡ xuất bản…' : 'Gỡ xuất bản'}
+              </button>
+            )}
+            {canUnpublish && (
+              <Link className="article-public-link" to={`/articles/${encodeURIComponent(article.slug)}`}>
+                Mở trang công khai
+              </Link>
+            )}
           </div>
         </div>
+        {canPublish && dirty && (
+          <p id={publishHintId} className="admin-field-hint">
+            Lưu thay đổi trước khi xuất bản. Xuất bản chỉ áp dụng cho bản đã lưu.
+          </p>
+        )}
         <EditorMessages
           failure={state.failure}
           notice={state.notice}
@@ -192,6 +227,8 @@ const NOTICE_TEXT: Record<EditorNotice, string> = {
   created: 'Đã tạo bản nháp.',
   saved: 'Đã lưu.',
   reloaded: 'Đã tải bản mới nhất từ máy chủ.',
+  published: 'Đã xuất bản. Bài đã hiển thị công khai.',
+  unpublished: 'Đã gỡ xuất bản. Bài không còn hiển thị công khai.',
 }
 
 interface EditorMessagesProps {

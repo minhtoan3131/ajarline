@@ -48,13 +48,22 @@ function conflictFailure(error: ApiError): EditorFailure {
       return { kind: 'field', field: 'slug', message: 'Slug này đã được bài khác sử dụng.' }
     case 'SLUG_IMMUTABLE_AFTER_PUBLICATION':
       return { kind: 'field', field: 'slug', message: 'Slug không thể đổi sau lần xuất bản đầu tiên.' }
+    case 'INVALID_PUBLICATION_STATE':
+      return general('Trạng thái hiện tại của bài không cho phép thao tác này. Hãy tải lại trang để xem trạng thái mới nhất.', error)
     default:
       return general('Thao tác bị từ chối do xung đột dữ liệu. Hãy tải lại trang để xem dữ liệu mới nhất.', error)
   }
 }
 
 function validationFailure(error: ApiError): EditorFailure {
-  return general(`Dữ liệu chưa hợp lệ: ${error.detail ?? 'hãy kiểm tra lại các trường.'}`, error)
+  switch (error.code) {
+    case 'CONTENT_SUMMARY_REQUIRED':
+      return { kind: 'field', field: 'summary', message: 'Cần có tóm tắt trước khi xuất bản.' }
+    case 'ARTICLE_BODY_REQUIRED':
+      return { kind: 'field', field: 'bodyMarkdown', message: 'Cần có nội dung bài trước khi xuất bản.' }
+    default:
+      return general(`Dữ liệu chưa hợp lệ: ${error.detail ?? 'hãy kiểm tra lại các trường.'}`, error)
+  }
 }
 
 function general(message: string, error?: ApiError): EditorFailure {

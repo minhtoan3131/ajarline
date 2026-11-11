@@ -1,5 +1,5 @@
 import type { HttpClient } from '../../../shared/api/httpClient'
-import type { ArticleAdminDetail, ArticleEditable, Versioned } from '../model/article'
+import type { ArticleAdminDetail, ArticleEditable, PublicationState, Versioned } from '../model/article'
 
 const ARTICLES_PATH = '/api/admin/v1/articles'
 
@@ -45,6 +45,40 @@ export async function updateArticle(
   const response = await client.request<ArticleAdminDetail>(articlePath(articleId), {
     method: 'PUT',
     body: editable,
+    ifMatch: etag,
+  })
+  return { value: response.body, etag: requireEtag(response.etag) }
+}
+
+const CONTENT_PATH = '/api/admin/v1/content'
+
+/**
+ * Publishes the saved version that matches the ETag. The request has no body.
+ *
+ * @throws ApiError 422 CONTENT_SUMMARY_REQUIRED or ARTICLE_BODY_REQUIRED,
+ *         412 REVISION_CONFLICT
+ */
+export async function publishContent(client: HttpClient, contentId: string, etag: string): Promise<Versioned<PublicationState>> {
+  return changePublication(client, contentId, 'publish', etag)
+}
+
+/**
+ * Stops public access. It does not delete the Article.
+ *
+ * @throws ApiError 409 INVALID_PUBLICATION_STATE for a Draft, 412 REVISION_CONFLICT
+ */
+export async function unpublishContent(client: HttpClient, contentId: string, etag: string): Promise<Versioned<PublicationState>> {
+  return changePublication(client, contentId, 'unpublish', etag)
+}
+
+async function changePublication(
+  client: HttpClient,
+  contentId: string,
+  action: 'publish' | 'unpublish',
+  etag: string,
+): Promise<Versioned<PublicationState>> {
+  const response = await client.request<PublicationState>(`${CONTENT_PATH}/${encodeURIComponent(contentId)}/${action}`, {
+    method: 'POST',
     ifMatch: etag,
   })
   return { value: response.body, etag: requireEtag(response.etag) }

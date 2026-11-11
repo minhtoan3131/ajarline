@@ -430,3 +430,8 @@ body.scroll-locked {
   overflow-y: auto;
   overscroll-behavior: contain;
 }
+
+.article-public-link {
+  align-self: center;
+  color: var(--admin-structural);
+}

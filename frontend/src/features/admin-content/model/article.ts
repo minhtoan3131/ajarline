@@ -80,3 +80,14 @@ export function sameFields(left: ArticleFields, right: ArticleFields): boolean {
     left.bodyMarkdown === right.bodyMarkdown
   )
 }
+
+/** Publication result returned by publish and unpublish. It has no content fields. */
+export interface PublicationState {
+  id: string
+  type: 'article'
+  status: PublicationStatus
+  revision: number
+  publishedAt: string | null
+  unpublishedAt: string | null
+  updatedAt: string
+}

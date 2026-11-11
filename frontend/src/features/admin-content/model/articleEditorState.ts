@@ -1,9 +1,17 @@
-import { EMPTY_FIELDS, fieldsOf, sameFields, type ArticleAdminDetail, type ArticleFields, type Versioned } from './article'
+import {
+  EMPTY_FIELDS,
+  fieldsOf,
+  sameFields,
+  type ArticleAdminDetail,
+  type ArticleFields,
+  type PublicationState,
+  type Versioned,
+} from './article'
 import type { EditorFailure } from './editorFailure'
 
-export type PendingMutation = 'saving' | 'reloading'
+export type PendingMutation = 'saving' | 'reloading' | 'publishing' | 'unpublishing'
 
-export type EditorNotice = 'created' | 'saved' | 'reloaded'
+export type EditorNotice = 'created' | 'saved' | 'reloaded' | 'published' | 'unpublished'
 
 /**
  * Editor state in three independent parts: the canonical server version
@@ -25,6 +33,7 @@ export type EditorAction =
   | { type: 'mutation-started'; pending: PendingMutation; submitted: ArticleFields | null }
   | { type: 'article-saved'; article: Versioned<ArticleAdminDetail>; notice: EditorNotice }
   | { type: 'article-reloaded'; article: Versioned<ArticleAdminDetail> }
+  | { type: 'publication-changed'; publication: Versioned<PublicationState>; notice: EditorNotice }
   | { type: 'mutation-failed'; failure: EditorFailure }
 
 export interface EditorStart {
@@ -89,6 +98,29 @@ export function articleEditorReducer(state: EditorState, action: EditorAction): 
         submitted: null,
         failure: null,
         notice: 'reloaded',
+      }
+    }
+    case 'publication-changed': {
+      if (state.current === null) {
+        return state
+      }
+      const { value, etag } = action.publication
+      // Publication changes state and revision only; content fields stay.
+      return {
+        ...state,
+        current: {
+          etag,
+          value: {
+            ...state.current.value,
+            status: value.status,
+            revision: value.revision,
+            publishedAt: value.publishedAt,
+            unpublishedAt: value.unpublishedAt,
+            updatedAt: value.updatedAt,
+          },
+        },
+        pending: null,
+        notice: action.notice,
       }
     }
     case 'mutation-failed':
