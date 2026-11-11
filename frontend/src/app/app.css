@@ -305,3 +305,128 @@ body {
   font-size: 0.9375rem;
   line-height: 1.6;
 }
+
+.article-editor-workspace {
+  display: grid;
+  gap: 24px;
+}
+
+.article-editor-pane-switch {
+  display: flex;
+  gap: 8px;
+}
+
+.article-editor-pane-switch [aria-pressed="true"] {
+  border-color: var(--admin-structural);
+  background: var(--admin-structural);
+  color: #ffffff;
+}
+
+.article-editor-fields,
+.article-editor-preview {
+  min-width: 0;
+}
+
+.article-editor-preview {
+  padding: 24px;
+  border: 1px solid var(--admin-border);
+  border-radius: 4px;
+  background: var(--admin-surface);
+}
+
+@media (min-width: 1024px) {
+  .article-editor-workspace {
+    grid-template-columns: minmax(0, 1fr) minmax(0, 1fr);
+    align-items: start;
+  }
+
+  .article-editor-pane-switch {
+    display: none;
+  }
+
+  .article-editor-preview {
+    position: sticky;
+    top: 16px;
+    max-height: calc(100vh - 32px);
+    overflow-y: auto;
+  }
+}
+
+@media (max-width: 1023px) {
+  .article-editor-workspace[data-pane="write"] .article-editor-preview,
+  .article-editor-workspace[data-pane="preview"] .article-editor-fields {
+    display: none;
+  }
+}
+
+.article-preview-title {
+  margin: 0 0 12px;
+  font-size: 1.75rem;
+  line-height: 1.25;
+  overflow-wrap: anywhere;
+}
+
+.article-preview-summary {
+  margin: 0 0 24px;
+  color: #34484c;
+}
+
+/* The overlay is portaled to <body>, outside .admin-scope, so it uses
+   literal values instead of the Admin variables. */
+body.scroll-locked {
+  overflow: hidden;
+}
+
+.preview-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 10;
+  display: grid;
+  place-items: center;
+  padding: 16px;
+  background: rgb(32 37 42 / 45%);
+}
+
+.preview-overlay-panel {
+  display: flex;
+  flex-direction: column;
+  width: min(960px, 100%);
+  max-height: 100%;
+  border-radius: 8px;
+  background: #ffffff;
+  box-shadow: 0 8px 24px rgb(32 37 42 / 14%);
+}
+
+.preview-overlay-bar {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  padding: 12px 16px;
+  border-bottom: 1px solid #d7d2c8;
+}
+
+.preview-overlay-bar h2 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.preview-overlay-close {
+  min-width: 44px;
+  min-height: 44px;
+  border: 1px solid #b9b3a8;
+  border-radius: 4px;
+  background: #ffffff;
+  font-size: 1.25rem;
+  cursor: pointer;
+}
+
+.preview-overlay :focus-visible {
+  outline: 2px solid #2b6f9b;
+  outline-offset: 2px;
+}
+
+.preview-overlay-body {
+  padding: 24px;
+  overflow-y: auto;
+  overscroll-behavior: contain;
+}

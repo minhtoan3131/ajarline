@@ -1,5 +1,7 @@
-import { useId, type ChangeEvent } from 'react'
+import { useDeferredValue, useId, useState, type ChangeEvent } from 'react'
 
+import { ArticlePreview } from './ArticlePreview'
+import { FullPreviewOverlay } from './FullPreviewOverlay'
 import type { ArticleAdminDetail, ArticleFields, PublicationStatus, Versioned } from '../model/article'
 import type { EditorNotice, PendingMutation } from '../model/articleEditorState'
 import type { EditorFailure } from '../model/editorFailure'
@@ -25,6 +27,10 @@ export function ArticleEditor({ initial, initialNotice, onCreated }: ArticleEdit
   // The public URL must stay stable once readers may have seen it.
   const slugLocked = article !== null && article.publishedAt !== null
   const idPrefix = useId()
+  const [pane, setPane] = useState<'write' | 'preview'>('write')
+  const [previewOpen, setPreviewOpen] = useState(false)
+  // Typing stays responsive; the preview catches up when React is idle.
+  const previewFields = useDeferredValue(state.fields)
 
   function fieldProps(field: keyof ArticleFields) {
     const failure = state.failure
@@ -37,46 +43,70 @@ export function ArticleEditor({ initial, initialNotice, onCreated }: ArticleEdit
   }
 
   return (
-    <form
-      className="article-editor"
-      noValidate
-      onSubmit={(event) => {
-        event.preventDefault()
-        void editor.save()
-      }}
-    >
-      <div className="article-editor-bar">
-        <h1>{article === null ? 'Bài viết mới' : 'Sửa bài viết'}</h1>
-        <PublicationBadge status={article?.status ?? null} />
-        <SaveStatus pending={state.pending} dirty={dirty} saved={article !== null} />
-        <div className="article-editor-actions">
-          <button type="submit" className="admin-button admin-button-primary" disabled={state.pending !== null}>
-            {state.pending === 'saving' ? 'Đang lưu…' : 'Lưu'}
-          </button>
+    <>
+      <form
+        className="article-editor"
+        noValidate
+        onSubmit={(event) => {
+          event.preventDefault()
+          void editor.save()
+        }}
+      >
+        <div className="article-editor-bar">
+          <h1>{article === null ? 'Bài viết mới' : 'Sửa bài viết'}</h1>
+          <PublicationBadge status={article?.status ?? null} />
+          <SaveStatus pending={state.pending} dirty={dirty} saved={article !== null} />
+          <div className="article-editor-actions">
+            <button type="submit" className="admin-button admin-button-primary" disabled={state.pending !== null}>
+              {state.pending === 'saving' ? 'Đang lưu…' : 'Lưu'}
+            </button>
+            <button type="button" className="admin-button" onClick={() => setPreviewOpen(true)}>
+              Xem trước toàn màn hình
+            </button>
+          </div>
         </div>
-      </div>
-      <EditorMessages
-        failure={state.failure}
-        notice={state.notice}
-        reloading={state.pending === 'reloading'}
-        onReload={() => void editor.reload()}
-      />
-      <div className="article-editor-fields">
-        <EditorField label="Tiêu đề" {...fieldProps('title')} />
-        <EditorField
-          label="Slug"
-          {...fieldProps('slug')}
-          readOnly={slugLocked}
-          hint={
-            slugLocked
-              ? 'Slug đã cố định từ lần xuất bản đầu tiên.'
-              : 'Chữ thường, chữ số và dấu gạch ngang; dùng làm đường dẫn công khai.'
-          }
+        <EditorMessages
+          failure={state.failure}
+          notice={state.notice}
+          reloading={state.pending === 'reloading'}
+          onReload={() => void editor.reload()}
         />
-        <EditorField label="Tóm tắt" {...fieldProps('summary')} rows={3} />
-        <EditorField label="Nội dung Markdown" {...fieldProps('bodyMarkdown')} rows={24} monospace />
-      </div>
-    </form>
+        <div className="article-editor-workspace" data-pane={pane}>
+          <div className="article-editor-pane-switch" role="group" aria-label="Chế độ soạn thảo">
+            <button type="button" className="admin-button" aria-pressed={pane === 'write'} onClick={() => setPane('write')}>
+              Soạn
+            </button>
+            <button
+              type="button"
+              className="admin-button"
+              aria-pressed={pane === 'preview'}
+              onClick={() => setPane('preview')}
+            >
+              Xem trước
+            </button>
+          </div>
+          <section className="article-editor-fields" aria-label="Nội dung soạn thảo">
+            <EditorField label="Tiêu đề" {...fieldProps('title')} />
+            <EditorField
+              label="Slug"
+              {...fieldProps('slug')}
+              readOnly={slugLocked}
+              hint={
+                slugLocked
+                  ? 'Slug đã cố định từ lần xuất bản đầu tiên.'
+                  : 'Chữ thường, chữ số và dấu gạch ngang; dùng làm đường dẫn công khai.'
+              }
+            />
+            <EditorField label="Tóm tắt" {...fieldProps('summary')} rows={3} />
+            <EditorField label="Nội dung Markdown" {...fieldProps('bodyMarkdown')} rows={24} monospace />
+          </section>
+          <section className="article-editor-preview" aria-label="Xem trước trực tiếp">
+            <ArticlePreview fields={previewFields} />
+          </section>
+        </div>
+      </form>
+      {previewOpen && <FullPreviewOverlay fields={state.fields} onClose={() => setPreviewOpen(false)} />}
+    </>
   )
 }
 
