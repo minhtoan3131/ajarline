@@ -9,3 +9,49 @@ spring:
   sql:
     init:
       mode: never
+
+server:
+  servlet:
+    session:
+      timeout: 2h
+      tracking-modes: cookie
+      cookie:
+        name: AJARLINE_SESSION
+        path: /api
+        secure: true
+        http-only: true
+        same-site: lax
+
+---
+
+spring:
+  config:
+    activate:
+      on-profile: local
+
+server:
+  servlet:
+    session:
+      cookie:
+        secure: false
+
+---
+
+springdoc:
+  api-docs:
+    path: /v3/api-docs
+  packages-to-scan:
+    - vn.io.ajarline.administration.api
+    - vn.io.ajarline.content.api
+  paths-to-match:
+    - /api/auth/v1/**
+    - /api/admin/v1/articles
+    - /api/admin/v1/articles/**
+    - /api/admin/v1/content/**
+    - /api/v1/articles/**
+  swagger-ui:
+    path: /swagger-ui.html
+    disable-swagger-default-url: true
+    operations-sorter: method
+    tags-sorter: alpha
+
