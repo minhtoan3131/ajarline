@@ -1,0 +1,6 @@
+package vn.io.ajarline.topic.contract;
+
+public enum TopicFailureCode {
+    VALIDATION_FAILED,
+    SLUG_CONFLICT
+}

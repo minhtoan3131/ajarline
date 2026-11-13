@@ -27,7 +27,7 @@ public final class TopicTestData {
                 VALUES (?, ?, ?, NULL, ?, ?, ?)
                 """, id, slug, name, active, FIXED_TIME, FIXED_TIME);
     }
-    
+
     public static void insertContentItem(JdbcTemplate jdbcTemplate, UUID id, String slug) {
         jdbcTemplate.update("""
                 INSERT INTO content_item(id, type, slug, title, summary, status, revision,

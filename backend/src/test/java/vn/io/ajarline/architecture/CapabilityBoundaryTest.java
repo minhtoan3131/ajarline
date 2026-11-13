@@ -35,7 +35,8 @@ class CapabilityBoundaryTest {
     private static final String[] CAPABILITIES = {
             ROOT + ".content..",
             ROOT + ".publication..",
-            ROOT + ".administration.."
+            ROOT + ".administration..",
+            ROOT + ".topic.."
     };
 
     // Importing classes is slow, so all rules share one import.
@@ -56,10 +57,16 @@ class CapabilityBoundaryTest {
     @CsvSource({
             "administration, content",
             "administration, publication",
+            "administration, topic",
             "publication,    content",
             "publication,    administration",
+            "publication,    topic",
             "content,        publication",
-            "content,        administration"
+            "content,        administration",
+            "content,        topic",
+            "topic,          content",
+            "topic,          publication",
+            "topic,          administration"
     })
     void access_ShouldUseOnlyContract_WhenCapabilityUsesAnotherCapability(
             String consumer, String provider) {
@@ -102,6 +109,19 @@ class CapabilityBoundaryTest {
                 .should().onlyBeAccessed().byAnyPackage(
                         ROOT + ".content.application..",
                         ROOT + ".content.infrastructure..");
+
+        rule.check(PRODUCTION_CLASSES);
+    }
+
+    @Test
+    void topicInfrastructure_ShouldBeUsedOnlyByTopic_WhenOtherPackagesNeedTopics() {
+        // Contracts and API types are not in the allowed list, so an entity
+        // can never leak through them.
+        ArchRule rule = classes()
+                .that().resideInAPackage(ROOT + ".topic.infrastructure..")
+                .should().onlyBeAccessed().byAnyPackage(
+                        ROOT + ".topic.application..",
+                        ROOT + ".topic.infrastructure..");
 
         rule.check(PRODUCTION_CLASSES);
     }

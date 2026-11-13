@@ -1,0 +1,99 @@
+package vn.io.ajarline.topic.application;
+
+import org.springframework.dao.DataIntegrityViolationException;
+import org.springframework.data.domain.Sort;
+import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
+import vn.io.ajarline.topic.contract.TopicCreateInput;
+import vn.io.ajarline.topic.contract.TopicCreator;
+import vn.io.ajarline.topic.contract.TopicFailureCode;
+import vn.io.ajarline.topic.contract.TopicOperationException;
+import vn.io.ajarline.topic.contract.TopicReader;
+import vn.io.ajarline.topic.contract.TopicView;
+import vn.io.ajarline.topic.infrastructure.persistence.TopicEntity;
+import vn.io.ajarline.topic.infrastructure.persistence.TopicJpaRepository;
+
+import java.time.Clock;
+import java.util.List;
+import java.util.UUID;
+
+/**
+ * Runs the Topic catalog use cases.
+ *
+ * <p>Each public method is one transaction. The database constraints are the
+ * authority for slug uniqueness; this service only translates their failures
+ * into Topic failure codes.</p>
+ */
+@Service
+public class TopicService implements TopicCreator, TopicReader {
+    private static final String SLUG_CONSTRAINT = "uk_topic_slug";
+    private static final Sort LIST_ORDER = Sort.by(
+            Sort.Order.asc("name"),
+            Sort.Order.asc("id"));
+
+    private final TopicJpaRepository topics;
+    private final TopicPolicy policy;
+    private final Clock clock;
+
+    public TopicService(TopicJpaRepository topics, TopicPolicy policy, Clock clock) {
+        this.topics = topics;
+        this.policy = policy;
+        this.clock = clock;
+    }
+
+    @Override
+    @Transactional
+    public TopicView create(TopicCreateInput input) {
+        TopicCreateInput normalized = policy.normalizeCreate(input);
+        TopicEntity topic = TopicEntity.create(
+                UUID.randomUUID(),
+                normalized.slug(),
+                normalized.name(),
+                normalized.description(),
+                normalized.active(),
+                clock.instant());
+
+        try {
+            topics.saveAndFlush(topic);
+        } catch (DataIntegrityViolationException exception) {
+            if (containsConstraint(exception, SLUG_CONSTRAINT)) {
+                throw new TopicOperationException(
+                        TopicFailureCode.SLUG_CONFLICT,
+                        "A Topic with this slug already exists.",
+                        exception);
+            }
+            throw exception;
+        }
+        return toView(topic);
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public List<TopicView> list() {
+        return topics.findAll(LIST_ORDER).stream()
+                .map(this::toView)
+                .toList();
+    }
+
+    private boolean containsConstraint(Throwable failure, String constraint) {
+        Throwable current = failure;
+        while (current != null) {
+            if (current.getMessage() != null && current.getMessage().contains(constraint)) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
+    }
+
+    private TopicView toView(TopicEntity topic) {
+        return new TopicView(
+                topic.getId(),
+                topic.getSlug(),
+                topic.getName(),
+                topic.getDescription(),
+                topic.isActive(),
+                topic.getCreatedAt(),
+                topic.getUpdatedAt());
+    }
+}
