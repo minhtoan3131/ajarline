@@ -25,21 +25,24 @@ class ApiDocumentationIT {
 
     private static final ObjectMapper JSON = JsonMapper.builder().build();
 
-    private static final Map<String, Map<String, String>> OPERATIONS = Map.of(
-            "/api/auth/v1/csrf", Map.of("get", "getCsrfToken"),
-            "/api/auth/v1/session", Map.of("get", "getSessionState"),
-            "/api/auth/v1/login", Map.of("post", "loginAdmin"),
-            "/api/auth/v1/logout", Map.of("post", "logoutAdmin"),
-            "/api/admin/v1/articles", Map.of("post", "createArticle"),
-            "/api/admin/v1/articles/{id}", Map.of(
+    private static final Map<String, Map<String, String>> OPERATIONS = Map.ofEntries(
+            Map.entry("/api/auth/v1/csrf", Map.of("get", "getCsrfToken")),
+            Map.entry("/api/auth/v1/session", Map.of("get", "getSessionState")),
+            Map.entry("/api/auth/v1/login", Map.of("post", "loginAdmin")),
+            Map.entry("/api/auth/v1/logout", Map.of("post", "logoutAdmin")),
+            Map.entry("/api/admin/v1/articles", Map.of("post", "createArticle")),
+            Map.entry("/api/admin/v1/articles/{id}", Map.of(
                     "get", "getAdminArticle",
-                    "put", "updateArticle"),
-            "/api/admin/v1/content/{id}/publish", Map.of(
-                    "post", "publishContent"),
-            "/api/admin/v1/content/{id}/unpublish", Map.of(
-                    "post", "unpublishContent"),
-            "/api/v1/articles/{slug}", Map.of(
-                    "get", "getPublicArticle"));
+                    "put", "updateArticle")),
+            Map.entry("/api/admin/v1/topics", Map.of(
+                    "get", "listAdminTopics",
+                    "post", "createTopic")),
+            Map.entry("/api/admin/v1/content/{id}/publish", Map.of(
+                    "post", "publishContent")),
+            Map.entry("/api/admin/v1/content/{id}/unpublish", Map.of(
+                    "post", "unpublishContent")),
+            Map.entry("/api/v1/articles/{slug}", Map.of(
+                    "get", "getPublicArticle")));
 
     @LocalServerPort
     private int port;

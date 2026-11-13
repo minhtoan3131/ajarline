@@ -47,6 +47,8 @@ springdoc:
     - /api/auth/v1/**
     - /api/admin/v1/articles
     - /api/admin/v1/articles/**
+    - /api/admin/v1/topics
+    - /api/admin/v1/topics/**
     - /api/admin/v1/content/**
     - /api/v1/articles/**
   swagger-ui:
