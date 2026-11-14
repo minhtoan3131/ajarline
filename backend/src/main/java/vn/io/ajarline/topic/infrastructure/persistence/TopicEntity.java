@@ -6,6 +6,7 @@ import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
 import java.time.Instant;
+import java.util.Objects;
 import java.util.UUID;
 
 @Entity
@@ -55,6 +56,19 @@ public class TopicEntity {
     public static TopicEntity create(UUID id, String slug, String name, String description,
                                      boolean active, Instant now) {
         return new TopicEntity(id, slug, name, description, active, now);
+    }
+
+    public boolean hasSameEditableState(String name, String description, boolean active) {
+        return Objects.equals(this.name, name)
+                && Objects.equals(this.description, description)
+                && this.active == active;
+    }
+
+    public void replaceEditableState(String name, String description, boolean active, Instant now) {
+        this.name = name;
+        this.description = description;
+        this.active = active;
+        this.updatedAt = now;
     }
 
     public UUID getId() {

@@ -4,6 +4,7 @@ import org.springframework.stereotype.Component;
 import vn.io.ajarline.topic.contract.TopicCreateInput;
 import vn.io.ajarline.topic.contract.TopicFailureCode;
 import vn.io.ajarline.topic.contract.TopicOperationException;
+import vn.io.ajarline.topic.contract.TopicUpdateInput;
 
 import java.util.Locale;
 import java.util.regex.Pattern;
@@ -42,6 +43,21 @@ public class TopicPolicy {
         String description = normalizeDescription(input.description());
         validateText(description, "Description", DESCRIPTION_MAX_LENGTH, true);
         return new TopicCreateInput(slug, input.name(), description, input.active());
+    }
+
+    /**
+     * Returns the canonical input accepted by the update operation.
+     *
+     * @throws TopicOperationException when a value violates the Topic limits
+     */
+    public TopicUpdateInput normalizeUpdate(TopicUpdateInput input) {
+        if (input == null) {
+            throw failure("Topic content is required.");
+        }
+        validateText(input.name(), "Name", NAME_MAX_LENGTH, false);
+        String description = normalizeDescription(input.description());
+        validateText(description, "Description", DESCRIPTION_MAX_LENGTH, true);
+        return new TopicUpdateInput(input.name(), description, input.active());
     }
 
     private String normalizeSlug(String slug) {

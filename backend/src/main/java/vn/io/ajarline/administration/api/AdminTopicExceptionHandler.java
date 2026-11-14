@@ -85,6 +85,8 @@ public class AdminTopicExceptionHandler {
                     "One or more fields are invalid.");
             case SLUG_CONFLICT -> new ProblemMapping(409, "Topic slug conflicts",
                     "A Topic with this slug already exists.");
+            case TOPIC_NOT_FOUND -> new ProblemMapping(404, "Topic was not found",
+                    "Topic was not found.");
         };
     }
 }

@@ -151,6 +151,80 @@ class AdminTopicApiIT extends AbstractAdminAuthenticationIT {
         assertThat(body.get("updatedAt").asString()).isNotBlank();
     }
 
+    @Test
+    void update_ShouldReturnUpdatedTopic_WhenPayloadIsValid() throws Exception {
+        Browser browser = authenticatedBrowser();
+        String token = csrf(browser);
+        JsonNode created = JSON.readTree(browser.post(
+                TOPICS, payload("java-basics", "Java", null, true), token).body());
+        String id = created.get("id").asString();
+
+        HttpResponse<String> response = browser.put(
+                TOPICS + "/" + id, editPayload("Java basics", "Core Java.", false), token, null);
+
+        assertThat(response.statusCode()).isEqualTo(200);
+        assertNoStore(response);
+        assertThat(response.headers().firstValue("ETag")).isEmpty();
+        JsonNode body = JSON.readTree(response.body());
+        assertItem(body, "java-basics", "Java basics", "Core Java.", false);
+        assertThat(body.get("id").asString()).isEqualTo(id);
+    }
+
+    @Test
+    void update_ShouldRejectRequest_WhenPayloadContainsSlug() throws Exception {
+        Browser browser = authenticatedBrowser();
+        String token = csrf(browser);
+        String id = JSON.readTree(browser.post(
+                TOPICS, payload("java-basics", "Java", null, true), token).body())
+                .get("id").asString();
+
+        HttpResponse<String> response = browser.put(
+                TOPICS + "/" + id, payload("other-slug", "Java", null, true), token, null);
+
+        assertProblem(response, 400, "INVALID_REQUEST");
+        HttpResponse<String> list = browser.get(TOPICS);
+        assertThat(JSON.readTree(list.body()).get("topics").get(0).get("slug").asString())
+                .isEqualTo("java-basics");
+    }
+
+    @Test
+    void update_ShouldRejectRequest_WhenTopicDoesNotExist() throws Exception {
+        Browser browser = authenticatedBrowser();
+        String token = csrf(browser);
+
+        HttpResponse<String> response = browser.put(
+                TOPICS + "/00000000-0000-0000-0000-000000000404",
+                editPayload("Name", null, true), token, null);
+
+        assertProblem(response, 404, "TOPIC_NOT_FOUND");
+    }
+
+    @Test
+    void update_ShouldRejectRequest_WhenValuesAreInvalid() throws Exception {
+        Browser browser = authenticatedBrowser();
+        String token = csrf(browser);
+        String id = JSON.readTree(browser.post(
+                TOPICS, payload("java-basics", "Java", null, true), token).body())
+                .get("id").asString();
+
+        HttpResponse<String> response = browser.put(
+                TOPICS + "/" + id, editPayload("   ", null, true), token, null);
+
+        assertProblem(response, 422, "VALIDATION_FAILED");
+    }
+
+    private String editPayload(String name, String description, boolean active) throws Exception {
+        ObjectNode body = JSON.createObjectNode();
+        body.put("name", name);
+        if (description == null) {
+            body.putNull("description");
+        } else {
+            body.put("description", description);
+        }
+        body.put("active", active);
+        return JSON.writeValueAsString(body);
+    }
+
     private long rowCount() {
         return jdbcTemplate.queryForObject("SELECT count(*) FROM topic", Long.class);
     }

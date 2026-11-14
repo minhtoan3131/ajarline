@@ -6,9 +6,11 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.io.ajarline.topic.contract.TopicCreateInput;
 import vn.io.ajarline.topic.contract.TopicCreator;
+import vn.io.ajarline.topic.contract.TopicEditor;
 import vn.io.ajarline.topic.contract.TopicFailureCode;
 import vn.io.ajarline.topic.contract.TopicOperationException;
 import vn.io.ajarline.topic.contract.TopicReader;
+import vn.io.ajarline.topic.contract.TopicUpdateInput;
 import vn.io.ajarline.topic.contract.TopicView;
 import vn.io.ajarline.topic.infrastructure.persistence.TopicEntity;
 import vn.io.ajarline.topic.infrastructure.persistence.TopicJpaRepository;
@@ -25,7 +27,7 @@ import java.util.UUID;
  * into Topic failure codes.</p>
  */
 @Service
-public class TopicService implements TopicCreator, TopicReader {
+public class TopicService implements TopicCreator, TopicReader, TopicEditor {
     private static final String SLUG_CONSTRAINT = "uk_topic_slug";
     private static final Sort LIST_ORDER = Sort.by(
             Sort.Order.asc("name"),
@@ -73,6 +75,32 @@ public class TopicService implements TopicCreator, TopicReader {
         return topics.findAll(LIST_ORDER).stream()
                 .map(this::toView)
                 .toList();
+    }
+
+    @Override
+    @Transactional
+    public TopicView replace(UUID id, TopicUpdateInput input) {
+        TopicUpdateInput normalized = policy.normalizeUpdate(input);
+        TopicEntity topic = topics.findByIdForUpdate(id)
+                .orElseThrow(() -> notFound(id));
+
+        if (topic.hasSameEditableState(
+                normalized.name(), normalized.description(), normalized.active())) {
+            return toView(topic);
+        }
+
+        topic.replaceEditableState(
+                normalized.name(),
+                normalized.description(),
+                normalized.active(),
+                clock.instant());
+        return toView(topic);
+    }
+
+    private TopicOperationException notFound(UUID id) {
+        return new TopicOperationException(
+                TopicFailureCode.TOPIC_NOT_FOUND,
+                "Topic was not found: " + id);
     }
 
     private boolean containsConstraint(Throwable failure, String constraint) {

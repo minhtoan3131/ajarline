@@ -11,12 +11,17 @@ import vn.io.ajarline.support.MutableClock;
 import vn.io.ajarline.support.PostgreSqlTestConfiguration;
 import vn.io.ajarline.topic.contract.TopicCreateInput;
 import vn.io.ajarline.topic.contract.TopicCreator;
+import vn.io.ajarline.topic.contract.TopicEditor;
 import vn.io.ajarline.topic.contract.TopicFailureCode;
 import vn.io.ajarline.topic.contract.TopicOperationException;
 import vn.io.ajarline.topic.contract.TopicReader;
+import vn.io.ajarline.topic.contract.TopicUpdateInput;
 import vn.io.ajarline.topic.contract.TopicView;
 
+import java.time.Duration;
 import java.time.Instant;
+import java.time.OffsetDateTime;
+import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -37,6 +42,9 @@ class TopicApplicationIT {
 
     @Autowired
     private TopicReader reader;
+
+    @Autowired
+    private TopicEditor editor;
 
     @Autowired
     private MutableClock clock;
@@ -120,6 +128,77 @@ class TopicApplicationIT {
         assertThat(reader.list())
                 .extracting(TopicView::id)
                 .containsExactly(uuid(1), uuid(2));
+    }
+
+    @Test
+    void replace_ShouldChangeEditableValuesAndUpdatedAt_WhenValuesDiffer() {
+        TopicView created = creator.create(new TopicCreateInput("java-basics", "Java", null, true));
+        clock.set(CREATED_AT.plus(Duration.ofHours(1)));
+
+        TopicView updated = editor.replace(
+                created.id(), new TopicUpdateInput("Java basics", "Core Java.", false));
+
+        assertThat(updated.slug()).isEqualTo("java-basics");
+        assertThat(updated.name()).isEqualTo("Java basics");
+        assertThat(updated.description()).isEqualTo("Core Java.");
+        assertThat(updated.active()).isFalse();
+        assertThat(updated.createdAt()).isEqualTo(CREATED_AT);
+        assertThat(updated.updatedAt()).isEqualTo(CREATED_AT.plus(Duration.ofHours(1)));
+        assertThat(storedUpdatedAt(created.id())).isEqualTo(updated.updatedAt());
+    }
+
+    @Test
+    void replace_ShouldKeepUpdatedAt_WhenNoValueDiffers() {
+        TopicView created = creator.create(new TopicCreateInput("java-basics", "Java", "Core.", true));
+        clock.set(CREATED_AT.plus(Duration.ofHours(1)));
+
+        TopicView result = editor.replace(
+                created.id(), new TopicUpdateInput("Java", "Core.", true));
+
+        assertThat(result.updatedAt()).isEqualTo(CREATED_AT);
+        assertThat(storedUpdatedAt(created.id())).isEqualTo(CREATED_AT);
+    }
+
+    @Test
+    void replace_ShouldTreatEmptyDescriptionAsNull_WhenStoredDescriptionIsNull() {
+        TopicView created = creator.create(new TopicCreateInput("java-basics", "Java", null, true));
+        clock.set(CREATED_AT.plus(Duration.ofHours(1)));
+
+        TopicView result = editor.replace(created.id(), new TopicUpdateInput("Java", "", true));
+
+        assertThat(result.updatedAt()).isEqualTo(CREATED_AT);
+    }
+
+    @Test
+    void replace_ShouldRejectUpdate_WhenTopicDoesNotExist() {
+        assertThatThrownBy(() -> editor.replace(
+                uuid(404), new TopicUpdateInput("Name", null, true)))
+                .isInstanceOfSatisfying(TopicOperationException.class,
+                        exception -> assertThat(exception.code())
+                                .isEqualTo(TopicFailureCode.TOPIC_NOT_FOUND));
+    }
+
+    @Test
+    void replace_ShouldRejectUpdate_WhenValuesAreInvalid() {
+        TopicView created = creator.create(new TopicCreateInput("java-basics", "Java", null, true));
+
+        assertThatThrownBy(() -> editor.replace(created.id(), new TopicUpdateInput("  ", null, true)))
+                .isInstanceOfSatisfying(TopicOperationException.class,
+                        exception -> assertThat(exception.code())
+                                .isEqualTo(TopicFailureCode.VALIDATION_FAILED));
+    }
+
+    @Test
+    void replace_ShouldReportValidationFailure_WhenValuesAreInvalidAndTopicDoesNotExist() {
+        assertThatThrownBy(() -> editor.replace(uuid(404), new TopicUpdateInput("  ", null, true)))
+                .isInstanceOfSatisfying(TopicOperationException.class,
+                        exception -> assertThat(exception.code())
+                                .isEqualTo(TopicFailureCode.VALIDATION_FAILED));
+    }
+
+    private Instant storedUpdatedAt(UUID id) {
+        return jdbcTemplate.queryForObject(
+                "SELECT updated_at FROM topic WHERE id = ?", OffsetDateTime.class, id).toInstant();
     }
 
     private long topicCount() {
