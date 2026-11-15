@@ -435,3 +435,37 @@ body.scroll-locked {
   align-self: center;
   color: var(--admin-structural);
 }
+
+.topic-manager-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+  margin-bottom: 8px;
+}
+
+.topic-manager-bar h1 { margin: 0; font-size: 1.5rem; }
+
+.topic-table {
+  width: 100%;
+  margin-top: 16px;
+  border-collapse: collapse;
+  background: var(--admin-surface);
+}
+
+.topic-table th,
+.topic-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--admin-border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.topic-description {
+  margin: 4px 0 0;
+  color: var(--admin-text-secondary);
+  font-size: 0.875rem;
+}
+
+.admin-badge-active { border-color: var(--admin-success); color: var(--admin-success); }
+.admin-badge-inactive { border-color: var(--admin-warning); color: var(--admin-warning); }
