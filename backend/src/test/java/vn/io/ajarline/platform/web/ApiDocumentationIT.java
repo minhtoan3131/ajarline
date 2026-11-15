@@ -231,6 +231,38 @@ class ApiDocumentationIT {
         assertThat(properties.has("unpublishedAt")).isFalse();
     }
 
+    @Test
+    void openApi_ShouldExposeTopicMetadata_WhenDocumentIsGenerated()
+            throws Exception {
+        JsonNode document = openApiDocument();
+        JsonNode paths = document.get("paths");
+        JsonNode list = operation(paths, "/api/admin/v1/topics", "get");
+        JsonNode create = operation(paths, "/api/admin/v1/topics", "post");
+        JsonNode update = operation(paths, "/api/admin/v1/topics/{id}", "put");
+        JsonNode delete = operation(paths, "/api/admin/v1/topics/{id}", "delete");
+
+        for (JsonNode topicOperation : new JsonNode[]{list, create, update, delete}) {
+            assertThat(hasSecurity(topicOperation, OpenApiConfiguration.ADMIN_SESSION)).isTrue();
+        }
+        for (JsonNode mutation : new JsonNode[]{create, update, delete}) {
+            assertThat(parameterNames(mutation)).contains("X-CSRF-TOKEN");
+        }
+        assertThat(parameterNames(update)).doesNotContain("If-Match");
+        assertThat(requestSchemaRef(create)).endsWith("/TopicCreatable");
+        assertThat(requestSchemaRef(update)).endsWith("/TopicEditable");
+        assertThat(responseSchemaRef(list, "200")).endsWith("/TopicAdminList");
+        assertThat(create.get("responses").get("201").get("headers").propertyNames())
+                .contains("Location");
+        assertThat(create.get("responses").get("201").get("headers").has("ETag")).isFalse();
+        assertThat(delete.get("responses").has("204")).isTrue();
+        assertThat(delete.get("responses").has("409")).isTrue();
+
+        JsonNode schemas = document.get("components").get("schemas");
+        assertThat(schemas.propertyNames()).contains(
+                "TopicCreatable", "TopicEditable", "TopicAdminItem", "TopicAdminList");
+        assertThat(schemas.get("TopicEditable").get("properties").has("slug")).isFalse();
+    }
+
 
     private JsonNode openApiDocument() throws Exception {
         HttpResponse<String> response = send(get("/v3/api-docs"));
