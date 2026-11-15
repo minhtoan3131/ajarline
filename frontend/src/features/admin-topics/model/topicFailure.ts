@@ -5,6 +5,7 @@ export type TopicFailure =
   | { kind: 'field'; field: keyof TopicFields; message: string }
   | { kind: 'general'; message: string }
   | { kind: 'not-found' }
+  | { kind: 'in-use' }
   | { kind: 'session-expired' }
   | { kind: 'session-renewed' }
 
@@ -48,6 +49,8 @@ function conflictFailure(error: ApiError): TopicFailure {
   switch (error.code) {
     case 'SLUG_CONFLICT':
       return { kind: 'field', field: 'slug', message: 'Slug này đã được Topic khác sử dụng.' }
+    case 'TOPIC_IN_USE':
+      return { kind: 'in-use' }
     default:
       return general('Thao tác bị từ chối do xung đột dữ liệu. Hãy tải lại trang để xem dữ liệu mới nhất.', error)
   }

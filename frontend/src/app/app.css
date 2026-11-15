@@ -539,3 +539,31 @@ body.scroll-locked {
   clip-path: inset(50%);
   white-space: nowrap;
 }
+
+.admin-button-danger {
+  border-color: var(--admin-error);
+  color: var(--admin-error);
+}
+
+.admin-button-danger:hover:not(:disabled) {
+  border-color: var(--admin-error);
+  background: var(--admin-error-bg);
+}
+
+.topic-form-danger {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--admin-border);
+}
+
+.topic-delete-confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.topic-delete-confirm p {
+  flex-basis: 100%;
+  margin: 0;
+}

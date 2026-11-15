@@ -335,3 +335,92 @@ describe('TopicManagementPage edit form', () => {
     expect(api.requestsTo('GET', TOPICS_PATH)).toHaveLength(2)
   })
 })
+
+describe('TopicManagementPage delete', () => {
+  it('delete_ShouldAskForConfirmationBeforeSending_WhenDeleteIsClicked', async () => {
+    const api = givenSignedInAdmin(new StubApiServer())
+      .on('GET', TOPICS_PATH, jsonResponse(200, topicList(activeTopic())))
+      .install()
+    const user = userEvent.setup()
+    renderAppRoute(ROUTE)
+    await user.click(await screen.findByRole('button', { name: 'Sửa Topic Java' }))
+
+    await user.click(screen.getByRole('button', { name: 'Xóa Topic' }))
+
+    const question = screen.getByRole('group', { name: 'Xác nhận xóa Topic' })
+    expect(question).toHaveTextContent('Xóa Topic “Java”?')
+    expect(api.requestsTo('DELETE', topicPath(TOPIC_ID))).toHaveLength(0)
+
+    await user.click(screen.getByRole('button', { name: 'Giữ lại' }))
+
+    expect(screen.getByRole('button', { name: 'Xóa Topic' })).toBeInTheDocument()
+    expect(api.requestsTo('DELETE', topicPath(TOPIC_ID))).toHaveLength(0)
+  })
+
+  it('delete_ShouldRemoveTopicFromList_WhenServerReturnsNoContent', async () => {
+    const api = givenSignedInAdmin(new StubApiServer())
+      .on(
+        'GET',
+        TOPICS_PATH,
+        jsonResponse(200, topicList(activeTopic(), inactiveTopic())),
+        jsonResponse(200, topicList(inactiveTopic())),
+      )
+      .on('DELETE', topicPath(TOPIC_ID), { status: 204 })
+      .install()
+    const user = userEvent.setup()
+    renderAppRoute(ROUTE)
+    await user.click(await screen.findByRole('button', { name: 'Sửa Topic Java' }))
+    await user.click(screen.getByRole('button', { name: 'Xóa Topic' }))
+
+    await user.click(screen.getByRole('button', { name: 'Xác nhận xóa' }))
+
+    expect(await screen.findByText('Đã xóa Topic.')).toBeInTheDocument()
+    const [removal] = api.requestsTo('DELETE', topicPath(TOPIC_ID))
+    expect(removal.headers.get('X-CSRF-TOKEN')).toBe(CSRF_TOKEN.token)
+    expect(removal.body).toBeUndefined()
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Sửa Topic Java' })).toBeNull())
+    expect(screen.getByRole('button', { name: 'Sửa Topic Spring' })).toBeInTheDocument()
+    expect(screen.queryByLabelText('Slug')).toBeNull()
+    expect(api.requestsTo('GET', TOPICS_PATH)).toHaveLength(2)
+  })
+
+  it('delete_ShouldKeepTopicAndSuggestTurningItOff_WhenTopicIsInUse', async () => {
+    const api = givenSignedInAdmin(new StubApiServer())
+      .on('GET', TOPICS_PATH, jsonResponse(200, topicList(activeTopic())))
+      .on('DELETE', topicPath(TOPIC_ID), problemResponse(409, 'TOPIC_IN_USE'))
+      .install()
+    const user = userEvent.setup()
+    renderAppRoute(ROUTE)
+    await user.click(await screen.findByRole('button', { name: 'Sửa Topic Java' }))
+    await user.click(screen.getByRole('button', { name: 'Xóa Topic' }))
+
+    await user.click(screen.getByRole('button', { name: 'Xác nhận xóa' }))
+
+    const alert = await screen.findByRole('alert')
+    expect(alert).toHaveTextContent('vẫn đang được nội dung sử dụng')
+    expect(alert).toHaveTextContent('Topic được tắt chứ không bị xóa')
+    expect(screen.queryByText('Đã xóa Topic.')).toBeNull()
+    expect(screen.getByLabelText('Slug')).toHaveValue('java')
+    expect(screen.getByRole('button', { name: 'Xóa Topic' })).toBeInTheDocument()
+    expect(screen.getByRole('table', { name: 'Danh sách Topic' })).toHaveTextContent('Java')
+    expect(api.requestsTo('GET', TOPICS_PATH)).toHaveLength(1)
+  })
+
+  it('delete_ShouldCloseFormAndReloadList_WhenTopicNoLongerExists', async () => {
+    const api = givenSignedInAdmin(new StubApiServer())
+      .on('GET', TOPICS_PATH, jsonResponse(200, topicList(activeTopic())), jsonResponse(200, topicList()))
+      .on('DELETE', topicPath(TOPIC_ID), problemResponse(404, 'TOPIC_NOT_FOUND'))
+      .install()
+    const user = userEvent.setup()
+    renderAppRoute(ROUTE)
+    await user.click(await screen.findByRole('button', { name: 'Sửa Topic Java' }))
+    await user.click(screen.getByRole('button', { name: 'Xóa Topic' }))
+
+    await user.click(screen.getByRole('button', { name: 'Xác nhận xóa' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('không còn tồn tại')
+    expect(screen.queryByLabelText('Slug')).toBeNull()
+    expect(await screen.findByText('Chưa có Topic nào.')).toBeInTheDocument()
+    expect(api.requestsTo('GET', TOPICS_PATH)).toHaveLength(2)
+  })
+})

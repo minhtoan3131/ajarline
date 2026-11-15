@@ -40,6 +40,7 @@ export function TopicManager() {
           onChange={manager.changeFields}
           onSubmit={() => void manager.save()}
           onCancel={manager.close}
+          onDelete={() => void manager.remove()}
         />
       )}
       <TopicListSection load={load} onRetry={reload} onEdit={manager.openEdit} editDisabled={locked} />

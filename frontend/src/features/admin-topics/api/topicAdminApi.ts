@@ -36,3 +36,12 @@ export async function updateTopic(client: HttpClient, topicId: string, editable:
   const response = await client.request<TopicAdminItem>(topicPath(topicId), { method: 'PUT', body: editable })
   return response.body
 }
+
+/**
+ * Deletes a Topic that no content uses. The server answers 204 without a body.
+ *
+ * @throws ApiError 404 TOPIC_NOT_FOUND, 409 TOPIC_IN_USE
+ */
+export async function deleteTopic(client: HttpClient, topicId: string): Promise<void> {
+  await client.request(topicPath(topicId), { method: 'DELETE' })
+}

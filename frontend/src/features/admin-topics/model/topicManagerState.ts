@@ -4,9 +4,9 @@ import type { TopicFailure } from './topicFailure'
 /** Which form is open. There is at most one at a time. */
 export type TopicPanel = { mode: 'closed' } | { mode: 'create' } | { mode: 'edit'; topic: TopicAdminItem }
 
-export type PendingTopicAction = 'saving'
+export type PendingTopicAction = 'saving' | 'deleting'
 
-export type TopicNotice = 'created' | 'saved'
+export type TopicNotice = 'created' | 'saved' | 'deleted'
 
 /**
  * Screen state: the open form (`panel`), the typed values (`fields`) against

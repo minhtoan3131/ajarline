@@ -2,7 +2,7 @@ import { useReducer } from 'react'
 
 import { useHttpClient } from '../../shared/api/HttpClientContext'
 import { useAdminSession } from '../admin-auth/AdminSessionContext'
-import { createTopic, updateTopic } from './api/topicAdminApi'
+import { createTopic, deleteTopic, updateTopic } from './api/topicAdminApi'
 import { toCreatable, toEditable, type TopicAdminItem, type TopicFields } from './model/topic'
 import { toTopicFailure } from './model/topicFailure'
 import {
@@ -20,6 +20,7 @@ export interface TopicManagerController {
   close(): void
   changeFields(changes: Partial<TopicFields>): void
   save(): Promise<void>
+  remove(): Promise<void>
 }
 
 /**
@@ -66,6 +67,21 @@ export function useTopicManager(onTopicsChanged: () => void): TopicManagerContro
     }
   }
 
+  async function remove() {
+    const panel = state.panel
+    if (state.pending !== null || panel.mode !== 'edit') {
+      return
+    }
+    dispatch({ type: 'mutation-started', pending: 'deleting' })
+    try {
+      await deleteTopic(client, panel.topic.id)
+      dispatch({ type: 'mutation-succeeded', notice: 'deleted' })
+      onTopicsChanged()
+    } catch (error) {
+      fail(error)
+    }
+  }
+
   return {
     state,
     dirty: isDirty(state),
@@ -74,5 +90,6 @@ export function useTopicManager(onTopicsChanged: () => void): TopicManagerContro
     close: () => dispatch({ type: 'panel-closed' }),
     changeFields: (changes) => dispatch({ type: 'fields-changed', changes }),
     save,
+    remove,
   }
 }

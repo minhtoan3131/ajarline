@@ -36,6 +36,10 @@ describe('toTopicFailure', () => {
     expect(toTopicFailure(apiError(404, 'TOPIC_NOT_FOUND'))).toEqual({ kind: 'not-found' })
   })
 
+  it('toTopicFailure_ShouldReportTopicInUse_WhenDeleteIsRefused', () => {
+    expect(toTopicFailure(apiError(409, 'TOPIC_IN_USE'))).toEqual({ kind: 'in-use' })
+  })
+
   it('toTopicFailure_ShouldReportTechnicalFailure_WhenNoResponseArrives', () => {
     expect(toTopicFailure(apiError(0))).toMatchObject({
       kind: 'general',

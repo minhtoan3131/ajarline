@@ -4,6 +4,7 @@ import type { TopicNotice } from '../model/topicManagerState'
 const NOTICE_TEXT: Record<TopicNotice, string> = {
   created: 'Đã tạo Topic.',
   saved: 'Đã lưu Topic.',
+  deleted: 'Đã xóa Topic.',
 }
 
 /** Success notice and failure message of the last action. */
@@ -32,6 +33,11 @@ function failureText(failure: TopicFailure): string {
       return failure.message
     case 'not-found':
       return 'Topic này không còn tồn tại. Danh sách đã được tải lại.'
+    case 'in-use':
+      return (
+        'Topic này vẫn đang được nội dung sử dụng nên chưa xóa được. ' +
+        'Nếu chỉ muốn ngừng dùng, hãy bỏ chọn "Cho phép gán Topic này cho bài viết mới" rồi lưu: Topic được tắt chứ không bị xóa.'
+      )
     case 'session-expired':
       return 'Phiên đăng nhập đã hết nên thao tác chưa được thực hiện.'
     case 'session-renewed':

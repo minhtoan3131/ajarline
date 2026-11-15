@@ -1,4 +1,4 @@
-import { useId, type ChangeEvent } from 'react'
+import { useId, useState, type ChangeEvent } from 'react'
 
 import type { TopicAdminItem, TopicFields } from '../model/topic'
 import type { TopicFailure } from '../model/topicFailure'
@@ -14,10 +14,11 @@ export interface TopicFormProps {
   onChange: (changes: Partial<TopicFields>) => void
   onSubmit: () => void
   onCancel: () => void
+  onDelete: () => void
 }
 
 /** Form for one Topic. It keeps the typed text on every failure. */
-export function TopicForm({ topic, fields, failure, pending, dirty, onChange, onSubmit, onCancel }: TopicFormProps) {
+export function TopicForm({ topic, fields, failure, pending, dirty, onChange, onSubmit, onCancel, onDelete }: TopicFormProps) {
   const idPrefix = useId()
   const editing = topic !== null
   const saving = pending === 'saving'
@@ -84,7 +85,58 @@ export function TopicForm({ topic, fields, failure, pending, dirty, onChange, on
           {dirty ? 'Có thay đổi chưa lưu' : ''}
         </p>
       </div>
+      {topic !== null && (
+        <div className="topic-form-danger">
+          <DeleteControl topicName={topic.name} deleting={pending === 'deleting'} disabled={busy} onDelete={onDelete} />
+        </div>
+      )}
     </form>
+  )
+}
+
+interface DeleteControlProps {
+  topicName: string
+  deleting: boolean
+  disabled: boolean
+  onDelete: () => void
+}
+
+/** Two-step delete: the first click only asks, the second one deletes. */
+function DeleteControl({ topicName, deleting, disabled, onDelete }: DeleteControlProps) {
+  const [confirming, setConfirming] = useState(false)
+
+  if (deleting) {
+    return (
+      <button type="button" className="admin-button" disabled>
+        Đang xóa…
+      </button>
+    )
+  }
+  if (!confirming) {
+    return (
+      <button type="button" className="admin-button admin-button-danger" disabled={disabled} onClick={() => setConfirming(true)}>
+        Xóa Topic
+      </button>
+    )
+  }
+  return (
+    <div className="topic-delete-confirm" role="group" aria-label="Xác nhận xóa Topic">
+      <p>Xóa Topic “{topicName}”? Việc này không hoàn tác được.</p>
+      <button
+        type="button"
+        className="admin-button admin-button-danger"
+        onClick={() => {
+          // Collapse the question first, so a failed delete leaves the plain button.
+          setConfirming(false)
+          onDelete()
+        }}
+      >
+        Xác nhận xóa
+      </button>
+      <button type="button" className="admin-button" onClick={() => setConfirming(false)}>
+        Giữ lại
+      </button>
+    </div>
   )
 }
 
