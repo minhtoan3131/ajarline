@@ -45,7 +45,13 @@ class ApiDocumentationIT {
             Map.entry("/api/admin/v1/content/{id}/unpublish", Map.of(
                     "post", "unpublishContent")),
             Map.entry("/api/v1/articles/{slug}", Map.of(
-                    "get", "getPublicArticle")));
+                    "get", "getPublicArticle")),
+            Map.entry("/api/v1/topics", Map.of(
+                    "get", "listPublicTopics")),
+            Map.entry("/api/v1/topics/{slug}", Map.of(
+                    "get", "getPublicTopic")),
+            Map.entry("/api/v1/topics/{slug}/content", Map.of(
+                    "get", "listPublicTopicContent")));
 
     @LocalServerPort
     private int port;
@@ -261,6 +267,31 @@ class ApiDocumentationIT {
         assertThat(schemas.propertyNames()).contains(
                 "TopicCreatable", "TopicEditable", "TopicAdminItem", "TopicAdminList");
         assertThat(schemas.get("TopicEditable").get("properties").has("slug")).isFalse();
+    }
+
+    @Test
+    void openApi_ShouldExposePublicTopicMetadata_WhenDocumentIsGenerated()
+            throws Exception {
+        JsonNode document = openApiDocument();
+        JsonNode paths = document.get("paths");
+        JsonNode list = operation(paths, "/api/v1/topics", "get");
+        JsonNode get = operation(paths, "/api/v1/topics/{slug}", "get");
+        JsonNode content = operation(paths, "/api/v1/topics/{slug}/content", "get");
+
+        for (JsonNode publicOperation : new JsonNode[]{list, get, content}) {
+            assertThat(hasSecurity(publicOperation, OpenApiConfiguration.ADMIN_SESSION)).isFalse();
+        }
+        assertThat(responseSchemaRef(list, "200")).endsWith("/TopicDiscoveryResponse");
+        assertThat(responseSchemaRef(get, "200")).endsWith("/PublicTopicResponse");
+        assertThat(responseSchemaRef(content, "200")).endsWith("/TopicContentResponse");
+        assertThat(get.get("responses").has("404")).isTrue();
+        assertThat(content.get("responses").has("400")).isTrue();
+        assertThat(content.get("responses").has("404")).isTrue();
+        assertThat(parameterNames(content)).contains("slug", "types", "page", "size");
+
+        JsonNode schemas = document.get("components").get("schemas");
+        assertThat(schemas.get("PublicTopicResponse").get("properties").propertyNames())
+                .containsExactlyInAnyOrder("id", "slug", "name", "description");
     }
 
 

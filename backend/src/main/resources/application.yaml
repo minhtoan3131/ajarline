@@ -43,6 +43,7 @@ springdoc:
   packages-to-scan:
     - vn.io.ajarline.administration.api
     - vn.io.ajarline.content.api
+    - vn.io.ajarline.topic.api
   paths-to-match:
     - /api/auth/v1/**
     - /api/admin/v1/articles
@@ -51,6 +52,8 @@ springdoc:
     - /api/admin/v1/topics/**
     - /api/admin/v1/content/**
     - /api/v1/articles/**
+    - /api/v1/topics
+    - /api/v1/topics/**
   swagger-ui:
     path: /swagger-ui.html
     disable-swagger-default-url: true
