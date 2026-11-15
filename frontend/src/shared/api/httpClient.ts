@@ -14,7 +14,7 @@ export interface CsrfToken {
   token: string
 }
 
-export type HttpMethod = 'GET' | 'POST' | 'PUT'
+export type HttpMethod = 'GET' | 'POST' | 'PUT' | 'DELETE'
 
 export interface RequestOptions {
   method?: HttpMethod
