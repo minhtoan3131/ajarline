@@ -58,6 +58,10 @@ public class TopicEntity {
         return new TopicEntity(id, slug, name, description, active, now);
     }
 
+    public boolean hasSameName(String name) {
+        return Objects.equals(this.name, name);
+    }
+
     public boolean hasSameEditableState(String name, String description, boolean active) {
         return Objects.equals(this.name, name)
                 && Objects.equals(this.description, description)

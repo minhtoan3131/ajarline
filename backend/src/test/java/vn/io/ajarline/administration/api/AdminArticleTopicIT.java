@@ -25,6 +25,7 @@ import vn.io.ajarline.support.PostgreSqlTestConfiguration;
 class AdminArticleTopicIT extends AbstractAdminAuthenticationIT {
 
     private static final String ARTICLES = "/api/admin/v1/articles";
+    private static final String TOPICS = "/api/admin/v1/topics";
     private static final UUID JAVA = uuid(1);
     private static final UUID SPRING = uuid(2);
     private static final UUID LEGACY = uuid(3);
@@ -165,6 +166,21 @@ class AdminArticleTopicIT extends AbstractAdminAuthenticationIT {
         JsonNode body = JSON.readTree(stored.body());
         assertThat(body.get("bodyMarkdown").asString()).isEqualTo("Body");
         assertThat(topicIds(body)).isEmpty();
+    }
+
+    @Test
+    void update_ShouldReturnRevisionConflict_WhenAttachedTopicWasRenamed() throws Exception {
+        Browser browser = authenticatedBrowser();
+        String token = csrf(browser);
+        UUID id = create(browser, token, "renamed-topic", JAVA);
+        String rename = "{\"name\":\"Java renamed\",\"description\":null,\"active\":true}";
+        assertThat(browser.put(TOPICS + "/" + JAVA, rename, token, null).statusCode()).isEqualTo(200);
+
+        HttpResponse<String> stale = browser.put(
+                ARTICLES + "/" + id, editable("renamed-topic", "Changed body", JAVA), token, "\"1\"");
+
+        assertProblem(stale, 412, "REVISION_CONFLICT");
+        assertThat(browser.get(ARTICLES + "/" + id).headers().firstValue("ETag")).contains("\"2\"");
     }
 
     private UUID create(Browser browser, String token, String slug, UUID... topicIds) throws Exception {

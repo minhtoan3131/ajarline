@@ -39,6 +39,7 @@ import static vn.io.ajarline.support.TopicTestData.uuid;
 class TopicApplicationIT {
 
     private static final Instant CREATED_AT = Instant.parse("2026-11-12T00:00:00Z");
+    private static final Instant RENAMED_AT = Instant.parse("2026-11-13T00:00:00Z");
 
     @Autowired
     private TopicCreator creator;
@@ -247,6 +248,62 @@ class TopicApplicationIT {
                 .isInstanceOfSatisfying(TopicOperationException.class,
                         exception -> assertThat(exception.code())
                                 .isEqualTo(TopicFailureCode.TOPIC_NOT_FOUND));
+    }
+
+    @Test
+    void replace_ShouldAdvanceRevisionOfAssignedContent_WhenNameChanges() {
+        insertTopic(jdbcTemplate, uuid(1), "java", "Java", true);
+        insertContentItem(jdbcTemplate, uuid(10), "assigned-draft");
+        insertContentItem(jdbcTemplate, uuid(11), "unassigned-draft");
+        insertAssignment(jdbcTemplate, uuid(10), uuid(1));
+        clock.set(RENAMED_AT);
+
+        editor.replace(uuid(1), new TopicUpdateInput("Java renamed", null, true));
+
+        assertThat(contentRevision(uuid(10))).isEqualTo(2);
+        assertThat(contentUpdatedAt(uuid(10))).isEqualTo(RENAMED_AT);
+        assertThat(contentRevision(uuid(11))).isEqualTo(1);
+    }
+
+    @Test
+    void replace_ShouldKeepContentRevision_WhenOnlyDescriptionAndActiveChange() {
+        insertTopic(jdbcTemplate, uuid(1), "java", "Java", true);
+        insertContentItem(jdbcTemplate, uuid(10), "assigned-draft");
+        insertAssignment(jdbcTemplate, uuid(10), uuid(1));
+
+        editor.replace(uuid(1), new TopicUpdateInput("Java", "New description", false));
+
+        assertThat(contentRevision(uuid(10))).isEqualTo(1);
+    }
+
+    @Test
+    void replace_ShouldKeepContentRevision_WhenNameIsSetToCurrentValue() {
+        insertTopic(jdbcTemplate, uuid(1), "java", "Java", true);
+        insertContentItem(jdbcTemplate, uuid(10), "assigned-draft");
+        insertAssignment(jdbcTemplate, uuid(10), uuid(1));
+
+        editor.replace(uuid(1), new TopicUpdateInput("Java", null, true));
+
+        assertThat(contentRevision(uuid(10))).isEqualTo(1);
+    }
+
+    @Test
+    void replace_ShouldRenameTopic_WhenNoContentIsAssigned() {
+        insertTopic(jdbcTemplate, uuid(1), "java", "Java", true);
+
+        TopicView renamed = editor.replace(uuid(1), new TopicUpdateInput("Java renamed", null, true));
+
+        assertThat(renamed.name()).isEqualTo("Java renamed");
+    }
+
+    private long contentRevision(UUID id) {
+        return jdbcTemplate.queryForObject(
+                "SELECT revision FROM content_item WHERE id = ?", Long.class, id);
+    }
+
+    private Instant contentUpdatedAt(UUID id) {
+        return jdbcTemplate.queryForObject(
+                "SELECT updated_at FROM content_item WHERE id = ?", OffsetDateTime.class, id).toInstant();
     }
 
     private long topicCount() {

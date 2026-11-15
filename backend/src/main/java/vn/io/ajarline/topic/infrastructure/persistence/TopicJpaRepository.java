@@ -35,6 +35,11 @@ public interface TopicJpaRepository extends JpaRepository<TopicEntity, UUID> {
             nativeQuery = true)
     boolean isAssigned(@Param("topicId") UUID topicId);
 
+    /** Returns the content ids that carry the Topic, whatever their publication state. */
+    @Query(value = "SELECT content_id FROM content_topic WHERE topic_id = :topicId ORDER BY content_id",
+            nativeQuery = true)
+    List<UUID> findAssignedContentIds(@Param("topicId") UUID topicId);
+
     /** Returns the Topic ids assigned to a content item, ordered by id. */
     @Query(value = "SELECT topic_id FROM content_topic WHERE content_id = :contentId ORDER BY topic_id",
             nativeQuery = true)

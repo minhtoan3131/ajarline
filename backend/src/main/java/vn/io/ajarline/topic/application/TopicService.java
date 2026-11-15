@@ -4,6 +4,7 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.data.domain.Sort;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
+import vn.io.ajarline.content.contract.ContentRevisionCommands;
 import vn.io.ajarline.topic.contract.TopicCreateInput;
 import vn.io.ajarline.topic.contract.TopicCreator;
 import vn.io.ajarline.topic.contract.TopicEditor;
@@ -17,6 +18,7 @@ import vn.io.ajarline.topic.infrastructure.persistence.TopicEntity;
 import vn.io.ajarline.topic.infrastructure.persistence.TopicJpaRepository;
 
 import java.time.Clock;
+import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 
@@ -38,11 +40,14 @@ public class TopicService implements TopicCreator, TopicReader, TopicEditor, Top
     private final TopicJpaRepository topics;
     private final TopicPolicy policy;
     private final Clock clock;
+    private final ContentRevisionCommands contentRevisions;
 
-    public TopicService(TopicJpaRepository topics, TopicPolicy policy, Clock clock) {
+    public TopicService(TopicJpaRepository topics, TopicPolicy policy, Clock clock,
+                        ContentRevisionCommands contentRevisions) {
         this.topics = topics;
         this.policy = policy;
         this.clock = clock;
+        this.contentRevisions = contentRevisions;
     }
 
     @Override
@@ -91,11 +96,18 @@ public class TopicService implements TopicCreator, TopicReader, TopicEditor, Top
             return toView(topic);
         }
 
+        boolean renamed = !topic.hasSameName(normalized.name());
+        Instant now = clock.instant();
         topic.replaceEditableState(
                 normalized.name(),
                 normalized.description(),
                 normalized.active(),
-                clock.instant());
+                now);
+        if (renamed) {
+            // The name shows with every content item that carries this Topic,
+            // so those items get a new revision. Content owns the revision.
+            contentRevisions.advanceRevisions(topics.findAssignedContentIds(id), now);
+        }
         return toView(topic);
     }
 
