@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.CacheControl;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,6 +26,7 @@ import vn.io.ajarline.platform.web.OpenApiConfiguration;
 import vn.io.ajarline.topic.contract.TopicCreator;
 import vn.io.ajarline.topic.contract.TopicEditor;
 import vn.io.ajarline.topic.contract.TopicReader;
+import vn.io.ajarline.topic.contract.TopicRemover;
 import vn.io.ajarline.topic.contract.TopicView;
 
 import java.net.URI;
@@ -39,11 +41,14 @@ public class AdminTopicController {
     private final TopicCreator creator;
     private final TopicReader reader;
     private final TopicEditor editor;
+    private final TopicRemover remover;
 
-    public AdminTopicController(TopicCreator creator, TopicReader reader, TopicEditor editor) {
+    public AdminTopicController(
+            TopicCreator creator, TopicReader reader, TopicEditor editor, TopicRemover remover) {
         this.creator = creator;
         this.reader = reader;
         this.editor = editor;
+        this.remover = remover;
     }
 
     @Operation(
@@ -167,5 +172,41 @@ public class AdminTopicController {
         return ResponseEntity.ok()
                 .cacheControl(CacheControl.noStore())
                 .body(TopicAdminItem.from(updated));
+    }
+
+    @Operation(
+            operationId = "deleteTopic",
+            summary = "Delete a Topic that is not assigned to any content")
+    @Parameter(
+            name = "X-CSRF-TOKEN",
+            in = ParameterIn.HEADER,
+            required = true,
+            description = "Current CSRF token for the authenticated session.")
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "204",
+                    description = "Topic deleted"),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Topic id is not a valid UUID"),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required"),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "CSRF proof is missing or invalid"),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Topic was not found"),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "Topic is still assigned to content")
+    })
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable UUID id) {
+        remover.delete(id);
+        return ResponseEntity.noContent()
+                .cacheControl(CacheControl.noStore())
+                .build();
     }
 }

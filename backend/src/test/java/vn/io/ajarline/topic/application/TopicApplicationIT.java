@@ -15,6 +15,7 @@ import vn.io.ajarline.topic.contract.TopicEditor;
 import vn.io.ajarline.topic.contract.TopicFailureCode;
 import vn.io.ajarline.topic.contract.TopicOperationException;
 import vn.io.ajarline.topic.contract.TopicReader;
+import vn.io.ajarline.topic.contract.TopicRemover;
 import vn.io.ajarline.topic.contract.TopicUpdateInput;
 import vn.io.ajarline.topic.contract.TopicView;
 
@@ -25,6 +26,8 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static vn.io.ajarline.support.TopicTestData.insertAssignment;
+import static vn.io.ajarline.support.TopicTestData.insertContentItem;
 import static vn.io.ajarline.support.TopicTestData.insertTopic;
 import static vn.io.ajarline.support.TopicTestData.uuid;
 
@@ -45,6 +48,9 @@ class TopicApplicationIT {
 
     @Autowired
     private TopicEditor editor;
+
+    @Autowired
+    private TopicRemover remover;
 
     @Autowired
     private MutableClock clock;
@@ -199,6 +205,48 @@ class TopicApplicationIT {
     private Instant storedUpdatedAt(UUID id) {
         return jdbcTemplate.queryForObject(
                 "SELECT updated_at FROM topic WHERE id = ?", OffsetDateTime.class, id).toInstant();
+    }
+
+    @Test
+    void delete_ShouldRemoveTopic_WhenTopicIsNotAssigned() {
+        TopicView created = creator.create(new TopicCreateInput("java-basics", "Java", null, true));
+
+        remover.delete(created.id());
+
+        assertThat(topicCount()).isZero();
+    }
+
+    @Test
+    void delete_ShouldRejectDeletion_WhenTopicIsAssigned() {
+        TopicView created = creator.create(new TopicCreateInput("java-basics", "Java", null, true));
+        insertContentItem(jdbcTemplate, uuid(10), "an-article");
+        insertAssignment(jdbcTemplate, uuid(10), created.id());
+
+        assertThatThrownBy(() -> remover.delete(created.id()))
+                .isInstanceOfSatisfying(TopicOperationException.class,
+                        exception -> assertThat(exception.code())
+                                .isEqualTo(TopicFailureCode.TOPIC_IN_USE));
+        assertThat(topicCount()).isEqualTo(1);
+    }
+
+    @Test
+    void delete_ShouldRejectDeletion_WhenTopicIsInactiveButStillAssigned() {
+        TopicView created = creator.create(new TopicCreateInput("java-basics", "Java", null, false));
+        insertContentItem(jdbcTemplate, uuid(10), "an-article");
+        insertAssignment(jdbcTemplate, uuid(10), created.id());
+
+        assertThatThrownBy(() -> remover.delete(created.id()))
+                .isInstanceOfSatisfying(TopicOperationException.class,
+                        exception -> assertThat(exception.code())
+                                .isEqualTo(TopicFailureCode.TOPIC_IN_USE));
+    }
+
+    @Test
+    void delete_ShouldRejectDeletion_WhenTopicDoesNotExist() {
+        assertThatThrownBy(() -> remover.delete(uuid(404)))
+                .isInstanceOfSatisfying(TopicOperationException.class,
+                        exception -> assertThat(exception.code())
+                                .isEqualTo(TopicFailureCode.TOPIC_NOT_FOUND));
     }
 
     private long topicCount() {

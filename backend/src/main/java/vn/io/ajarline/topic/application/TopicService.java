@@ -10,6 +10,7 @@ import vn.io.ajarline.topic.contract.TopicEditor;
 import vn.io.ajarline.topic.contract.TopicFailureCode;
 import vn.io.ajarline.topic.contract.TopicOperationException;
 import vn.io.ajarline.topic.contract.TopicReader;
+import vn.io.ajarline.topic.contract.TopicRemover;
 import vn.io.ajarline.topic.contract.TopicUpdateInput;
 import vn.io.ajarline.topic.contract.TopicView;
 import vn.io.ajarline.topic.infrastructure.persistence.TopicEntity;
@@ -27,8 +28,9 @@ import java.util.UUID;
  * into Topic failure codes.</p>
  */
 @Service
-public class TopicService implements TopicCreator, TopicReader, TopicEditor {
+public class TopicService implements TopicCreator, TopicReader, TopicEditor, TopicRemover {
     private static final String SLUG_CONSTRAINT = "uk_topic_slug";
+    private static final String ASSIGNMENT_CONSTRAINT = "fk_content_topic_topic_id";
     private static final Sort LIST_ORDER = Sort.by(
             Sort.Order.asc("name"),
             Sort.Order.asc("id"));
@@ -95,6 +97,33 @@ public class TopicService implements TopicCreator, TopicReader, TopicEditor {
                 normalized.active(),
                 clock.instant());
         return toView(topic);
+    }
+
+    @Override
+    @Transactional
+    public void delete(UUID id) {
+        TopicEntity topic = topics.findByIdForUpdate(id)
+                .orElseThrow(() -> notFound(id));
+        if (topics.isAssigned(id)) {
+            throw inUse(null);
+        }
+
+        try {
+            topics.delete(topic);
+            topics.flush();
+        } catch (DataIntegrityViolationException exception) {
+            if (containsConstraint(exception, ASSIGNMENT_CONSTRAINT)) {
+                throw inUse(exception);
+            }
+            throw exception;
+        }
+    }
+
+    private TopicOperationException inUse(Throwable cause) {
+        return new TopicOperationException(
+                TopicFailureCode.TOPIC_IN_USE,
+                "The Topic is still assigned to content.",
+                cause);
     }
 
     private TopicOperationException notFound(UUID id) {

@@ -1,6 +1,9 @@
 package vn.io.ajarline.administration.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static vn.io.ajarline.support.TopicTestData.insertAssignment;
+import static vn.io.ajarline.support.TopicTestData.insertContentItem;
+import static vn.io.ajarline.support.TopicTestData.uuid;
 
 import java.net.http.HttpResponse;
 import org.junit.jupiter.api.BeforeEach;
@@ -223,6 +226,51 @@ class AdminTopicApiIT extends AbstractAdminAuthenticationIT {
         }
         body.put("active", active);
         return JSON.writeValueAsString(body);
+    }
+
+    @Test
+    void delete_ShouldRemoveTopic_WhenTopicIsNotAssigned() throws Exception {
+        Browser browser = authenticatedBrowser();
+        String token = csrf(browser);
+        String id = JSON.readTree(browser.post(
+                TOPICS, payload("java-basics", "Java", null, true), token).body())
+                .get("id").asString();
+
+        HttpResponse<String> response = browser.send(
+                "DELETE", TOPICS + "/" + id, null, token, null);
+
+        assertThat(response.statusCode()).isEqualTo(204);
+        assertThat(response.body()).isEmpty();
+        assertNoStore(response);
+        assertThat(rowCount()).isZero();
+    }
+
+    @Test
+    void delete_ShouldRejectRequest_WhenTopicIsAssigned() throws Exception {
+        Browser browser = authenticatedBrowser();
+        String token = csrf(browser);
+        String id = JSON.readTree(browser.post(
+                TOPICS, payload("java-basics", "Java", null, true), token).body())
+                .get("id").asString();
+        insertContentItem(jdbcTemplate, uuid(10), "an-article");
+        insertAssignment(jdbcTemplate, uuid(10), java.util.UUID.fromString(id));
+
+        HttpResponse<String> response = browser.send(
+                "DELETE", TOPICS + "/" + id, null, token, null);
+
+        assertProblem(response, 409, "TOPIC_IN_USE");
+        assertThat(rowCount()).isEqualTo(1);
+    }
+
+    @Test
+    void delete_ShouldRejectRequest_WhenTopicDoesNotExist() throws Exception {
+        Browser browser = authenticatedBrowser();
+        String token = csrf(browser);
+
+        HttpResponse<String> response = browser.send(
+                "DELETE", TOPICS + "/00000000-0000-0000-0000-000000000404", null, token, null);
+
+        assertProblem(response, 404, "TOPIC_NOT_FOUND");
     }
 
     private long rowCount() {

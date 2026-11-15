@@ -87,6 +87,8 @@ public class AdminTopicExceptionHandler {
                     "A Topic with this slug already exists.");
             case TOPIC_NOT_FOUND -> new ProblemMapping(404, "Topic was not found",
                     "Topic was not found.");
+            case TOPIC_IN_USE -> new ProblemMapping(409, "Topic is still assigned to content",
+                    "The Topic is still assigned to content and cannot be deleted.");
         };
     }
 }

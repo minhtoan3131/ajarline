@@ -38,7 +38,8 @@ class ApiDocumentationIT {
                     "get", "listAdminTopics",
                     "post", "createTopic")),
             Map.entry("/api/admin/v1/topics/{id}", Map.of(
-                    "put", "updateTopic")),
+                    "put", "updateTopic",
+                    "delete", "deleteTopic")),
             Map.entry("/api/admin/v1/content/{id}/publish", Map.of(
                     "post", "publishContent")),
             Map.entry("/api/admin/v1/content/{id}/unpublish", Map.of(
