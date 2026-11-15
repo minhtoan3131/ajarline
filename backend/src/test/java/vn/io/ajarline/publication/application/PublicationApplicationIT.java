@@ -17,6 +17,7 @@ import vn.io.ajarline.content.contract.ArticleReader;
 import vn.io.ajarline.content.contract.ArticleView;
 import vn.io.ajarline.content.contract.ContentFailureCode;
 import vn.io.ajarline.content.contract.ContentOperationException;
+import vn.io.ajarline.content.contract.PublicArticleView;
 import vn.io.ajarline.content.contract.PublicationStatus;
 import vn.io.ajarline.publication.contract.ContentPublisher;
 import vn.io.ajarline.publication.contract.ContentUnpublisher;
@@ -185,7 +186,7 @@ class PublicationApplicationIT {
         assertThat(stored.publishedAt()).isEqualTo(FIRST_PUBLISH);
         assertThat(stored.unpublishedAt()).isNull();
         assertThat(stored.updatedAt()).isEqualTo(FIRST_PUBLISH);
-        assertThat(reader.findPublishedBySlug("rollback-unpublish"))
+        assertThat(reader.findPublishedBySlug("rollback-unpublish").map(PublicArticleView::article))
                 .contains(stored);
     }
 

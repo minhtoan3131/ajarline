@@ -110,7 +110,7 @@ public class ArticleApplicationIT {
                 WHERE id = ?
                 """, OffsetDateTime.ofInstant(CREATED_AT, ZoneOffset.UTC), createdArticle.id());
 
-        ArticleView found = articleReader.findPublishedBySlug("published-article").orElseThrow();
+        ArticleView found = articleReader.findPublishedBySlug("published-article").orElseThrow().article();
 
         assertThat(found.status()).isEqualTo(PublicationStatus.PUBLISHED);
         assertThat(found.bodyMarkdown()).isEqualTo("# body");

@@ -5,6 +5,8 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import vn.io.ajarline.content.contract.ArticleView;
+import vn.io.ajarline.content.contract.PublicArticleView;
+import vn.io.ajarline.content.contract.TopicLabel;
 
 /**
  * Represents one publicly eligible Article returned by the public API.
@@ -34,7 +36,8 @@ public record PublicArticleResponse(
         topics = List.copyOf(topics);
     }
 
-    static PublicArticleResponse from(ArticleView article) {
+    static PublicArticleResponse from(PublicArticleView view) {
+        ArticleView article = view.article();
         return new PublicArticleResponse(
                 article.id(),
                 "article",
@@ -42,7 +45,7 @@ public record PublicArticleResponse(
                 article.title(),
                 article.summary(),
                 article.bodyMarkdown(),
-                List.of(),
+                view.topics().stream().map(TopicReference::from).toList(),
                 null,
                 null,
                 null,
@@ -57,6 +60,9 @@ public record PublicArticleResponse(
             String slug,
             String name
     ) {
+        static TopicReference from(TopicLabel label) {
+            return new TopicReference(label.id(), label.slug(), label.name());
+        }
     }
 
     @Schema(requiredProperties = {"id", "slug", "title"})

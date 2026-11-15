@@ -6,8 +6,10 @@ import org.springframework.transaction.annotation.Transactional;
 import vn.io.ajarline.content.contract.ContentFailureCode;
 import vn.io.ajarline.content.contract.ContentOperationException;
 import vn.io.ajarline.content.contract.TopicAssignmentPort;
+import vn.io.ajarline.content.contract.TopicLabel;
 import vn.io.ajarline.topic.infrastructure.persistence.TopicEntity;
 import vn.io.ajarline.topic.infrastructure.persistence.TopicJpaRepository;
+import vn.io.ajarline.topic.infrastructure.persistence.TopicLabelRow;
 
 import java.util.HashSet;
 import java.util.List;
@@ -27,6 +29,14 @@ public class TopicAssignmentService implements TopicAssignmentPort {
     @Transactional(propagation = Propagation.MANDATORY)
     public List<UUID> topicIdsOf(UUID contentId) {
         return topics.findAssignedTopicIds(contentId);
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public List<TopicLabel> topicLabelsOf(UUID contentId) {
+        return topics.findLabelsOfContent(List.of(contentId)).stream()
+                .map(TopicLabelRow::toLabel)
+                .toList();
     }
 
     @Override

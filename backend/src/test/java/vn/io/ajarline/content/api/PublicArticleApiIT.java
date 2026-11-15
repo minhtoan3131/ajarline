@@ -1,8 +1,12 @@
 package vn.io.ajarline.content.api;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static vn.io.ajarline.support.TopicTestData.insertTopic;
+import static vn.io.ajarline.support.TopicTestData.uuid;
 
 import java.net.http.HttpResponse;
+import java.util.List;
+import java.util.UUID;
 import org.junit.jupiter.api.BeforeEach;
 import org.junit.jupiter.api.Test;
 import org.springframework.beans.factory.annotation.Autowired;
@@ -10,6 +14,7 @@ import org.springframework.boot.test.context.SpringBootTest;
 import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import tools.jackson.databind.JsonNode;
+import tools.jackson.databind.node.ArrayNode;
 import tools.jackson.databind.node.ObjectNode;
 import vn.io.ajarline.administration.api.AbstractAdminAuthenticationIT;
 import vn.io.ajarline.support.PostgreSqlTestConfiguration;
@@ -29,7 +34,9 @@ class PublicArticleApiIT extends AbstractAdminAuthenticationIT {
 
     @BeforeEach
     void clearArticles() {
+        // content_topic rows go with their content_item; topic is restricted, so it goes last.
         jdbc.update("DELETE FROM content_item");
+        jdbc.update("DELETE FROM topic");
     }
 
     @Test
@@ -145,10 +152,52 @@ class PublicArticleApiIT extends AbstractAdminAuthenticationIT {
                 PUBLIC_ARTICLES + "/Canonical-Slug"));
     }
 
+    @Test
+    void get_ShouldListTopicsByNameThenId_WhenArticleHasTopics()
+            throws Exception {
+        // Two Topics share the name "Java", so the id decides their order.
+        insertTopic(jdbc, uuid(1), "spring", "Spring", true);
+        insertTopic(jdbc, uuid(3), "java-core", "Java", true);
+        insertTopic(jdbc, uuid(2), "java", "Java", true);
+        Browser admin = authenticatedBrowser();
+        String token = csrf(admin);
+        String id = create(admin, token, "topic-article",
+                List.of(uuid(1), uuid(3), uuid(2)));
+        assertThat(admin.post(
+                ADMIN_CONTENT + "/" + id + "/publish",
+                null, token, "\"1\"").statusCode()).isEqualTo(200);
+
+        HttpResponse<String> response = new Browser().get(
+                PUBLIC_ARTICLES + "/topic-article");
+
+        assertThat(response.statusCode()).isEqualTo(200);
+        JsonNode topics = JSON.readTree(response.body()).get("topics");
+        assertThat(topics.size()).isEqualTo(3);
+        assertThat(topics.get(0).propertyNames())
+                .containsExactlyInAnyOrder("id", "slug", "name");
+        assertThat(List.of(
+                topics.get(0).get("slug").asString(),
+                topics.get(1).get("slug").asString(),
+                topics.get(2).get("slug").asString()))
+                .containsExactly("java", "java-core", "spring");
+        assertThat(topics.get(0).get("id").asString())
+                .isEqualTo(uuid(2).toString());
+        assertThat(topics.get(0).get("name").asString()).isEqualTo("Java");
+    }
+
     private String create(
             Browser admin,
             String token,
             String slug
+    ) throws Exception {
+        return create(admin, token, slug, List.of());
+    }
+
+    private String create(
+            Browser admin,
+            String token,
+            String slug,
+            List<UUID> topicIds
     ) throws Exception {
         ObjectNode request = JSON.createObjectNode();
         request.put("title", "Public Article");
@@ -157,7 +206,8 @@ class PublicArticleApiIT extends AbstractAdminAuthenticationIT {
         request.put("bodyMarkdown", "# Public body");
         request.putNull("moduleId");
         request.putNull("position");
-        request.putArray("topicIds");
+        ArrayNode topics = request.putArray("topicIds");
+        topicIds.forEach(topicId -> topics.add(topicId.toString()));
 
         HttpResponse<String> response = admin.post(
                 ADMIN_ARTICLES,

@@ -7,7 +7,7 @@ import java.util.UUID;
  * Reads and changes the Topics assigned to one content item.
  *
  * <p>Content defines this port and the Topic capability implements it, so
- * content never imports Topic. Both methods must run inside the caller's
+ * content never imports Topic. Every method must run inside the caller's
  * transaction: an assignment change is part of saving the content item and
  * must commit or roll back together with it.</p>
  */
@@ -17,6 +17,13 @@ public interface TopicAssignmentPort {
      * Returns the ids of the Topics assigned to the content item, ordered by id.
      */
     List<UUID> topicIdsOf(UUID contentId);
+
+    /**
+     * Returns the Topics assigned to the content item, ordered by name and
+     * then by id. Inactive Topics are included: turning a Topic off does not
+     * remove it from content.
+     */
+    List<TopicLabel> topicLabelsOf(UUID contentId);
 
     /**
      * Makes the Topics assigned to the content item equal to the given ids.

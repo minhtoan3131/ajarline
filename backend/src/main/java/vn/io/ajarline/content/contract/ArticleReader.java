@@ -6,5 +6,9 @@ import java.util.UUID;
 public interface ArticleReader {
     ArticleView get(UUID id);
 
-    Optional<ArticleView> findPublishedBySlug(String slug);
+    /**
+     * Returns the Article with the slug when it is published, together with
+     * the Topics shown with it, ordered by name and then by id.
+     */
+    Optional<PublicArticleView> findPublishedBySlug(String slug);
 }

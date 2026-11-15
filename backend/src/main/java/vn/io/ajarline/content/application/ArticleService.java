@@ -66,7 +66,7 @@ public class ArticleService implements ArticleCreator, ArticleReader, ArticleEdi
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<ArticleView> findPublishedBySlug(String slug) {
+    public Optional<PublicArticleView> findPublishedBySlug(String slug) {
         if (slug == null) {
             return Optional.empty();
         }
@@ -74,9 +74,9 @@ public class ArticleService implements ArticleCreator, ArticleReader, ArticleEdi
                         ContentType.ARTICLE,
                         slug,
                         PublicationStatus.PUBLISHED)
-                .map(content -> toView(
-                        content,
-                        requireArticle(content.getId())));
+                .map(content -> new PublicArticleView(
+                        toView(content, requireArticle(content.getId())),
+                        topicAssignment.topicLabelsOf(content.getId())));
     }
 
     private ArticleEntity requireArticle(UUID uuid) {
