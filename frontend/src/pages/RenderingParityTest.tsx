@@ -35,6 +35,7 @@ describe('Rendering parity', () => {
           title: 'T',
           summary: 'S',
           bodyMarkdown: FIXTURE,
+          topics: [],
           publishedAt: '2026-11-01T02:00:00Z',
           updatedAt: '2026-11-01T02:00:00Z',
         }}

@@ -277,6 +277,10 @@ body {
   border-color: var(--reader-focus);
 }
 
+.reader-article-header .reader-topic-chips {
+  margin-top: 16px;
+}
+
 .reader-pagination {
   display: flex;
   align-items: center;

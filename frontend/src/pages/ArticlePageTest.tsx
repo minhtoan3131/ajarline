@@ -4,6 +4,15 @@ import { describe, expect, it } from 'vitest'
 
 import { renderAppRoute } from '../app/testsupport/renderAppRoute'
 import { EDITORIAL_PROFILE } from '../features/article-reading/editorialProfile'
+import {
+  contentItem,
+  JAVA_TOPIC_REF,
+  publicTopic,
+  SPRING_TOPIC_REF,
+  topicContentPath,
+  topicContentResponse,
+  topicPath,
+} from '../features/topic-browsing/fixture/publicTopicFixture'
 import { jsonResponse, problemResponse, StubApiServer } from '../shared/api/testsupport/StubApiServer'
 
 const ARTICLE_PATH = '/api/v1/articles/hieu-protobuf'
@@ -93,5 +102,43 @@ describe('ArticlePage', () => {
 
     // Then
     expect(await screen.findByRole('heading', { level: 1, name: 'Hiểu Protobuf với Java' })).toBeInTheDocument()
+  })
+
+  it('render_ShouldLinkTopicsToTopicHome_WhenArticleHasTopics', async () => {
+    new StubApiServer()
+      .on('GET', ARTICLE_PATH, jsonResponse(200, { ...PUBLIC_ARTICLE, topics: [JAVA_TOPIC_REF, SPRING_TOPIC_REF] }))
+      .install()
+
+    renderAppRoute('/articles/hieu-protobuf')
+
+    const chips = await screen.findByRole('list', { name: 'Chủ đề của bài viết' })
+    const links = within(chips).getAllByRole('link')
+    expect(links.map((link) => link.textContent)).toEqual(['Java', 'Spring Boot'])
+    expect(links[1]).toHaveAttribute('href', '/topics/spring-boot')
+  })
+
+  it('render_ShouldNotShowTopicList_WhenArticleHasNoTopics', async () => {
+    new StubApiServer().on('GET', ARTICLE_PATH, jsonResponse(200, PUBLIC_ARTICLE)).install()
+
+    renderAppRoute('/articles/hieu-protobuf')
+    await screen.findByRole('heading', { level: 1, name: 'Hiểu Protobuf với Java' })
+
+    expect(screen.queryByRole('list', { name: 'Chủ đề của bài viết' })).toBeNull()
+  })
+
+  it('navigate_ShouldOpenTopicHome_WhenTopicChipIsClicked', async () => {
+    new StubApiServer()
+      .on('GET', ARTICLE_PATH, jsonResponse(200, { ...PUBLIC_ARTICLE, topics: [JAVA_TOPIC_REF] }))
+      .on('GET', topicPath('java'), jsonResponse(200, publicTopic()))
+      .on('GET', topicContentPath('java', 0), jsonResponse(200, topicContentResponse([contentItem()])))
+      .install()
+    const user = userEvent.setup()
+    renderAppRoute('/articles/hieu-protobuf')
+    const chips = await screen.findByRole('list', { name: 'Chủ đề của bài viết' })
+
+    await user.click(within(chips).getByRole('link', { name: 'Java' }))
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Java' })).toBeInTheDocument()
+    expect(screen.getByTestId('location')).toHaveTextContent('/topics/java')
   })
 })
