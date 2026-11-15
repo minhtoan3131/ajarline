@@ -57,6 +57,9 @@ describe('ArticleEditorPage', () => {
     await user.click(screen.getByRole('button', { name: 'Lưu' }))
 
     // Then
+    // Saving moves to the new route, which mounts a fresh editor. Wait for it first,
+    // or the notice is found in the old editor just before it is removed.
+    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent(EDIT_ROUTE))
     expect(await screen.findByText('Đã tạo bản nháp.')).toBeInTheDocument()
     const [create] = api.requestsTo('POST', ARTICLES_PATH)
     expect(create.body).toEqual({

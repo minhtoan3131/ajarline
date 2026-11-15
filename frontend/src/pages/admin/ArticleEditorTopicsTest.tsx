@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react'
+import { screen, waitFor } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 
@@ -166,6 +166,9 @@ describe('Article editor Topics', () => {
 
     await user.click(screen.getByRole('button', { name: 'Lưu' }))
 
+    // Saving moves to the new route, which mounts a fresh editor. Wait for it first,
+    // or the notice is found in the old editor just before it is removed.
+    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent(`/admin/articles/${ARTICLE_ID}`))
     expect(await screen.findByText('Đã tạo bản nháp.')).toBeInTheDocument()
     expect(api.requestsTo('POST', ARTICLES_PATH)[0].body).toMatchObject({
       topicIds: [TOPIC_ID],
