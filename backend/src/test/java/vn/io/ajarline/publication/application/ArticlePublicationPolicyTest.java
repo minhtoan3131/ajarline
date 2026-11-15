@@ -4,6 +4,7 @@ import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 import org.junit.jupiter.api.Test;
 import vn.io.ajarline.content.contract.ArticleView;
@@ -61,6 +62,7 @@ class ArticlePublicationPolicyTest {
                 null,
                 null,
                 NOW,
-                NOW);
+                NOW,
+                List.of());
     }
 }

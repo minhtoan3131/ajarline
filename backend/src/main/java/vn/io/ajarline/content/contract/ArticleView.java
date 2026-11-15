@@ -1,6 +1,7 @@
 package vn.io.ajarline.content.contract;
 
 import java.time.Instant;
+import java.util.List;
 import java.util.UUID;
 
 /**
@@ -22,6 +23,7 @@ public record ArticleView(
         Instant publishedAt,
         Instant unpublishedAt,
         Instant createdAt,
-        Instant updatedAt
+        Instant updatedAt,
+        List<UUID> topicIds
 ) {
 }

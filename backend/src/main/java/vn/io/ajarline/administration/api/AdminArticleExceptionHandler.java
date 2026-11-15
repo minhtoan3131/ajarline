@@ -91,6 +91,10 @@ public class AdminArticleExceptionHandler {
                     "The slug cannot change after first publication.");
             case REVISION_CONFLICT ->
                     new ProblemMapping(412, "Revision conflict", "The resource changed since it was loaded.");
+            case TOPIC_REFERENCE_NOT_FOUND -> new ProblemMapping(422, "Topic reference was not found",
+                    "One or more Topic ids do not exist.");
+            case INACTIVE_TOPIC_ASSIGNMENT -> new ProblemMapping(422, "Topic cannot be assigned",
+                    "An inactive Topic cannot be newly assigned.");
         };
     }
 }

@@ -90,7 +90,7 @@ public class AdminArticleController {
                             schema = @Schema(implementation = ArticleEditable.class)))
             @RequestBody(required = false) JsonNode body) {
         ArticleEditable editable = ArticleEditable.parse(body);
-        //TODO: Coordinate module membership and topic assignment through their owners.
+        // TODO: Coordinate Module membership through its owner.
         ArticleView created = creator.create(editable.toContentInput());
         URI location = URI.create(BASE_PATH + "/" + created.id());
         return ResponseEntity.created(location)
@@ -196,7 +196,7 @@ public class AdminArticleController {
             @Parameter(hidden = true) HttpServletRequest request) {
         long expectedRevision = RevisionHttpHeaders.requiredExpectedRevision(request);
         ArticleEditable editable = ArticleEditable.parse(body);
-        // TODO: Coordinate Module membership and Topic assignment through their owners.
+        // TODO: Coordinate Module membership through its owner.
         ArticleView updated = editor.replace(id, expectedRevision, editable.toContentInput());
         return ResponseEntity.ok()
                 .eTag(RevisionHttpHeaders.etag(updated.revision()))

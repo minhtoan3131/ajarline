@@ -70,7 +70,7 @@ public record ArticleEditable(
     }
 
     ArticleContentInput toContentInput() {
-        return new ArticleContentInput(title, slug, summary, bodyMarkdown);
+        return new ArticleContentInput(title, slug, summary, bodyMarkdown, topicIds);
     }
 
     private void validateRelationships() {

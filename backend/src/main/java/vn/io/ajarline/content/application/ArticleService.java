@@ -23,13 +23,16 @@ public class ArticleService implements ArticleCreator, ArticleReader, ArticleEdi
     private final ArticleJpaRepository articleRepository;
     private final ArticlePolicy policy;
     private final Clock clock;
+    private final TopicAssignmentPort topicAssignment;
 
     public ArticleService(ContentItemJpaRepository contentRepository,
-                          ArticleJpaRepository articleRepository, ArticlePolicy policy, Clock clock) {
+                          ArticleJpaRepository articleRepository, ArticlePolicy policy, Clock clock,
+                          TopicAssignmentPort topicAssignment) {
         this.contentRepository = contentRepository;
         this.articleRepository = articleRepository;
         this.policy = policy;
         this.clock = clock;
+        this.topicAssignment = topicAssignment;
     }
 
     @Override
@@ -46,6 +49,8 @@ public class ArticleService implements ArticleCreator, ArticleReader, ArticleEdi
         contentRepository.save(contentItemEntity);
         articleRepository.save(articleEntity);
         flushCanonicalWrite();
+        // The content row must exist before an assignment can point at it.
+        topicAssignment.replaceAssignments(id, normalizedInput.topicIds());
         return toView(contentItemEntity, articleEntity);
     }
 
@@ -126,7 +131,8 @@ public class ArticleService implements ArticleCreator, ArticleReader, ArticleEdi
                 content.getPublishedAt(),
                 content.getUnpublishedAt(),
                 content.getCreatedAt(),
-                content.getUpdatedAt()
+                content.getUpdatedAt(),
+                topicAssignment.topicIdsOf(content.getId())
         );
     }
 
@@ -165,7 +171,10 @@ public class ArticleService implements ArticleCreator, ArticleReader, ArticleEdi
         );
 
         boolean hasBodyChanged = !articleEntity.hasSameBody(normalizedInput.bodyMarkdown());
-        if (!hasCommonChanged && !hasBodyChanged) {
+        // The assignment is written here, before any decision to return early, so
+        // that one failure rolls back the whole save.
+        boolean hasTopicsChanged = topicAssignment.replaceAssignments(id, normalizedInput.topicIds());
+        if (!hasCommonChanged && !hasBodyChanged && !hasTopicsChanged) {
             return toView(contentItemEntity, articleEntity);
         }
 

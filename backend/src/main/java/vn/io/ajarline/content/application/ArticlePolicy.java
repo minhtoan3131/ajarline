@@ -5,6 +5,7 @@ import vn.io.ajarline.content.contract.ArticleContentInput;
 import vn.io.ajarline.content.contract.ContentFailureCode;
 import vn.io.ajarline.content.contract.ContentOperationException;
 
+import java.util.HashSet;
 import java.util.Locale;
 import java.util.regex.Pattern;
 
@@ -33,7 +34,10 @@ public class ArticlePolicy {
             summary = null;
         }
         validateText(summary, "Summary", 1000, true);
-        return new ArticleContentInput(input.title(), slug, summary, input.bodyMarkdown());
+        if (new HashSet<>(input.topicIds()).size() != input.topicIds().size()) {
+            throw failure("Topic ids must not repeat.");
+        }
+        return new ArticleContentInput(input.title(), slug, summary, input.bodyMarkdown(), input.topicIds());
     }
 
     private void validateText(String value, String fieldName, int maximumLength, boolean nullable) {

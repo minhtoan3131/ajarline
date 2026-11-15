@@ -127,6 +127,17 @@ class CapabilityBoundaryTest {
     }
 
     @Test
+    void content_ShouldNotDependOnTopic_WhenContentNeedsTopicBehavior() {
+        // Content reaches Topic only through ports that it defines itself,
+        // so it must not import even the Topic contract.
+        ArchRule rule = noClasses()
+                .that().resideInAPackage(ROOT + ".content..")
+                .should().dependOnClassesThat().resideInAPackage(ROOT + ".topic..");
+
+        rule.check(PRODUCTION_CLASSES);
+    }
+
+    @Test
     void publicationAndAdministration_ShouldNotUsePersistence_WhenChangingContent() {
         ArchRule rule = noClasses()
                 .that().resideInAnyPackage(

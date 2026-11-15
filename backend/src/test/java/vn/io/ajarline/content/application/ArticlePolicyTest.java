@@ -5,6 +5,9 @@ import vn.io.ajarline.content.contract.ArticleContentInput;
 import vn.io.ajarline.content.contract.ContentFailureCode;
 import vn.io.ajarline.content.contract.ContentOperationException;
 
+import java.util.List;
+import java.util.UUID;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
@@ -55,6 +58,27 @@ public class ArticlePolicyTest {
     void normalizeAndValidate_ShouldRejectInput_WhenSummaryIsTooLong() {
         ArticleContentInput input = input("java-threads", "a".repeat(1001), null);
         assertValidationFailure(input);
+    }
+
+    @Test
+    void normalizeAndValidate_ShouldRejectInput_WhenTopicIdsRepeat() {
+        UUID topicId = UUID.randomUUID();
+        ArticleContentInput input = new ArticleContentInput(
+                "Java threads", "java-threads", null, null, List.of(topicId, topicId));
+
+        assertValidationFailure(input);
+    }
+
+    @Test
+    void normalizeAndValidate_ShouldKeepTopicIds_WhenInputIsValid() {
+        UUID first = UUID.randomUUID();
+        UUID second = UUID.randomUUID();
+        ArticleContentInput input = new ArticleContentInput(
+                "Java threads", "java-threads", null, null, List.of(first, second));
+
+        ArticleContentInput result = articlePolicy.normalizeAndValidate(input);
+
+        assertThat(result.topicIds()).containsExactly(first, second);
     }
 
     private ArticleContentInput input(

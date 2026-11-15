@@ -1,0 +1,139 @@
+package vn.io.ajarline.topic.application;
+
+import org.junit.jupiter.api.BeforeEach;
+import org.junit.jupiter.api.Test;
+import org.springframework.beans.factory.annotation.Autowired;
+import org.springframework.boot.test.context.SpringBootTest;
+import org.springframework.context.annotation.Import;
+import org.springframework.jdbc.core.JdbcTemplate;
+import org.springframework.transaction.support.TransactionTemplate;
+import vn.io.ajarline.content.contract.ContentFailureCode;
+import vn.io.ajarline.content.contract.ContentOperationException;
+import vn.io.ajarline.content.contract.TopicAssignmentPort;
+import vn.io.ajarline.support.ContentApplicationTestConfiguration;
+import vn.io.ajarline.support.PostgreSqlTestConfiguration;
+
+import java.util.List;
+import java.util.UUID;
+
+import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static vn.io.ajarline.support.TopicTestData.insertAssignment;
+import static vn.io.ajarline.support.TopicTestData.insertContentItem;
+import static vn.io.ajarline.support.TopicTestData.insertTopic;
+import static vn.io.ajarline.support.TopicTestData.uuid;
+
+@SpringBootTest
+@Import({
+        PostgreSqlTestConfiguration.class,
+        ContentApplicationTestConfiguration.class
+})
+class TopicAssignmentApplicationIT {
+
+    private static final UUID CONTENT_ID = uuid(100);
+    private static final UUID JAVA = uuid(1);
+    private static final UUID SPRING = uuid(2);
+    private static final UUID LEGACY = uuid(3);
+
+    @Autowired
+    private TopicAssignmentPort assignments;
+
+    @Autowired
+    private JdbcTemplate jdbcTemplate;
+
+    @Autowired
+    private TransactionTemplate transactions;
+
+    @BeforeEach
+    void resetDatabase() {
+        jdbcTemplate.update("DELETE FROM content_item");
+        jdbcTemplate.update("DELETE FROM topic");
+        insertContentItem(jdbcTemplate, CONTENT_ID, "assigned-article");
+        insertTopic(jdbcTemplate, JAVA, "java", "Java", true);
+        insertTopic(jdbcTemplate, SPRING, "spring", "Spring", true);
+        insertTopic(jdbcTemplate, LEGACY, "legacy", "Legacy", false);
+    }
+
+    @Test
+    void replaceAssignments_ShouldAddTopicsAndReportChange_WhenTopicsAreActive() {
+        boolean changed = replace(JAVA, SPRING);
+
+        assertThat(changed).isTrue();
+        assertThat(assignedTopicIds()).containsExactly(JAVA, SPRING);
+    }
+
+    @Test
+    void replaceAssignments_ShouldReportNoChange_WhenSetIsUnchanged() {
+        insertAssignment(jdbcTemplate, CONTENT_ID, JAVA);
+
+        boolean changed = replace(JAVA);
+
+        assertThat(changed).isFalse();
+        assertThat(assignedTopicIds()).containsExactly(JAVA);
+    }
+
+    @Test
+    void replaceAssignments_ShouldRemoveMissingTopics_WhenTopicIsInactiveToo() {
+        insertAssignment(jdbcTemplate, CONTENT_ID, JAVA);
+        insertAssignment(jdbcTemplate, CONTENT_ID, LEGACY);
+
+        boolean changed = replace(JAVA);
+
+        assertThat(changed).isTrue();
+        assertThat(assignedTopicIds()).containsExactly(JAVA);
+    }
+
+    @Test
+    void replaceAssignments_ShouldKeepAssignedInactiveTopic_WhenItStaysInTheSet() {
+        insertAssignment(jdbcTemplate, CONTENT_ID, LEGACY);
+
+        boolean unchanged = replace(LEGACY);
+        boolean extended = replace(LEGACY, JAVA);
+
+        assertThat(unchanged).isFalse();
+        assertThat(extended).isTrue();
+        assertThat(assignedTopicIds()).containsExactly(JAVA, LEGACY);
+    }
+
+    @Test
+    void replaceAssignments_ShouldRejectInactiveTopic_WhenItIsNewlyAdded() {
+        assertThatThrownBy(() -> replace(JAVA, LEGACY))
+                .isInstanceOfSatisfying(ContentOperationException.class,
+                        exception -> assertThat(exception.code())
+                                .isEqualTo(ContentFailureCode.INACTIVE_TOPIC_ASSIGNMENT));
+
+        // The active Topic in the same request is not assigned either.
+        assertThat(assignedTopicIds()).isEmpty();
+    }
+
+    @Test
+    void replaceAssignments_ShouldRejectUnknownTopic_WhenIdDoesNotExist() {
+        assertThatThrownBy(() -> replace(JAVA, uuid(99)))
+                .isInstanceOfSatisfying(ContentOperationException.class,
+                        exception -> assertThat(exception.code())
+                                .isEqualTo(ContentFailureCode.TOPIC_REFERENCE_NOT_FOUND));
+
+        assertThat(assignedTopicIds()).isEmpty();
+    }
+
+    @Test
+    void topicIdsOf_ShouldReturnIdsOrderedById_WhenTopicsAreAssigned() {
+        insertAssignment(jdbcTemplate, CONTENT_ID, SPRING);
+        insertAssignment(jdbcTemplate, CONTENT_ID, JAVA);
+
+        List<UUID> ids = transactions.execute(status -> assignments.topicIdsOf(CONTENT_ID));
+
+        assertThat(ids).containsExactly(JAVA, SPRING);
+    }
+
+    private boolean replace(UUID... topicIds) {
+        return Boolean.TRUE.equals(transactions.execute(
+                status -> assignments.replaceAssignments(CONTENT_ID, List.of(topicIds))));
+    }
+
+    private List<UUID> assignedTopicIds() {
+        return jdbcTemplate.queryForList(
+                "SELECT topic_id FROM content_topic WHERE content_id = ? ORDER BY topic_id",
+                UUID.class, CONTENT_ID);
+    }
+}
