@@ -70,4 +70,23 @@ public interface TopicJpaRepository extends JpaRepository<TopicEntity, UUID> {
              ORDER BY t.name, t.id
             """, nativeQuery = true)
     List<TopicLabelRow> findLabelsOfContent(@Param("contentIds") Collection<UUID> contentIds);
+
+    Optional<TopicEntity> findBySlug(String slug);
+
+    /** Returns every content id that carries at least one Topic. */
+    @Query(value = "SELECT DISTINCT content_id FROM content_topic", nativeQuery = true)
+    List<UUID> findAllAssignedContentIds();
+
+    /**
+     * Returns the Topics assigned to at least one of the given content items,
+     * ordered by name and then by id.
+     */
+    @Query(value = """
+            SELECT t.* FROM topic t
+             WHERE EXISTS (SELECT 1 FROM content_topic assignment
+                            WHERE assignment.topic_id = t.id
+                              AND assignment.content_id IN (:contentIds))
+             ORDER BY t.name, t.id
+            """, nativeQuery = true)
+    List<TopicEntity> findAssignedToAnyContent(@Param("contentIds") Collection<UUID> contentIds);
 }
