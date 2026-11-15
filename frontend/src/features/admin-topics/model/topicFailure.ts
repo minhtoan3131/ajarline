@@ -4,6 +4,7 @@ import type { TopicFields } from './topic'
 export type TopicFailure =
   | { kind: 'field'; field: keyof TopicFields; message: string }
   | { kind: 'general'; message: string }
+  | { kind: 'not-found' }
   | { kind: 'session-expired' }
   | { kind: 'session-renewed' }
 
@@ -27,6 +28,8 @@ export function toTopicFailure(error: unknown): TopicFailure {
       return error.code === 'CSRF_INVALID'
         ? { kind: 'session-renewed' }
         : general('Phiên hiện tại không được phép thực hiện thao tác này.', error)
+    case 404:
+      return { kind: 'not-found' }
     case 409:
       return conflictFailure(error)
     case 422:

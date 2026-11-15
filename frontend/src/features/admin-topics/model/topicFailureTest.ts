@@ -25,13 +25,15 @@ describe('toTopicFailure', () => {
   })
 
   it('toTopicFailure_ShouldStateEveryLimitWithReference_WhenValidationFails', () => {
-    // When
     const failure = toTopicFailure(apiError(422, 'VALIDATION_FAILED'))
 
-    // Then
     expect(failure.kind).toBe('general')
     expect(failure).toMatchObject({ message: expect.stringContaining('tối đa 200 ký tự') })
     expect(failure).toMatchObject({ message: expect.stringContaining('Mã tra cứu: req-1.') })
+  })
+
+  it('toTopicFailure_ShouldReportMissingTopic_WhenServerAnswersNotFound', () => {
+    expect(toTopicFailure(apiError(404, 'TOPIC_NOT_FOUND'))).toEqual({ kind: 'not-found' })
   })
 
   it('toTopicFailure_ShouldReportTechnicalFailure_WhenNoResponseArrives', () => {

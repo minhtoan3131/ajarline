@@ -9,7 +9,6 @@ import { renderAppRoute } from './testsupport/renderAppRoute'
 
 describe('AdminLayout', () => {
   it('navigate_ShouldOpenTopicManagement_WhenTopicLinkIsClicked', async () => {
-    // Given
     givenSignedInAdmin(new StubApiServer())
       .on('GET', TOPICS_PATH, jsonResponse(200, topicList(activeTopic())))
       .install()
@@ -18,23 +17,18 @@ describe('AdminLayout', () => {
     const link = await screen.findByRole('link', { name: 'Topic' })
     expect(link).not.toHaveAttribute('aria-current')
 
-    // When
     await user.click(link)
 
-    // Then
     expect(await screen.findByRole('heading', { level: 1, name: 'Topic' })).toBeInTheDocument()
     expect(screen.getByTestId('location')).toHaveTextContent('/admin/topics')
     expect(screen.getByRole('link', { name: 'Topic' })).toHaveAttribute('aria-current', 'page')
   })
 
   it('render_ShouldHideNavigation_WhenVisitorIsAnonymous', async () => {
-    // Given
     givenAnonymousVisitor(new StubApiServer()).install()
 
-    // When
     renderAppRoute('/admin/login')
 
-    // Then
     expect(await screen.findByLabelText('Tên đăng nhập')).toBeInTheDocument()
     expect(screen.queryByRole('navigation', { name: 'Điều hướng quản trị' })).toBeNull()
   })

@@ -49,3 +49,28 @@ export function sameTopicFields(left: TopicFields, right: TopicFields): boolean 
     left.active === right.active
   )
 }
+
+/** Form values of an existing Topic. The slug is shown but never sent. */
+export function fieldsOf(topic: TopicAdminItem): TopicFields {
+  return {
+    slug: topic.slug,
+    name: topic.name,
+    description: topic.description ?? '',
+    active: topic.active,
+  }
+}
+
+/** Full request body of update. It has no slug: a Topic slug never changes. */
+export interface TopicEditable {
+  name: string
+  description: string | null
+  active: boolean
+}
+
+export function toEditable(fields: TopicFields): TopicEditable {
+  return {
+    name: fields.name,
+    description: fields.description === '' ? null : fields.description,
+    active: fields.active,
+  }
+}

@@ -1,7 +1,13 @@
 import type { TopicAdminItem } from '../model/topic'
 
+interface TopicListProps {
+  topics: TopicAdminItem[]
+  editDisabled: boolean
+  onEdit: (topic: TopicAdminItem) => void
+}
+
 /** Table of Topics. An inactive Topic stays in the list, marked as turned off. */
-export function TopicList({ topics }: { topics: TopicAdminItem[] }) {
+export function TopicList({ topics, editDisabled, onEdit }: TopicListProps) {
   if (topics.length === 0) {
     return <p className="admin-status">Chưa có Topic nào.</p>
   }
@@ -12,6 +18,9 @@ export function TopicList({ topics }: { topics: TopicAdminItem[] }) {
           <th scope="col">Tên</th>
           <th scope="col">Slug</th>
           <th scope="col">Trạng thái</th>
+          <th scope="col">
+            <span className="admin-visually-hidden">Thao tác</span>
+          </th>
         </tr>
       </thead>
       <tbody>
@@ -26,6 +35,17 @@ export function TopicList({ topics }: { topics: TopicAdminItem[] }) {
             </td>
             <td>
               <ActiveBadge active={topic.active} />
+            </td>
+            <td>
+              <button
+                type="button"
+                className="admin-button"
+                disabled={editDisabled}
+                aria-label={`Sửa Topic ${topic.name}`}
+                onClick={() => onEdit(topic)}
+              >
+                Sửa
+              </button>
             </td>
           </tr>
         ))}

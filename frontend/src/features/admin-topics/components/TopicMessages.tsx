@@ -3,6 +3,7 @@ import type { TopicNotice } from '../model/topicManagerState'
 
 const NOTICE_TEXT: Record<TopicNotice, string> = {
   created: 'Đã tạo Topic.',
+  saved: 'Đã lưu Topic.',
 }
 
 /** Success notice and failure message of the last action. */
@@ -29,6 +30,8 @@ function failureText(failure: TopicFailure): string {
       return 'Có trường cần sửa; xem thông báo dưới trường đó.'
     case 'general':
       return failure.message
+    case 'not-found':
+      return 'Topic này không còn tồn tại. Danh sách đã được tải lại.'
     case 'session-expired':
       return 'Phiên đăng nhập đã hết nên thao tác chưa được thực hiện.'
     case 'session-renewed':

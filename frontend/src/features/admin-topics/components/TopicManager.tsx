@@ -1,3 +1,4 @@
+import type { TopicAdminItem } from '../model/topic'
 import { useTopicList, type TopicListLoad } from '../useTopicList'
 import { useTopicManager } from '../useTopicManager'
 import { TopicForm } from './TopicForm'
@@ -30,7 +31,8 @@ export function TopicManager() {
       <TopicMessages failure={state.failure} notice={state.notice} />
       {state.panel.mode !== 'closed' && (
         <TopicForm
-          key="create"
+          key={state.panel.mode === 'edit' ? state.panel.topic.id : 'create'}
+          topic={state.panel.mode === 'edit' ? state.panel.topic : null}
           fields={state.fields}
           failure={state.failure}
           pending={state.pending}
@@ -40,12 +42,19 @@ export function TopicManager() {
           onCancel={manager.close}
         />
       )}
-      <TopicListSection load={load} onRetry={reload} />
+      <TopicListSection load={load} onRetry={reload} onEdit={manager.openEdit} editDisabled={locked} />
     </section>
   )
 }
 
-function TopicListSection({ load, onRetry }: { load: TopicListLoad; onRetry: () => void }) {
+interface TopicListSectionProps {
+  load: TopicListLoad
+  onRetry: () => void
+  onEdit: (topic: TopicAdminItem) => void
+  editDisabled: boolean
+}
+
+function TopicListSection({ load, onRetry, onEdit, editDisabled }: TopicListSectionProps) {
   switch (load.status) {
     case 'loading':
       return (
@@ -63,6 +72,6 @@ function TopicListSection({ load, onRetry }: { load: TopicListLoad; onRetry: () 
         </div>
       )
     case 'ready':
-      return <TopicList topics={load.topics} />
+      return <TopicList topics={load.topics} editDisabled={editDisabled} onEdit={onEdit} />
   }
 }

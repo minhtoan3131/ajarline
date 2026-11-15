@@ -2,8 +2,8 @@ import { useReducer } from 'react'
 
 import { useHttpClient } from '../../shared/api/HttpClientContext'
 import { useAdminSession } from '../admin-auth/AdminSessionContext'
-import { createTopic } from './api/topicAdminApi'
-import { toCreatable, type TopicFields } from './model/topic'
+import { createTopic, updateTopic } from './api/topicAdminApi'
+import { toCreatable, toEditable, type TopicAdminItem, type TopicFields } from './model/topic'
 import { toTopicFailure } from './model/topicFailure'
 import {
   INITIAL_TOPIC_MANAGER_STATE,
@@ -16,6 +16,7 @@ export interface TopicManagerController {
   readonly state: TopicManagerState
   readonly dirty: boolean
   openCreate(): void
+  openEdit(topic: TopicAdminItem): void
   close(): void
   changeFields(changes: Partial<TopicFields>): void
   save(): Promise<void>
@@ -38,17 +39,27 @@ export function useTopicManager(onTopicsChanged: () => void): TopicManagerContro
       // The old token is no longer valid. Get a new one so the next try works.
       void session.renewCsrfToken().catch(() => undefined)
     }
+    if (failure.kind === 'not-found') {
+      // The Topic is gone; load the list again so its row disappears.
+      onTopicsChanged()
+    }
     dispatch({ type: 'mutation-failed', failure })
   }
 
   async function save() {
-    if (state.pending !== null || state.panel.mode !== 'create') {
+    const panel = state.panel
+    if (state.pending !== null || panel.mode === 'closed') {
       return
     }
     dispatch({ type: 'mutation-started', pending: 'saving' })
     try {
-      await createTopic(client, toCreatable(state.fields))
-      dispatch({ type: 'mutation-succeeded', notice: 'created' })
+      if (panel.mode === 'create') {
+        await createTopic(client, toCreatable(state.fields))
+        dispatch({ type: 'mutation-succeeded', notice: 'created' })
+      } else {
+        await updateTopic(client, panel.topic.id, toEditable(state.fields))
+        dispatch({ type: 'mutation-succeeded', notice: 'saved' })
+      }
       onTopicsChanged()
     } catch (error) {
       fail(error)
@@ -59,6 +70,7 @@ export function useTopicManager(onTopicsChanged: () => void): TopicManagerContro
     state,
     dirty: isDirty(state),
     openCreate: () => dispatch({ type: 'create-opened' }),
+    openEdit: (topic) => dispatch({ type: 'edit-opened', topic }),
     close: () => dispatch({ type: 'panel-closed' }),
     changeFields: (changes) => dispatch({ type: 'fields-changed', changes }),
     save,

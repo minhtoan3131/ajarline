@@ -1,10 +1,12 @@
 import { useId, type ChangeEvent } from 'react'
 
-import type { TopicFields } from '../model/topic'
+import type { TopicAdminItem, TopicFields } from '../model/topic'
 import type { TopicFailure } from '../model/topicFailure'
 import type { PendingTopicAction } from '../model/topicManagerState'
 
 export interface TopicFormProps {
+  /** The Topic being edited, or null when the form creates a new one. */
+  topic: TopicAdminItem | null
   fields: TopicFields
   failure: TopicFailure | null
   pending: PendingTopicAction | null
@@ -15,8 +17,9 @@ export interface TopicFormProps {
 }
 
 /** Form for one Topic. It keeps the typed text on every failure. */
-export function TopicForm({ fields, failure, pending, dirty, onChange, onSubmit, onCancel }: TopicFormProps) {
+export function TopicForm({ topic, fields, failure, pending, dirty, onChange, onSubmit, onCancel }: TopicFormProps) {
   const idPrefix = useId()
+  const editing = topic !== null
   const saving = pending === 'saving'
   const busy = pending !== null
   const slugError = failure?.kind === 'field' && failure.field === 'slug' ? failure.message : null
@@ -30,13 +33,18 @@ export function TopicForm({ fields, failure, pending, dirty, onChange, onSubmit,
         onSubmit()
       }}
     >
-      <h2>Topic mới</h2>
+      <h2>{editing ? 'Sửa Topic' : 'Topic mới'}</h2>
       <TopicField
         id={`${idPrefix}-slug`}
         label="Slug"
         value={fields.slug}
         error={slugError}
-        hint="Chữ thường, chữ số và dấu gạch ngang. Dùng làm đường dẫn công khai và không đổi được sau khi tạo."
+        readOnly={editing}
+        hint={
+          editing
+            ? 'Slug đã cố định từ lúc tạo.'
+            : 'Chữ thường, chữ số và dấu gạch ngang. Dùng làm đường dẫn công khai và không đổi được sau khi tạo.'
+        }
         onChange={(slug) => onChange({ slug })}
       />
       <TopicField
@@ -67,7 +75,7 @@ export function TopicForm({ fields, failure, pending, dirty, onChange, onSubmit,
       <p className="admin-field-hint">Tắt không xóa Topic: các bài đã gắn vẫn được giữ.</p>
       <div className="topic-form-actions">
         <button type="submit" className="admin-button admin-button-primary" disabled={busy}>
-          {saving ? 'Đang tạo…' : 'Tạo'}
+          {submitLabel(editing, saving)}
         </button>
         <button type="button" className="admin-button" disabled={busy} onClick={onCancel}>
           Hủy
@@ -78,6 +86,13 @@ export function TopicForm({ fields, failure, pending, dirty, onChange, onSubmit,
       </div>
     </form>
   )
+}
+
+function submitLabel(editing: boolean, saving: boolean): string {
+  if (saving) {
+    return editing ? 'Đang lưu…' : 'Đang tạo…'
+  }
+  return editing ? 'Lưu' : 'Tạo'
 }
 
 interface TopicFieldProps {

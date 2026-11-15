@@ -1,12 +1,12 @@
-import { EMPTY_TOPIC_FIELDS, sameTopicFields, type TopicFields } from './topic'
+import { EMPTY_TOPIC_FIELDS, fieldsOf, sameTopicFields, type TopicAdminItem, type TopicFields } from './topic'
 import type { TopicFailure } from './topicFailure'
 
 /** Which form is open. There is at most one at a time. */
-export type TopicPanel = { mode: 'closed' } | { mode: 'create' }
+export type TopicPanel = { mode: 'closed' } | { mode: 'create' } | { mode: 'edit'; topic: TopicAdminItem }
 
 export type PendingTopicAction = 'saving'
 
-export type TopicNotice = 'created'
+export type TopicNotice = 'created' | 'saved'
 
 /**
  * Screen state: the open form (`panel`), the typed values (`fields`) against
@@ -24,6 +24,7 @@ export interface TopicManagerState {
 
 export type TopicManagerAction =
   | { type: 'create-opened' }
+  | { type: 'edit-opened'; topic: TopicAdminItem }
   | { type: 'panel-closed' }
   | { type: 'fields-changed'; changes: Partial<TopicFields> }
   | { type: 'mutation-started'; pending: PendingTopicAction }
@@ -47,6 +48,10 @@ export function topicManagerReducer(state: TopicManagerState, action: TopicManag
   switch (action.type) {
     case 'create-opened':
       return { ...INITIAL_TOPIC_MANAGER_STATE, panel: { mode: 'create' } }
+    case 'edit-opened': {
+      const fields = fieldsOf(action.topic)
+      return { ...INITIAL_TOPIC_MANAGER_STATE, panel: { mode: 'edit', topic: action.topic }, baseline: fields, fields }
+    }
     case 'panel-closed':
       return INITIAL_TOPIC_MANAGER_STATE
     case 'fields-changed': {
@@ -66,6 +71,10 @@ export function topicManagerReducer(state: TopicManagerState, action: TopicManag
       // Success closes the form. The next list load shows the stored values.
       return { ...INITIAL_TOPIC_MANAGER_STATE, notice: action.notice }
     case 'mutation-failed':
+      // A Topic that no longer exists cannot be edited, so the form closes.
+      if (action.failure.kind === 'not-found') {
+        return { ...INITIAL_TOPIC_MANAGER_STATE, failure: action.failure }
+      }
       return { ...state, pending: null, failure: action.failure }
   }
 }
