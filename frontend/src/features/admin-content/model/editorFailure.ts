@@ -61,6 +61,10 @@ function validationFailure(error: ApiError): EditorFailure {
       return { kind: 'field', field: 'summary', message: 'Cần có tóm tắt trước khi xuất bản.' }
     case 'ARTICLE_BODY_REQUIRED':
       return { kind: 'field', field: 'bodyMarkdown', message: 'Cần có nội dung bài trước khi xuất bản.' }
+    case 'TOPIC_REFERENCE_NOT_FOUND':
+      return { kind: 'field', field: 'topicIds', message: 'Có Topic đã chọn không còn tồn tại. Hãy tải lại trang để xem danh sách mới.' }
+    case 'INACTIVE_TOPIC_ASSIGNMENT':
+      return { kind: 'field', field: 'topicIds', message: 'Topic đã tắt không gắn thêm được. Hãy bỏ chọn Topic đó rồi lưu lại.' }
     default:
       return general(`Dữ liệu chưa hợp lệ: ${error.detail ?? 'hãy kiểm tra lại các trường.'}`, error)
   }

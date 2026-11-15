@@ -567,3 +567,29 @@ body.scroll-locked {
   flex-basis: 100%;
   margin: 0;
 }
+
+.topic-picker {
+  margin: 0 0 16px;
+  padding: 12px 16px;
+  border: 1px solid var(--admin-border);
+  border-radius: 4px;
+  background: var(--admin-surface);
+}
+
+.topic-picker legend { padding: 0 6px; font-weight: 600; }
+
+.topic-picker-list {
+  display: grid;
+  gap: 6px;
+  margin: 0 0 8px;
+  padding: 0;
+  list-style: none;
+}
+
+.topic-picker-item {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+}
+
+.topic-picker-item input { width: 18px; height: 18px; }

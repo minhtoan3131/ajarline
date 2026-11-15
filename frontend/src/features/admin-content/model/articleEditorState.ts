@@ -4,6 +4,7 @@ import {
   sameFields,
   type ArticleAdminDetail,
   type ArticleFields,
+  type ArticleTextField,
   type PublicationState,
   type Versioned,
 } from './article'
@@ -29,7 +30,8 @@ export interface EditorState {
 }
 
 export type EditorAction =
-  | { type: 'field-changed'; field: keyof ArticleFields; value: string }
+  | { type: 'field-changed'; field: ArticleTextField; value: string }
+  | { type: 'topics-changed'; topicIds: string[] }
   | { type: 'mutation-started'; pending: PendingMutation; submitted: ArticleFields | null }
   | { type: 'article-saved'; article: Versioned<ArticleAdminDetail>; notice: EditorNotice }
   | { type: 'article-reloaded'; article: Versioned<ArticleAdminDetail> }
@@ -67,6 +69,17 @@ export function articleEditorReducer(state: EditorState, action: EditorAction): 
       return {
         ...state,
         fields: { ...state.fields, [action.field]: action.value },
+        failure: keepFailure ? failure : null,
+        notice: null,
+      }
+    }
+    case 'topics-changed': {
+      const failure = state.failure
+      // Changing the Topic choice clears the Topic error only.
+      const keepFailure = !(failure?.kind === 'field' && failure.field === 'topicIds')
+      return {
+        ...state,
+        fields: { ...state.fields, topicIds: action.topicIds },
         failure: keepFailure ? failure : null,
         notice: null,
       }

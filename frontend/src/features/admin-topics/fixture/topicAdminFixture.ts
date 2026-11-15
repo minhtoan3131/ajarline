@@ -1,3 +1,4 @@
+import { jsonResponse, type StubApiServer } from '../../../shared/api/testsupport/StubApiServer'
 import type { TopicAdminItem } from '../model/topic'
 
 export const TOPICS_PATH = '/api/admin/v1/topics'
@@ -29,4 +30,9 @@ export function inactiveTopic(changes: Partial<TopicAdminItem> = {}): TopicAdmin
 /** Body of the list endpoint. */
 export function topicList(...topics: TopicAdminItem[]) {
   return { topics }
+}
+
+/** Stubs the Topic list that the Article editor loads for its Topic picker. */
+export function givenTopicCatalog(api: StubApiServer, ...topics: TopicAdminItem[]): StubApiServer {
+  return api.on('GET', TOPICS_PATH, jsonResponse(200, topicList(...topics)))
 }

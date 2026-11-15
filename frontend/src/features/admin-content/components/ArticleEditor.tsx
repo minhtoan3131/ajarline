@@ -3,7 +3,9 @@ import { Link } from 'react-router'
 
 import { ArticlePreview } from './ArticlePreview'
 import { FullPreviewOverlay } from './FullPreviewOverlay'
-import type { ArticleAdminDetail, ArticleFields, PublicationStatus, Versioned } from '../model/article'
+import { TopicPicker } from './TopicPicker'
+import { useTopicList } from '../../admin-topics/useTopicList'
+import type { ArticleAdminDetail, ArticleTextField, PublicationStatus, Versioned } from '../model/article'
 import type { EditorNotice, PendingMutation } from '../model/articleEditorState'
 import type { EditorFailure } from '../model/editorFailure'
 import { useArticleEditor } from '../useArticleEditor'
@@ -24,6 +26,9 @@ export interface ArticleEditorProps {
 export function ArticleEditor({ initial, initialNotice, onCreated }: ArticleEditorProps) {
   const editor = useArticleEditor(initial, initialNotice, onCreated)
   const { state, dirty } = editor
+  const topicList = useTopicList()
+  const topicError =
+    state.failure?.kind === 'field' && state.failure.field === 'topicIds' ? state.failure.message : null
   const article = state.current?.value ?? null
   // The public URL must stay stable once readers may have seen it.
   const slugLocked = article !== null && article.publishedAt !== null
@@ -36,7 +41,7 @@ export function ArticleEditor({ initial, initialNotice, onCreated }: ArticleEdit
   const canPublish = article !== null && article.status !== 'PUBLISHED'
   const canUnpublish = article !== null && article.status === 'PUBLISHED'
 
-  function fieldProps(field: keyof ArticleFields) {
+  function fieldProps(field: ArticleTextField) {
     const failure = state.failure
     return {
       id: `${idPrefix}-${field}`,
@@ -133,6 +138,15 @@ export function ArticleEditor({ initial, initialNotice, onCreated }: ArticleEdit
               }
             />
             <EditorField label="Tóm tắt" {...fieldProps('summary')} rows={3} />
+            <TopicPicker
+              load={topicList.load}
+              selectedIds={state.fields.topicIds}
+              attachedIds={state.baseline.topicIds}
+              error={topicError}
+              disabled={state.pending !== null}
+              onChange={editor.changeTopics}
+              onRetry={topicList.reload}
+            />
             <EditorField label="Nội dung Markdown" {...fieldProps('bodyMarkdown')} rows={24} monospace />
           </section>
           <section className="article-editor-preview" aria-label="Xem trước trực tiếp">

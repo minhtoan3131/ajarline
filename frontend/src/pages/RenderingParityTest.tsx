@@ -21,7 +21,7 @@ describe('Rendering parity', () => {
   it('render_ShouldProduceSameMarkup_WhenPreviewAndPublicPageRenderSameMarkdown', () => {
     // Given
     const preview = render(
-      <ArticlePreview fields={{ title: 'T', slug: 't', summary: 'S', bodyMarkdown: FIXTURE }} />,
+      <ArticlePreview fields={{ title: 'T', slug: 't', summary: 'S', bodyMarkdown: FIXTURE, topicIds: [] }} />,
     )
     const previewHtml = rendererHtml(preview.container)
     preview.unmount()

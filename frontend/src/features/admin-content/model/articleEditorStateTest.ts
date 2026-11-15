@@ -59,4 +59,41 @@ describe('articleEditorReducer', () => {
     expect(afterTitle.failure).not.toBeNull()
     expect(afterSlug.failure).toBeNull()
   })
+
+  it('reduce_ShouldMarkFormDirty_WhenTopicSelectionChanges', () => {
+    const state = createEditorState({ initial: LOADED, initialNotice: null })
+
+    const changed = articleEditorReducer(state, { type: 'topics-changed', topicIds: ['topic-a'] })
+
+    expect(isDirty(changed)).toBe(true)
+  })
+
+  it('reduce_ShouldClearOnlyTopicError_WhenTopicSelectionChanges', () => {
+    let state = createEditorState({ initial: LOADED, initialNotice: null })
+    state = articleEditorReducer(state, {
+      type: 'mutation-failed',
+      failure: { kind: 'field', field: 'topicIds', message: 'Topic đã tắt không gắn thêm được.' },
+    })
+
+    const afterTitle = articleEditorReducer(state, { type: 'field-changed', field: 'title', value: 'x' })
+    const afterTopics = articleEditorReducer(state, { type: 'topics-changed', topicIds: [] })
+
+    expect(afterTitle.failure).not.toBeNull()
+    expect(afterTopics.failure).toBeNull()
+  })
+
+  it('reduce_ShouldKeepChosenTopics_WhenSelectionChangesDuringSave', () => {
+    let state = createEditorState({ initial: LOADED, initialNotice: null })
+    state = articleEditorReducer(state, { type: 'mutation-started', pending: 'saving', submitted: state.fields })
+    state = articleEditorReducer(state, { type: 'topics-changed', topicIds: ['topic-a'] })
+
+    state = articleEditorReducer(state, {
+      type: 'article-saved',
+      article: { value: draftArticle({ revision: 2 }), etag: '"2"' },
+      notice: 'saved',
+    })
+
+    expect(state.fields.topicIds).toEqual(['topic-a'])
+    expect(isDirty(state)).toBe(true)
+  })
 })

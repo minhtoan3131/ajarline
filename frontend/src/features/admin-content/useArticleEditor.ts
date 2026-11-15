@@ -3,14 +3,15 @@ import { useReducer } from 'react'
 import { useHttpClient } from '../../shared/api/HttpClientContext'
 import { useAdminSession } from '../admin-auth/AdminSessionContext'
 import { createArticle, getArticle, publishContent, unpublishContent, updateArticle } from './api/articleAdminApi'
-import { relationshipsOf, STANDALONE, toEditable, type ArticleAdminDetail, type ArticleFields, type Versioned } from './model/article'
+import { relationshipsOf, STANDALONE, toEditable, type ArticleAdminDetail, type ArticleTextField, type Versioned } from './model/article'
 import { articleEditorReducer, createEditorState, isDirty, type EditorNotice, type EditorState } from './model/articleEditorState'
 import { toEditorFailure } from './model/editorFailure'
 
 export interface ArticleEditorController {
   readonly state: EditorState
   readonly dirty: boolean
-  changeField(field: keyof ArticleFields, value: string): void
+  changeField(field: ArticleTextField, value: string): void
+  changeTopics(topicIds: string[]): void
   save(): Promise<void>
   reload(): Promise<void>
   publish(): Promise<void>
@@ -96,6 +97,7 @@ export function useArticleEditor(
     state,
     dirty: isDirty(state),
     changeField: (field, value) => dispatch({ type: 'field-changed', field, value }),
+    changeTopics: (topicIds) => dispatch({ type: 'topics-changed', topicIds }),
     save,
     reload,
     publish: () => changePublication('publish'),
