@@ -1,4 +1,4 @@
-import { screen } from '@testing-library/react'
+import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 
@@ -61,7 +61,8 @@ describe('ArticlePage', () => {
     await screen.findByRole('heading', { level: 1, name: 'Hiểu Protobuf với Java' })
 
     // Then
-    expect(screen.queryByRole('navigation')).toBeNull()
+    // The header has the main navigation; a standalone Article itself has none.
+    expect(within(screen.getByRole('article')).queryByRole('navigation')).toBeNull()
     expect(screen.queryByRole('link', { name: /quản trị|admin|đăng nhập/i })).toBeNull()
   })
 

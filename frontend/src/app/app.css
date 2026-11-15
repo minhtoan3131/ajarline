@@ -79,6 +79,29 @@ body {
   text-decoration: none;
 }
 
+.reader-nav {
+  display: flex;
+  gap: 24px;
+  margin-left: 40px;
+}
+
+.reader-nav-link {
+  padding: 4px 0;
+  border-bottom: 2px solid transparent;
+  color: var(--reader-muted);
+  font-size: 0.9375rem;
+  text-decoration: none;
+}
+
+.reader-nav-link:hover {
+  color: var(--reader-ink);
+}
+
+.reader-nav-link[aria-current="page"] {
+  border-bottom-color: var(--reader-focus);
+  color: var(--reader-ink);
+}
+
 .reader-main {
   width: min(760px, 100% - 40px);
   margin: 0 auto;
@@ -174,6 +197,11 @@ body {
   .reader-header,
   .reader-main {
     width: calc(100% - 26px);
+  }
+
+  .reader-nav {
+    gap: 16px;
+    margin-left: auto;
   }
 
   .reader-article-body {
