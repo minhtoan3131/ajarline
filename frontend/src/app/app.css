@@ -469,3 +469,28 @@ body.scroll-locked {
 
 .admin-badge-active { border-color: var(--admin-success); color: var(--admin-success); }
 .admin-badge-inactive { border-color: var(--admin-warning); color: var(--admin-warning); }
+
+.admin-nav {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+  margin-right: auto;
+  margin-left: 24px;
+}
+
+.admin-nav-group {
+  color: var(--admin-text-secondary);
+  font-size: 0.875rem;
+}
+
+.admin-nav-link {
+  padding: 4px 8px;
+  border-bottom: 2px solid transparent;
+  color: var(--admin-structural);
+  text-decoration: none;
+}
+
+.admin-nav-link[aria-current="page"] {
+  border-bottom-color: var(--admin-structural);
+  font-weight: 600;
+}

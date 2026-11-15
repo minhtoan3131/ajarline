@@ -1,5 +1,5 @@
 import { useState } from 'react'
-import { Link, Outlet, useNavigate } from 'react-router'
+import { Link, NavLink, Outlet, useNavigate } from 'react-router'
 
 import { AdminSessionProvider, useAdminSession } from '../features/admin-auth/AdminSessionContext'
 
@@ -35,6 +35,7 @@ function AdminHeader() {
   return (
     <header className="admin-header">
       <span className="admin-brand">Ajarline · Quản trị</span>
+      {(session.status === 'signed-in' || session.status === 'expired') && <AdminNavigation />}
       {session.status === 'signed-in' && (
         <button type="button" className="admin-button" onClick={() => void signOut()}>
           Đăng xuất
@@ -52,5 +53,21 @@ function AdminHeader() {
         </p>
       )}
     </header>
+  )
+}
+
+/**
+ * Links to the Admin screens, grouped like the information architecture.
+ * Only the Organization group exists so far; Content and the vocabulary
+ * group come with their own screens.
+ */
+function AdminNavigation() {
+  return (
+    <nav className="admin-nav" aria-label="Điều hướng quản trị">
+      <span className="admin-nav-group">Tổ chức</span>
+      <NavLink to="/admin/topics" className="admin-nav-link">
+        Topic
+      </NavLink>
+    </nav>
   )
 }
