@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import vn.io.ajarline.platform.web.ApiProblem;
 import vn.io.ajarline.platform.web.ApiProblemWriter;
+import vn.io.ajarline.platform.web.ApiQueryException;
 
 @Order(Ordered.HIGHEST_PRECEDENCE)
 @RestControllerAdvice(assignableTypes = PublicTopicController.class)
@@ -29,9 +30,9 @@ public class PublicTopicExceptionHandler {
                 "Topic is not publicly available.");
     }
 
-    @ExceptionHandler(PublicTopicQueryException.class)
+    @ExceptionHandler(ApiQueryException.class)
     ResponseEntity<ApiProblem> invalidQuery(
-            PublicTopicQueryException exception, HttpServletRequest request) {
+            ApiQueryException exception, HttpServletRequest request) {
         return problems.response(
                 request,
                 400,

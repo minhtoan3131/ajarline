@@ -1,6 +1,8 @@
 package vn.io.ajarline.topic.api;
 
 import vn.io.ajarline.content.contract.ContentType;
+import vn.io.ajarline.platform.web.ApiQueryException;
+import vn.io.ajarline.platform.web.PageQuery;
 
 import java.util.EnumSet;
 import java.util.LinkedHashSet;
@@ -12,8 +14,8 @@ import java.util.Set;
  * Holds the checked query of the Topic content list.
  *
  * <p>{@code types} is a comma-separated list of known type tokens with no
- * repeats; each token is trimmed. {@code page} starts at 0. {@code size} is
- * 1 to 50, 20 by default.</p>
+ * repeats; each token is trimmed. {@code page} and {@code size} follow the rule
+ * of {@link PageQuery}.</p>
  */
 record TopicContentQuery(
         List<String> typeTokens,
@@ -22,8 +24,6 @@ record TopicContentQuery(
         int size
 ) {
     static final List<String> TYPE_TOKENS = List.of("series", "module", "article", "news");
-    static final int DEFAULT_SIZE = 20;
-    static final int MAX_SIZE = 50;
 
     TopicContentQuery {
         typeTokens = List.copyOf(typeTokens);
@@ -31,13 +31,14 @@ record TopicContentQuery(
     }
 
     /**
-     * Checks the raw query values.
+     * Checks the raw query values. The types are checked before the paging.
      *
-     * @throws PublicTopicQueryException when a value has the wrong shape
+     * @throws ApiQueryException when a value has the wrong shape
      */
     static TopicContentQuery parse(String types, String page, String size) {
         List<String> tokens = parseTypes(types);
-        return new TopicContentQuery(tokens, contentTypes(tokens), parsePage(page), parseSize(size));
+        PageQuery paging = PageQuery.parse(page, size);
+        return new TopicContentQuery(tokens, contentTypes(tokens), paging.page(), paging.size());
     }
 
     /** Returns the lowercase name used for a content type on the wire. */
@@ -54,7 +55,7 @@ record TopicContentQuery(
         for (String part : raw.split(",", -1)) {
             String token = part.strip();
             if (!TYPE_TOKENS.contains(token) || !tokens.add(token)) {
-                throw new PublicTopicQueryException(
+                throw new ApiQueryException(
                         "INVALID_RESULT_TYPE",
                         "Invalid result type",
                         "One or more Topic content types are invalid.");
@@ -75,41 +76,5 @@ record TopicContentQuery(
             }
         }
         return selected;
-    }
-
-    private static int parsePage(String raw) {
-        if (raw == null) {
-            return 0;
-        }
-        Integer page = parseInteger(raw);
-        if (page == null || page < 0) {
-            throw new PublicTopicQueryException(
-                    "INVALID_PAGE",
-                    "Collection request is invalid",
-                    "page must be an integer of at least 0.");
-        }
-        return page;
-    }
-
-    private static int parseSize(String raw) {
-        if (raw == null) {
-            return DEFAULT_SIZE;
-        }
-        Integer size = parseInteger(raw);
-        if (size == null || size < 1 || size > MAX_SIZE) {
-            throw new PublicTopicQueryException(
-                    "INVALID_PAGE_SIZE",
-                    "Collection request is invalid",
-                    "size must be an integer from 1 to " + MAX_SIZE + ".");
-        }
-        return size;
-    }
-
-    private static Integer parseInteger(String raw) {
-        try {
-            return Integer.valueOf(raw);
-        } catch (NumberFormatException exception) {
-            return null;
-        }
     }
 }
