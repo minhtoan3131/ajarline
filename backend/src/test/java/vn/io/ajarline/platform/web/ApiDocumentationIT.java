@@ -44,6 +44,8 @@ class ApiDocumentationIT {
                     "post", "publishContent")),
             Map.entry("/api/admin/v1/content/{id}/unpublish", Map.of(
                     "post", "unpublishContent")),
+            Map.entry("/api/v1/articles", Map.of(
+                    "get", "listStandaloneArticles")),
             Map.entry("/api/v1/articles/{slug}", Map.of(
                     "get", "getPublicArticle")),
             Map.entry("/api/v1/topics", Map.of(
@@ -294,6 +296,29 @@ class ApiDocumentationIT {
                 .containsExactlyInAnyOrder("id", "slug", "name", "description");
     }
 
+    @Test
+    void openApi_ShouldExposeStandaloneArticleMetadata_WhenDocumentIsGenerated()
+            throws Exception {
+        JsonNode document = openApiDocument();
+        JsonNode list = operation(document.get("paths"), "/api/v1/articles", "get");
+
+        assertThat(hasSecurity(list, OpenApiConfiguration.ADMIN_SESSION)).isFalse();
+        assertThat(list.get("tags")).hasSize(1);
+        assertThat(list.get("tags").get(0).asString()).isEqualTo("Public Discovery");
+        assertThat(parameterNames(list)).containsExactlyInAnyOrder("standalone", "page", "size");
+        assertThat(requiredParameters(list)).containsExactly("standalone");
+        assertThat(responseSchemaRef(list, "200")).endsWith("/ArticleCollectionResponse");
+        assertThat(list.get("responses").has("400")).isTrue();
+        assertThat(list.get("responses").has("404")).isFalse();
+
+        JsonNode schemas = document.get("components").get("schemas");
+        assertThat(schemas.get("ArticleCollectionResponse").get("properties").propertyNames())
+                .containsExactlyInAnyOrder("page", "size", "hasMore", "items");
+        assertThat(schemas.get("ArticleSummary").get("properties").propertyNames())
+                .containsExactlyInAnyOrder(
+                        "id", "type", "slug", "title", "summary",
+                        "topics", "publishedAt", "updatedAt");
+    }
 
     private JsonNode openApiDocument() throws Exception {
         HttpResponse<String> response = send(get("/v3/api-docs"));
@@ -311,6 +336,16 @@ class ApiDocumentationIT {
         JsonNode parameters = operation.get("parameters");
         if (parameters != null) {
             for (JsonNode parameter : parameters) {
+                names.add(parameter.get("name").asString());
+            }
+        }
+        return names;
+    }
+
+    private static Set<String> requiredParameters(JsonNode operation) {
+        Set<String> names = new HashSet<>();
+        for (JsonNode parameter : operation.get("parameters")) {
+            if (parameter.has("required") && parameter.get("required").asBoolean()) {
                 names.add(parameter.get("name").asString());
             }
         }
