@@ -4,6 +4,7 @@ import { Link } from 'react-router'
 import { ArticlePreview } from './ArticlePreview'
 import { FullPreviewOverlay } from './FullPreviewOverlay'
 import { TopicPicker } from './TopicPicker'
+import { articlePath } from '../../article-reading/articleRoutes'
 import { useTopicList } from '../../admin-topics/useTopicList'
 import type { ArticleAdminDetail, ArticleTextField, PublicationStatus, Versioned } from '../model/article'
 import type { EditorNotice, PendingMutation } from '../model/articleEditorState'
@@ -94,7 +95,7 @@ export function ArticleEditor({ initial, initialNotice, onCreated }: ArticleEdit
               </button>
             )}
             {canUnpublish && (
-              <Link className="article-public-link" to={`/articles/${encodeURIComponent(article.slug)}`}>
+              <Link className="article-public-link" to={articlePath(article.slug)}>
                 Mở trang công khai
               </Link>
             )}

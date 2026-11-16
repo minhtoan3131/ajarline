@@ -1,8 +1,8 @@
 import { useParams, useSearchParams } from 'react-router'
 
 import { TopicHomeView } from '../features/topic-browsing/components/TopicHomeView'
-import { pageFromQuery } from '../features/topic-browsing/topicRoutes'
 import { useTopicHome } from '../features/topic-browsing/useTopicHome'
+import { pageFromQuery } from '../shared/lib/pageFromQuery'
 import { NotFoundPage } from './NotFoundPage'
 
 export function TopicHomePage() {

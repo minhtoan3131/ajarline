@@ -3,6 +3,7 @@ import { Link } from 'react-router'
 import type { PublicTopic, TopicContentItem, TopicContentPage } from '../model/publicTopic'
 import { contextTrailOf, groupTopicContent, readerPathOf, type TopicContentGroup } from '../model/topicContentGroups'
 import { topicHomePath } from '../topicRoutes'
+import { Pagination } from '../../../shared/ui/Pagination'
 import { TopicChips } from './TopicChips'
 
 /**
@@ -32,7 +33,11 @@ export function TopicHomeView({ topic, content }: { topic: PublicTopic; content:
           {groups.map((group) => (
             <TopicContentGroupView key={group.key} group={group} topicSlug={topic.slug} />
           ))}
-          <TopicPagination slug={topic.slug} page={content.page} hasMore={content.hasMore} />
+          <Pagination
+            page={content.page}
+            hasMore={content.hasMore}
+            pathOf={(target) => topicHomePath(topic.slug, target)}
+          />
         </>
       )}
     </section>
@@ -66,27 +71,5 @@ function TopicContentEntry({ item, topicSlug }: { item: TopicContentItem; topicS
       <p className="reader-content-summary">{item.summary}</p>
       <TopicChips topics={otherTopics} label={`Chủ đề khác của ${item.title}`} />
     </li>
-  )
-}
-
-/** Previous and next by page and hasMore. There is no total, so no "2 of 14". */
-function TopicPagination({ slug, page, hasMore }: { slug: string; page: number; hasMore: boolean }) {
-  if (page === 0 && !hasMore) {
-    return null
-  }
-  return (
-    <nav className="reader-pagination" aria-label="Phân trang">
-      {page > 0 && (
-        <Link to={topicHomePath(slug, page - 1)} rel="prev" className="reader-pagination-link">
-          Trang trước
-        </Link>
-      )}
-      <span className="reader-pagination-current">Trang {page + 1}</span>
-      {hasMore && (
-        <Link to={topicHomePath(slug, page + 1)} rel="next" className="reader-pagination-link">
-          Trang sau
-        </Link>
-      )}
-    </nav>
   )
 }

@@ -1,3 +1,4 @@
+import { articlePath } from '../../article-reading/articleRoutes'
 import type { TopicContentItem } from './publicTopic'
 
 export type TopicContentGroupKey = 'series' | 'in-series' | 'standalone' | 'news'
@@ -44,7 +45,7 @@ export function groupTopicContent(items: TopicContentItem[]): TopicContentGroup[
 
 /** Reader route of an item, or null for a content type that has no Reader page yet. */
 export function readerPathOf(item: TopicContentItem): string | null {
-  return item.type === 'article' ? `/articles/${encodeURIComponent(item.slug)}` : null
+  return item.type === 'article' ? articlePath(item.slug) : null
 }
 
 /** "Series › Module" of the public parents, or null when the item has none. */
