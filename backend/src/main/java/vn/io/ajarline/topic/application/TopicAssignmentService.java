@@ -11,10 +11,13 @@ import vn.io.ajarline.topic.infrastructure.persistence.TopicEntity;
 import vn.io.ajarline.topic.infrastructure.persistence.TopicJpaRepository;
 import vn.io.ajarline.topic.infrastructure.persistence.TopicLabelRow;
 
+import java.util.Collection;
 import java.util.HashSet;
 import java.util.List;
+import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
+import java.util.stream.Collectors;
 
 @Service
 public class TopicAssignmentService implements TopicAssignmentPort {
@@ -37,6 +40,19 @@ public class TopicAssignmentService implements TopicAssignmentPort {
         return topics.findLabelsOfContent(List.of(contentId)).stream()
                 .map(TopicLabelRow::toLabel)
                 .toList();
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public Map<UUID, List<TopicLabel>> topicLabelsOf(Collection<UUID> contentIds) {
+        if (contentIds.isEmpty()) {
+            return Map.of();
+        }
+        // The rows come ordered by name and id, and grouping keeps that order for each item.
+        return topics.findLabelsOfContent(contentIds).stream()
+                .collect(Collectors.groupingBy(
+                        TopicLabelRow::getContentId,
+                        Collectors.mapping(TopicLabelRow::toLabel, Collectors.toList())));
     }
 
     @Override

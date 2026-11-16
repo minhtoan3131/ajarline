@@ -1,6 +1,8 @@
 package vn.io.ajarline.content.contract;
 
+import java.util.Collection;
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 /**
@@ -24,6 +26,16 @@ public interface TopicAssignmentPort {
      * remove it from content.
      */
     List<TopicLabel> topicLabelsOf(UUID contentId);
+
+    /**
+     * Returns the Topics assigned to each of the given content items with one
+     * read. The labels of an item are ordered by name and then by id, and
+     * inactive Topics are included. An item that has no Topic has no key in the
+     * result, so callers should use {@code getOrDefault(id, List.of())}.
+     *
+     * <p>An empty collection returns an empty map without any read.</p>
+     */
+    Map<UUID, List<TopicLabel>> topicLabelsOf(Collection<UUID> contentIds);
 
     /**
      * Makes the Topics assigned to the content item equal to the given ids.

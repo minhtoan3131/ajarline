@@ -10,10 +10,12 @@ import org.springframework.transaction.support.TransactionTemplate;
 import vn.io.ajarline.content.contract.ContentFailureCode;
 import vn.io.ajarline.content.contract.ContentOperationException;
 import vn.io.ajarline.content.contract.TopicAssignmentPort;
+import vn.io.ajarline.content.contract.TopicLabel;
 import vn.io.ajarline.support.ContentApplicationTestConfiguration;
 import vn.io.ajarline.support.PostgreSqlTestConfiguration;
 
 import java.util.List;
+import java.util.Map;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
@@ -34,6 +36,9 @@ class TopicAssignmentApplicationIT {
     private static final UUID JAVA = uuid(1);
     private static final UUID SPRING = uuid(2);
     private static final UUID LEGACY = uuid(3);
+    private static final UUID OTHER_CONTENT_ID = uuid(101);
+    private static final UUID EMPTY_CONTENT_ID = uuid(102);
+    private static final UUID JAVA_TWIN = uuid(4);
 
     @Autowired
     private TopicAssignmentPort assignments;
@@ -49,9 +54,12 @@ class TopicAssignmentApplicationIT {
         jdbcTemplate.update("DELETE FROM content_item");
         jdbcTemplate.update("DELETE FROM topic");
         insertContentItem(jdbcTemplate, CONTENT_ID, "assigned-article");
+        insertContentItem(jdbcTemplate, OTHER_CONTENT_ID, "other-article");
+        insertContentItem(jdbcTemplate, EMPTY_CONTENT_ID, "untagged-article");
         insertTopic(jdbcTemplate, JAVA, "java", "Java", true);
         insertTopic(jdbcTemplate, SPRING, "spring", "Spring", true);
         insertTopic(jdbcTemplate, LEGACY, "legacy", "Legacy", false);
+        insertTopic(jdbcTemplate, JAVA_TWIN, "java-twin", "Java", true);
     }
 
     @Test
@@ -126,9 +134,78 @@ class TopicAssignmentApplicationIT {
         assertThat(ids).containsExactly(JAVA, SPRING);
     }
 
+    @Test
+    void topicLabelsOf_ShouldGroupLabelsByContent_WhenSeveralItemsAreAsked() {
+        insertAssignment(jdbcTemplate, CONTENT_ID, JAVA);
+        insertAssignment(jdbcTemplate, CONTENT_ID, SPRING);
+        insertAssignment(jdbcTemplate, OTHER_CONTENT_ID, SPRING);
+
+        Map<UUID, List<TopicLabel>> labels = labelsOf(CONTENT_ID, OTHER_CONTENT_ID);
+
+        assertThat(labels).containsOnlyKeys(CONTENT_ID, OTHER_CONTENT_ID);
+        assertThat(labels.get(CONTENT_ID)).extracting(TopicLabel::slug)
+                .containsExactly("java", "spring");
+        assertThat(labels.get(OTHER_CONTENT_ID)).extracting(TopicLabel::slug)
+                .containsExactly("spring");
+    }
+
+    @Test
+    void topicLabelsOf_ShouldOrderLabelsByNameThenId_WhenTopicsShareAName() {
+        insertAssignment(jdbcTemplate, CONTENT_ID, SPRING);
+        insertAssignment(jdbcTemplate, CONTENT_ID, JAVA_TWIN);
+        insertAssignment(jdbcTemplate, CONTENT_ID, JAVA);
+
+        Map<UUID, List<TopicLabel>> labels = labelsOf(CONTENT_ID);
+
+        assertThat(labels.get(CONTENT_ID)).extracting(TopicLabel::id)
+                .containsExactly(JAVA, JAVA_TWIN, SPRING);
+    }
+
+    @Test
+    void topicLabelsOf_ShouldHaveNoKey_WhenAnItemHasNoTopic() {
+        insertAssignment(jdbcTemplate, CONTENT_ID, JAVA);
+
+        Map<UUID, List<TopicLabel>> labels = labelsOf(CONTENT_ID, EMPTY_CONTENT_ID);
+
+        assertThat(labels).containsOnlyKeys(CONTENT_ID);
+    }
+
+    @Test
+    void topicLabelsOf_ShouldLeaveOutItems_WhenTheyWereNotAsked() {
+        insertAssignment(jdbcTemplate, CONTENT_ID, JAVA);
+        insertAssignment(jdbcTemplate, OTHER_CONTENT_ID, SPRING);
+
+        Map<UUID, List<TopicLabel>> labels = labelsOf(CONTENT_ID);
+
+        assertThat(labels).containsOnlyKeys(CONTENT_ID);
+    }
+
+    @Test
+    void topicLabelsOf_ShouldIncludeInactiveTopic_WhenItIsAssigned() {
+        insertAssignment(jdbcTemplate, CONTENT_ID, LEGACY);
+
+        Map<UUID, List<TopicLabel>> labels = labelsOf(CONTENT_ID);
+
+        assertThat(labels.get(CONTENT_ID)).extracting(TopicLabel::slug)
+                .containsExactly("legacy");
+    }
+
+    @Test
+    void topicLabelsOf_ShouldReturnEmptyMap_WhenNoIdIsGiven() {
+        insertAssignment(jdbcTemplate, CONTENT_ID, JAVA);
+
+        Map<UUID, List<TopicLabel>> labels = labelsOf();
+
+        assertThat(labels).isEmpty();
+    }
+
     private boolean replace(UUID... topicIds) {
         return Boolean.TRUE.equals(transactions.execute(
                 status -> assignments.replaceAssignments(CONTENT_ID, List.of(topicIds))));
+    }
+
+    private Map<UUID, List<TopicLabel>> labelsOf(UUID... contentIds) {
+        return transactions.execute(status -> assignments.topicLabelsOf(List.of(contentIds)));
     }
 
     private List<UUID> assignedTopicIds() {
