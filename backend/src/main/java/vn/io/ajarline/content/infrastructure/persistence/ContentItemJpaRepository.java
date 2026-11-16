@@ -80,4 +80,22 @@ public interface ContentItemJpaRepository extends JpaRepository<ContentItemEntit
             @Param("types") Collection<String> types,
             @Param("limit") int limit,
             @Param("offset") long offset);
+
+    /**
+     * Returns one window of items of the given type and status, ordered by
+     * title and then by id. Filtering and ordering happen before the window is
+     * cut, so the same data always gives the same pages.
+     */
+    @Query(value = """
+            SELECT * FROM content_item item
+             WHERE item.type = :type
+               AND item.status = :status
+             ORDER BY item.title, item.id
+             LIMIT :limit OFFSET :offset
+            """, nativeQuery = true)
+    List<ContentItemEntity> findWindowOfTypeWithStatus(
+            @Param("type") String type,
+            @Param("status") String status,
+            @Param("limit") int limit,
+            @Param("offset") long offset);
 }
