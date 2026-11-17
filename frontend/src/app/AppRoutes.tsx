@@ -8,6 +8,7 @@ import { TopicManagementPage } from '../pages/admin/TopicManagementPage'
 import { ArticlePage } from '../pages/ArticlePage'
 import { NotFoundPage } from '../pages/NotFoundPage'
 import { RuntimeStatusPage } from '../pages/RuntimeStatusPage'
+import { StandaloneIndexPage } from '../pages/StandaloneIndexPage'
 import { TopicHomePage } from '../pages/TopicHomePage'
 import { TopicIndexPage } from '../pages/TopicIndexPage'
 import { AdminLayout } from './AdminLayout'
@@ -19,6 +20,7 @@ export function AppRoutes() {
     <Routes>
       <Route element={<ReaderLayout />}>
         <Route index element={<RuntimeStatusPage />} />
+        <Route path="articles" element={<StandaloneIndexPage />} />
         <Route path="articles/:slug" element={<ArticlePage />} />
         <Route path="topics" element={<TopicIndexPage />} />
         <Route path="topics/:slug" element={<TopicHomePage />} />

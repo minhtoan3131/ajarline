@@ -225,6 +225,7 @@ body {
   border-bottom: 1px solid var(--reader-line);
 }
 
+.reader-content-entry h2,
 .reader-content-entry h3 {
   margin: 0 0 8px;
   font-size: 1.125rem;
@@ -232,11 +233,13 @@ body {
   overflow-wrap: anywhere;
 }
 
+.reader-content-entry h2 a,
 .reader-content-entry h3 a {
   color: var(--reader-ink);
   text-decoration: none;
 }
 
+.reader-content-entry h2 a:hover,
 .reader-content-entry h3 a:hover {
   text-decoration: underline;
 }
