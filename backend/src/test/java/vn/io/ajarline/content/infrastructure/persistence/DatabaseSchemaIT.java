@@ -32,7 +32,10 @@ public class DatabaseSchemaIT {
                 "content_item",
                 "article",
                 "topic",
-                "content_topic"
+                "content_topic",
+                "series",
+                "module",
+                "module_article"
         );
     }
 
@@ -42,7 +45,8 @@ public class DatabaseSchemaIT {
                 SELECT indexname
                 FROM pg_indexes
                 WHERE schemaname = 'public'
-                AND tablename IN ('content_item', 'article', 'topic', 'content_topic')
+                AND tablename IN ('content_item', 'article', 'topic', 'content_topic',
+                                  'series', 'module', 'module_article')
                 ORDER BY indexname
                 """, String.class);
         assertThat(indexes).containsExactlyInAnyOrder(
@@ -52,7 +56,12 @@ public class DatabaseSchemaIT {
                 "pk_topic",
                 "uk_topic_slug",
                 "pk_content_topic",
-                "ix_content_topic_topic_id_content_id"
+                "ix_content_topic_topic_id_content_id",
+                "pk_series",
+                "pk_module",
+                "uk_module_series_position",
+                "pk_module_article",
+                "uk_module_article_module_position"
         );
     }
 
