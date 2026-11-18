@@ -1,4 +1,4 @@
-import { useDeferredValue, useId, useState } from 'react'
+import { useDeferredValue, useId, useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
 
 import { ArticlePreview } from './ArticlePreview'
@@ -9,16 +9,28 @@ import { SaveStatus } from './SaveStatus'
 import { TopicPicker } from './TopicPicker'
 import { articlePath } from '../../article-reading/articleRoutes'
 import { useTopicList } from '../../admin-topics/useTopicList'
-import type { ArticleAdminDetail, ArticleTextField, Versioned } from '../model/article'
+import type { ArticleAdminDetail, ArticleTextField, Placement, Versioned } from '../model/article'
 import type { EditorNotice } from '../model/articleEditorState'
 import type { EditorFailure } from '../model/editorFailure'
 import { useArticleEditor } from '../useArticleEditor'
+
+/** What the editor hands to the control that chooses the Module of the Article. */
+export interface PlacementSlot {
+  value: Placement | null
+  onChange: (placement: Placement | null) => void
+  /** Error of the placement field, for example a Module that no longer exists. */
+  error: string | null
+  /** True while a request runs. The control must not change the placement then. */
+  disabled: boolean
+}
 
 export interface ArticleEditorProps {
   /** Loaded Article, or null when the Admin creates a new one. */
   initial: Versioned<ArticleAdminDetail> | null
   initialNotice: EditorNotice | null
   onCreated?: (articleId: string) => void
+  /** Draws the control for the Module and position. The editor does not know Series or Module. */
+  renderPlacement?: (slot: PlacementSlot) => ReactNode
 }
 
 /**
@@ -27,12 +39,14 @@ export interface ArticleEditorProps {
  * Save and publication are separate actions. The form never reports success
  * before the server answers, and it keeps the typed text on every failure.
  */
-export function ArticleEditor({ initial, initialNotice, onCreated }: ArticleEditorProps) {
+export function ArticleEditor({ initial, initialNotice, onCreated, renderPlacement }: ArticleEditorProps) {
   const editor = useArticleEditor(initial, initialNotice, onCreated)
   const { state, dirty } = editor
   const topicList = useTopicList()
   const topicError =
     state.failure?.kind === 'field' && state.failure.field === 'topicIds' ? state.failure.message : null
+  const placementError =
+    state.failure?.kind === 'field' && state.failure.field === 'placement' ? state.failure.message : null
   const article = state.current?.value ?? null
   // The public URL must stay stable once readers may have seen it.
   const slugLocked = article !== null && article.publishedAt !== null
@@ -133,6 +147,12 @@ export function ArticleEditor({ initial, initialNotice, onCreated }: ArticleEdit
               onChange={editor.changeTopics}
               onRetry={topicList.reload}
             />
+            {renderPlacement?.({
+              value: state.fields.placement,
+              onChange: editor.changePlacement,
+              error: placementError,
+              disabled: state.pending !== null,
+            })}
             <EditorField label="Nội dung Markdown" {...fieldProps('bodyMarkdown')} rows={24} monospace />
           </section>
           <section className="article-editor-preview" aria-label="Xem trước trực tiếp">

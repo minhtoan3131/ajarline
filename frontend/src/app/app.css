@@ -814,6 +814,16 @@ a.admin-button {
 
 .learning-parent legend { padding: 0 6px; font-weight: 600; }
 
+.placement-picker {
+  margin: 0 0 16px;
+  padding: 12px 16px;
+  border: 1px solid var(--admin-border);
+  border-radius: 4px;
+  background: var(--admin-surface);
+}
+
+.placement-picker legend { padding: 0 6px; font-weight: 600; }
+
 .admin-dialog-backdrop {
   position: fixed;
   inset: 0;

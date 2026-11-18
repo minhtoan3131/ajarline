@@ -11,14 +11,15 @@ import {
   draftArticle,
   revisionHeaders,
 } from '../../features/admin-content/fixture/articleAdminFixture'
+import { givenSeriesList } from '../../features/admin-learning/fixture/learningAdminFixture'
 import { activeTopic, givenTopicCatalog, inactiveTopic } from '../../features/admin-topics/fixture/topicAdminFixture'
 import { jsonResponse, problemResponse, StubApiServer } from '../../shared/api/testsupport/StubApiServer'
 
 const EDIT_ROUTE = `/admin/articles/${ARTICLE_ID}`
 
-/** Session plus the Topic list that every Article editor loads. */
+/** Session, the Topic list and the Series list that every Article editor loads. */
 function givenSignedInEditor(api: StubApiServer): StubApiServer {
-  return givenTopicCatalog(givenSignedInAdmin(api), activeTopic(), inactiveTopic())
+  return givenSeriesList(givenTopicCatalog(givenSignedInAdmin(api), activeTopic(), inactiveTopic()), [])
 }
 
 function givenLoadedDraft(api: StubApiServer, article = draftArticle()): StubApiServer {
@@ -88,7 +89,6 @@ describe('ArticleEditorPage', () => {
     expect(screen.getByLabelText('Nội dung Markdown')).toHaveValue('## Mở đầu\n\nNội dung bài.')
     expect(screen.getByText('Đã lưu mọi thay đổi')).toBeInTheDocument()
     expect(api.requestsTo('POST', ARTICLES_PATH)).toHaveLength(0)
-    expect(screen.queryByLabelText(/module/i)).toBeNull()
   })
 
   it('save_ShouldSendIfMatchAndUseNewEtag_WhenArticleIsSavedTwice', async () => {

@@ -76,6 +76,14 @@ function validationFailure(error: ApiError): EditorFailure {
       return { kind: 'field', field: 'summary', message: 'Cần có tóm tắt trước khi xuất bản.' }
     case 'ARTICLE_BODY_REQUIRED':
       return { kind: 'field', field: 'bodyMarkdown', message: 'Cần có nội dung bài trước khi xuất bản.' }
+    case 'MODULE_REFERENCE_NOT_FOUND':
+      return { kind: 'field', field: 'placement', message: 'Module đã chọn không còn tồn tại. Hãy chọn lại.' }
+    case 'INVALID_POSITION':
+      return {
+        kind: 'field',
+        field: 'placement',
+        message: 'Vị trí không hợp lệ cho Module đã chọn. Nhập số từ 1 đến số bài hiện có của Module cộng 1.',
+      }
     case 'TOPIC_REFERENCE_NOT_FOUND':
       return { kind: 'field', field: 'topicIds', message: 'Có Topic đã chọn không còn tồn tại. Hãy tải lại trang để xem danh sách mới.' }
     case 'INACTIVE_TOPIC_ASSIGNMENT':

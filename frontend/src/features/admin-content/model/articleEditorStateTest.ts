@@ -96,4 +96,41 @@ describe('articleEditorReducer', () => {
     expect(state.fields.topicIds).toEqual(['topic-a'])
     expect(isDirty(state)).toBe(true)
   })
+
+  it('reduce_ShouldMarkFormDirty_WhenPlacementChanges', () => {
+    const state = createEditorState({ initial: LOADED, initialNotice: null })
+
+    const changed = articleEditorReducer(state, {
+      type: 'placement-changed',
+      placement: { moduleId: 'module-1', position: 2 },
+    })
+
+    expect(isDirty(changed)).toBe(true)
+  })
+
+  it('reduce_ShouldNotMarkFormDirty_WhenPlacementReturnsToSavedValue', () => {
+    const state = createEditorState({ initial: LOADED, initialNotice: null })
+    const changed = articleEditorReducer(state, {
+      type: 'placement-changed',
+      placement: { moduleId: 'module-1', position: 2 },
+    })
+
+    const back = articleEditorReducer(changed, { type: 'placement-changed', placement: null })
+
+    expect(isDirty(back)).toBe(false)
+  })
+
+  it('reduce_ShouldClearOnlyPlacementError_WhenPlacementChanges', () => {
+    let state = createEditorState({ initial: LOADED, initialNotice: null })
+    state = articleEditorReducer(state, {
+      type: 'mutation-failed',
+      failure: { kind: 'field', field: 'placement', message: 'Module đã chọn không còn tồn tại.' },
+    })
+
+    const afterTitle = articleEditorReducer(state, { type: 'field-changed', field: 'title', value: 'x' })
+    const afterPlacement = articleEditorReducer(state, { type: 'placement-changed', placement: null })
+
+    expect(afterTitle.failure).not.toBeNull()
+    expect(afterPlacement.failure).toBeNull()
+  })
 })

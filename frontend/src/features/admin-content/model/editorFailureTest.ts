@@ -21,6 +21,13 @@ describe('toEditorFailure', () => {
       field: 'topicIds',
     })
   })
+
+  it.each(['MODULE_REFERENCE_NOT_FOUND', 'INVALID_POSITION'])(
+    'toEditorFailure_ShouldPointAtPlacement_When%s',
+    (code) => {
+      expect(toEditorFailure(apiError(422, code))).toMatchObject({ kind: 'field', field: 'placement' })
+    },
+  )
 })
 
 describe('toCommonEditorFailure', () => {

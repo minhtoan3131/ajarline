@@ -11,6 +11,7 @@ import {
   draftArticle,
   revisionHeaders,
 } from '../../features/admin-content/fixture/articleAdminFixture'
+import { givenSeriesList } from '../../features/admin-learning/fixture/learningAdminFixture'
 import {
   activeTopic,
   inactiveTopic,
@@ -24,7 +25,7 @@ import { jsonResponse, problemResponse, StubApiServer } from '../../shared/api/t
 const EDIT_ROUTE = `/admin/articles/${ARTICLE_ID}`
 
 function givenArticle(article = draftArticle()): StubApiServer {
-  return givenSignedInAdmin(new StubApiServer())
+  return givenSeriesList(givenSignedInAdmin(new StubApiServer()), [])
     .on('GET', TOPICS_PATH, jsonResponse(200, topicList(activeTopic(), inactiveTopic())))
     .on('GET', ARTICLE_PATH, jsonResponse(200, article, revisionHeaders(article)))
 }
@@ -128,7 +129,7 @@ describe('Article editor Topics', () => {
   it('save_ShouldKeepAttachedTopics_WhenTopicListCannotBeLoaded', async () => {
     const article = draftArticle({ topicIds: [TOPIC_ID] })
     const saved = draftArticle({ revision: 2, title: 'Tiêu đề mới', topicIds: [TOPIC_ID] })
-    const api = givenSignedInAdmin(new StubApiServer())
+    const api = givenSeriesList(givenSignedInAdmin(new StubApiServer()), [])
       .on('GET', TOPICS_PATH, problemResponse(500, 'INTERNAL_ERROR'), jsonResponse(200, topicList(activeTopic())))
       .on('GET', ARTICLE_PATH, jsonResponse(200, article, revisionHeaders(article)))
       .on('PUT', ARTICLE_PATH, jsonResponse(200, saved, revisionHeaders(saved)))
@@ -153,7 +154,7 @@ describe('Article editor Topics', () => {
 
   it('save_ShouldCreateDraftWithTopics_WhenNewArticleHasChosenTopic', async () => {
     const created = draftArticle({ topicIds: [TOPIC_ID] })
-    const api = givenSignedInAdmin(new StubApiServer())
+    const api = givenSeriesList(givenSignedInAdmin(new StubApiServer()), [])
       .on('GET', TOPICS_PATH, jsonResponse(200, topicList(activeTopic())))
       .on('POST', ARTICLES_PATH, jsonResponse(201, created, { ...revisionHeaders(created), Location: ARTICLE_PATH }))
       .on('GET', ARTICLE_PATH, jsonResponse(200, created, revisionHeaders(created)))

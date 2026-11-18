@@ -3,7 +3,7 @@ import { useReducer } from 'react'
 import { useHttpClient } from '../../shared/api/HttpClientContext'
 import { useAdminSession } from '../admin-auth/AdminSessionContext'
 import { createArticle, getArticle, publishContent, unpublishContent, updateArticle } from './api/articleAdminApi'
-import { relationshipsOf, STANDALONE, toEditable, type ArticleAdminDetail, type ArticleTextField, type Versioned } from './model/article'
+import { toEditable, type ArticleAdminDetail, type ArticleTextField, type Placement, type Versioned } from './model/article'
 import { articleEditorReducer, createEditorState, isDirty, type EditorNotice, type EditorState } from './model/articleEditorState'
 import { toEditorFailure } from './model/editorFailure'
 
@@ -12,6 +12,7 @@ export interface ArticleEditorController {
   readonly dirty: boolean
   changeField(field: ArticleTextField, value: string): void
   changeTopics(topicIds: string[]): void
+  changePlacement(placement: Placement | null): void
   save(): Promise<void>
   reload(): Promise<void>
   publish(): Promise<void>
@@ -52,12 +53,11 @@ export function useArticleEditor(
     dispatch({ type: 'mutation-started', pending: 'saving', submitted })
     try {
       if (current === null) {
-        const created = await createArticle(client, toEditable(submitted, STANDALONE))
+        const created = await createArticle(client, toEditable(submitted))
         dispatch({ type: 'article-saved', article: created, notice: 'created' })
         onCreated?.(created.value.id)
       } else {
-        const editable = toEditable(submitted, relationshipsOf(current.value))
-        const updated = await updateArticle(client, current.value.id, editable, current.etag)
+        const updated = await updateArticle(client, current.value.id, toEditable(submitted), current.etag)
         dispatch({ type: 'article-saved', article: updated, notice: 'saved' })
       }
     } catch (error) {
@@ -98,6 +98,7 @@ export function useArticleEditor(
     dirty: isDirty(state),
     changeField: (field, value) => dispatch({ type: 'field-changed', field, value }),
     changeTopics: (topicIds) => dispatch({ type: 'topics-changed', topicIds }),
+    changePlacement: (placement) => dispatch({ type: 'placement-changed', placement }),
     save,
     reload,
     publish: () => changePublication('publish'),
