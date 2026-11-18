@@ -1,7 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
 import { ApiError } from '../../../shared/api/httpClient'
-import { toEditorFailure } from './editorFailure'
+import { toCommonEditorFailure, toEditorFailure } from './editorFailure'
 
 function apiError(status: number, code: string): ApiError {
   return new ApiError(status, { code, requestId: 'req-1' }, null)
@@ -20,5 +20,26 @@ describe('toEditorFailure', () => {
       kind: 'field',
       field: 'topicIds',
     })
+  })
+})
+
+describe('toCommonEditorFailure', () => {
+  it('toCommonEditorFailure_ShouldReportSessionExpired_WhenSessionIsMissing', () => {
+    expect(toCommonEditorFailure(apiError(401, 'AUTHENTICATION_REQUIRED'))).toEqual({ kind: 'session-expired' })
+  })
+
+  it('toCommonEditorFailure_ShouldAskForNewToken_WhenCsrfTokenIsInvalid', () => {
+    expect(toCommonEditorFailure(apiError(403, 'CSRF_INVALID'))).toEqual({ kind: 'session-renewed' })
+  })
+
+  it('toCommonEditorFailure_ShouldReportConflict_WhenRevisionIsStale', () => {
+    expect(toCommonEditorFailure(apiError(412, 'REVISION_CONFLICT'))).toEqual({ kind: 'conflict' })
+  })
+
+  it('toCommonEditorFailure_ShouldReportTechnicalProblem_WhenNoResponseCame', () => {
+    const failure = toCommonEditorFailure(new ApiError(0, null, null))
+
+    expect(failure).toMatchObject({ kind: 'general' })
+    expect(failure.kind === 'general' && failure.message).toContain('Không kết nối được máy chủ')
   })
 })
