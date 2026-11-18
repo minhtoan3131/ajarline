@@ -8,6 +8,7 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
 import vn.io.ajarline.content.contract.ContentOperationException;
+import vn.io.ajarline.learning.contract.LearningOperationException;
 import vn.io.ajarline.platform.web.ApiProblem;
 import vn.io.ajarline.platform.web.ApiProblemWriter;
 import vn.io.ajarline.publication.contract.PublicationOperationException;
@@ -47,6 +48,14 @@ public class AdminPublicationExceptionHandler {
     @ExceptionHandler(ContentOperationException.class)
     ResponseEntity<ApiProblem> content(
             ContentOperationException failure,
+            HttpServletRequest request
+    ) {
+        return AdminFailureMapping.response(problems, request, failure.code().name());
+    }
+
+    @ExceptionHandler(LearningOperationException.class)
+    ResponseEntity<ApiProblem> learning(
+            LearningOperationException failure,
             HttpServletRequest request
     ) {
         return AdminFailureMapping.response(problems, request, failure.code().name());

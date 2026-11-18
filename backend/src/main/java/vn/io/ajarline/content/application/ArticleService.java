@@ -2,7 +2,6 @@ package vn.io.ajarline.content.application;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import vn.io.ajarline.content.contract.*;
 import vn.io.ajarline.content.infrastructure.persistence.ArticleEntity;
@@ -17,7 +16,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Service
-public class ArticleService implements ArticleCreator, ArticleReader, ArticleEditor, ContentPublicationAccess, ContentEligibility {
+public class ArticleService implements ArticleCreator, ArticleReader, ArticleEditor {
     private static final String SLUG_CONSTRAINT = "uk_content_item_type_slug";
     private final ContentItemJpaRepository contentRepository;
     private final ArticleJpaRepository articleRepository;
@@ -159,22 +158,6 @@ public class ArticleService implements ArticleCreator, ArticleReader, ArticleEdi
         return placement == null ? null : placement.moduleId();
     }
 
-    private ContentRecordView toRecordView(ContentItemEntity content) {
-        return new ContentRecordView(
-                content.getId(),
-                content.getType(),
-                content.getTitle(),
-                content.getSlug(),
-                content.getSummary(),
-                content.getStatus(),
-                content.getRevision(),
-                content.getPublishedAt(),
-                content.getUnpublishedAt(),
-                content.getCreatedAt(),
-                content.getUpdatedAt()
-        );
-    }
-
     private ContentOperationException notFound(UUID id) {
         return new ContentOperationException(ContentFailureCode.CONTENT_NOT_FOUND,
                 "Article was not found: " + id);
@@ -245,49 +228,6 @@ public class ArticleService implements ArticleCreator, ArticleReader, ArticleEdi
         // the set: it rose above.
         revisions.advanceRevisions(change.revisionTargets(), now);
         return toView(contentItemEntity, articleEntity);
-    }
-
-    @Override
-    @Transactional(propagation = Propagation.MANDATORY)
-    public ContentRecordView lock(UUID id, long expectedRevision) {
-        LockedArticle locked = lockArticle(id, expectedRevision);
-        return toRecordView(locked.content());
-    }
-
-    @Override
-    @Transactional(propagation = Propagation.MANDATORY)
-    public ContentRecordView markPublished(
-            UUID id,
-            long expectedRevision,
-            Instant changedAt
-    ) {
-        LockedArticle locked = lockArticle(id, expectedRevision);
-        locked.content().markPublished(changedAt);
-        flushCanonicalWrite();
-        return toRecordView(locked.content());
-    }
-
-    @Override
-    @Transactional(propagation = Propagation.MANDATORY)
-    public ContentRecordView markUnpublished(
-            UUID id,
-            long expectedRevision,
-            Instant changedAt
-    ) {
-        LockedArticle locked = lockArticle(id, expectedRevision);
-        locked.content().markUnpublished(changedAt);
-        flushCanonicalWrite();
-        return toRecordView(locked.content());
-    }
-
-    @Override
-    @Transactional(propagation = Propagation.MANDATORY)
-    public void requirePublishable(UUID id) {
-        ContentItemEntity content = contentRepository.findById(id)
-                .filter(item -> item.getType() == ContentType.ARTICLE)
-                .orElseThrow(() -> notFound(id));
-        ArticleEntity article = requireArticle(id);
-        policy.requirePublishable(content.getSummary(), article.getBodyMarkdown());
     }
 
 

@@ -26,7 +26,9 @@ final class AdminFailureMapping {
             entry("MODULE_REFERENCE_NOT_FOUND", new Problem(422, "Module reference was not found", "The Module does not exist.")),
             entry("INVALID_POSITION", new Problem(422, "Position is invalid", "The position is outside the allowed range.")),
             entry("ORDER_SET_CONFLICT", new Problem(409, "Order does not match the children", "The ids must be exactly the current children.")),
-            entry("INVALID_PUBLICATION_STATE", new Problem(409, "Content cannot be unpublished from the current state", "Content cannot be unpublished from the current state."))
+            entry("INVALID_PUBLICATION_STATE", new Problem(409, "Content cannot be unpublished from the current state", "Content cannot be unpublished from the current state.")),
+            entry("MODULE_HAS_NO_PUBLIC_ARTICLE", new Problem(422, "Module has no public Article", "A Module needs at least one published Article before it can be published.")),
+            entry("SERIES_HAS_NO_PUBLIC_MODULE", new Problem(422, "Series has no public Module", "A Series needs at least one published Module with a published Article before it can be published."))
     );
 
     private AdminFailureMapping() {

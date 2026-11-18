@@ -4,8 +4,10 @@ import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
+import vn.io.ajarline.content.contract.ContentEligibility;
 import vn.io.ajarline.content.contract.ContentFailureCode;
 import vn.io.ajarline.content.contract.ContentOperationException;
+import vn.io.ajarline.content.contract.ContentPublicationAccess;
 import vn.io.ajarline.content.contract.ContentRecordInput;
 import vn.io.ajarline.content.contract.ContentRecordReader;
 import vn.io.ajarline.content.contract.ContentRecordSummary;
@@ -15,10 +17,13 @@ import vn.io.ajarline.content.contract.ContentType;
 import vn.io.ajarline.content.contract.EditableRecord;
 import vn.io.ajarline.content.contract.PublicationStatus;
 import vn.io.ajarline.content.contract.TopicAssignmentPort;
+import vn.io.ajarline.content.infrastructure.persistence.ArticleEntity;
+import vn.io.ajarline.content.infrastructure.persistence.ArticleJpaRepository;
 import vn.io.ajarline.content.infrastructure.persistence.ContentItemEntity;
 import vn.io.ajarline.content.infrastructure.persistence.ContentItemJpaRepository;
 
 import java.time.Clock;
+import java.time.Instant;
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
@@ -27,23 +32,31 @@ import java.util.UUID;
 
 /**
  * Reads and writes the common record of content items of any type.
+ * It also applies the publication changes that the publication workflow asks for.
  * The caller owns the transaction. Methods that touch the database fail without one.
  */
 @Service
-public class ContentRecordService implements ContentRecordReader, ContentRecordWriter {
+public class ContentRecordService
+        implements ContentRecordReader, ContentRecordWriter, ContentPublicationAccess, ContentEligibility {
     private static final String SLUG_CONSTRAINT = "uk_content_item_type_slug";
 
     private final ContentItemJpaRepository contentRepository;
+    private final ArticleJpaRepository articleRepository;
     private final ContentRecordPolicy policy;
+    private final ArticlePolicy articlePolicy;
     private final Clock clock;
     private final TopicAssignmentPort topicAssignment;
 
     public ContentRecordService(ContentItemJpaRepository contentRepository,
+                                ArticleJpaRepository articleRepository,
                                 ContentRecordPolicy policy,
+                                ArticlePolicy articlePolicy,
                                 Clock clock,
                                 TopicAssignmentPort topicAssignment) {
         this.contentRepository = contentRepository;
+        this.articleRepository = articleRepository;
         this.policy = policy;
+        this.articlePolicy = articlePolicy;
         this.clock = clock;
         this.topicAssignment = topicAssignment;
     }
@@ -133,13 +146,26 @@ public class ContentRecordService implements ContentRecordReader, ContentRecordW
         ContentItemEntity item = contentRepository.findByIdForUpdate(id)
                 .filter(found -> found.getType() == type)
                 .orElseThrow(() -> notFound(id, type));
+        requireRevision(item, expectedRevision);
+        return item;
+    }
 
+    /**
+     * Same as above, for any type. The publication workflow knows the type only after the lock.
+     */
+    private ContentItemEntity lockAtRevision(UUID id, long expectedRevision) {
+        ContentItemEntity item = contentRepository.findByIdForUpdate(id)
+                .orElseThrow(() -> notFound(id));
+        requireRevision(item, expectedRevision);
+        return item;
+    }
+
+    private void requireRevision(ContentItemEntity item, long expectedRevision) {
         if (item.getRevision() != expectedRevision) {
             throw new ContentOperationException(
                     ContentFailureCode.REVISION_CONFLICT,
                     "The revision does not match the expected revision.");
         }
-        return item;
     }
 
     @Override
@@ -173,6 +199,44 @@ public class ContentRecordService implements ContentRecordReader, ContentRecordW
         return toView(item);
     }
 
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public ContentRecordView lock(UUID id, long expectedRevision) {
+        return toView(lockAtRevision(id, expectedRevision));
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public ContentRecordView markPublished(UUID id, long expectedRevision, Instant changedAt) {
+        ContentItemEntity item = lockAtRevision(id, expectedRevision);
+        item.markPublished(changedAt);
+        contentRepository.flush();
+        return toView(item);
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public ContentRecordView markUnpublished(UUID id, long expectedRevision, Instant changedAt) {
+        ContentItemEntity item = lockAtRevision(id, expectedRevision);
+        item.markUnpublished(changedAt);
+        contentRepository.flush();
+        return toView(item);
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void requirePublishable(UUID id) {
+        ContentItemEntity item = contentRepository.findById(id)
+                .orElseThrow(() -> notFound(id));
+        if (item.getType() == ContentType.ARTICLE) {
+            ArticleEntity article = articleRepository.findById(id).orElseThrow(
+                    () -> new IllegalStateException("Article subtype row is missing for " + id));
+            articlePolicy.requirePublishable(item.getSummary(), article.getBodyMarkdown());
+            return;
+        }
+        policy.requirePublishableSummary(item.getSummary());
+    }
+
     private ContentItemEntity requireItem(UUID id, ContentType type) {
         return contentRepository.findById(id)
                 .filter(item -> item.getType() == type)
@@ -183,6 +247,12 @@ public class ContentRecordService implements ContentRecordReader, ContentRecordW
         return new ContentOperationException(
                 ContentFailureCode.CONTENT_NOT_FOUND,
                 type + " was not found: " + id);
+    }
+
+    private ContentOperationException notFound(UUID id) {
+        return new ContentOperationException(
+                ContentFailureCode.CONTENT_NOT_FOUND,
+                "Content was not found: " + id);
     }
 
     /**

@@ -12,7 +12,7 @@ import java.util.UUID;
 })
 public record PublicationStateResponse(
         UUID id,
-        @Schema(allowableValues = "article") String type,
+        @Schema(allowableValues = {"article", "module", "series"}) String type,
         PublicationStatus status,
         long revision,
         @Schema(nullable = true) Instant publishedAt,
