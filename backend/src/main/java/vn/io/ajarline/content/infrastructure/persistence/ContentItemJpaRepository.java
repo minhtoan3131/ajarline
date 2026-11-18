@@ -98,4 +98,25 @@ public interface ContentItemJpaRepository extends JpaRepository<ContentItemEntit
             @Param("status") String status,
             @Param("limit") int limit,
             @Param("offset") long offset);
+
+    /**
+     * Returns one window of the content index. The text filter is a literal, case-insensitive
+     * search in the title or the slug. An empty text matches every item. Ordering and paging
+     * run after filtering, so the same data always gives the same pages.
+     */
+    @Query(value = """
+            SELECT * FROM content_item item
+             WHERE item.type IN (:types)
+               AND item.status IN (:statuses)
+               AND (position(lower(:q) in lower(item.title)) > 0
+                    OR position(lower(:q) in lower(item.slug)) > 0)
+             ORDER BY item.updated_at DESC, item.id ASC
+             LIMIT :limit OFFSET :offset
+            """, nativeQuery = true)
+    List<ContentItemEntity> findIndexWindow(
+            @Param("types") Collection<String> types,
+            @Param("statuses") Collection<String> statuses,
+            @Param("q") String q,
+            @Param("limit") int limit,
+            @Param("offset") long offset);
 }

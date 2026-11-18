@@ -298,7 +298,10 @@ public class ContentRecordService
                 item.getUpdatedAt());
     }
 
-    private ContentRecordSummary toSummary(ContentItemEntity item) {
+    /**
+     * Also used by the content index, so both reads show the same columns.
+     */
+    static ContentRecordSummary toSummary(ContentItemEntity item) {
         return new ContentRecordSummary(
                 item.getId(),
                 item.getType(),

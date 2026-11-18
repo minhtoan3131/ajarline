@@ -39,6 +39,23 @@ class PageQueryTest {
         assertRejected(null, size, "INVALID_PAGE_SIZE");
     }
 
+    @ParameterizedTest(name = "[{index}] size={0}")
+    @ValueSource(ints = {1, 51, 100})
+    void parse_ShouldAcceptSize_WhenSizeIsNotAboveTheGivenMaximum(int size) {
+        PageQuery query = PageQuery.parse("0", String.valueOf(size), 100);
+
+        assertThat(query.size()).isEqualTo(size);
+    }
+
+    @Test
+    void parse_ShouldRejectSize_WhenSizeIsAboveTheGivenMaximum() {
+        assertThatThrownBy(() -> PageQuery.parse("0", "101", 100))
+                .isInstanceOfSatisfying(ApiQueryException.class, exception -> {
+                    assertThat(exception.code()).isEqualTo("INVALID_PAGE_SIZE");
+                    assertThat(exception.getMessage()).contains("100");
+                });
+    }
+
     @Test
     void parse_ShouldReportThePage_WhenPageAndSizeAreBothInvalid() {
         assertRejected("abc", "0", "INVALID_PAGE");
