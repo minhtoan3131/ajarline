@@ -24,6 +24,7 @@ public record ArticleView(
         Instant unpublishedAt,
         Instant createdAt,
         Instant updatedAt,
-        List<UUID> topicIds
+        List<UUID> topicIds,
+        ArticlePlacement placement
 ) {
 }

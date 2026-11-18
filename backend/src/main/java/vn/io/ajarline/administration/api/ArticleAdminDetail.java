@@ -34,7 +34,6 @@ public record ArticleAdminDetail(
         Instant updatedAt
 ) {
     static ArticleAdminDetail from(ArticleView view) {
-        // TODO: Compose moduleId and position from the learning capability.
         return new ArticleAdminDetail(
                 view.id(),
                 "article",
@@ -42,8 +41,8 @@ public record ArticleAdminDetail(
                 view.slug(),
                 view.summary(),
                 view.bodyMarkdown(),
-                null,
-                null,
+                view.placement() == null ? null : view.placement().moduleId(),
+                view.placement() == null ? null : view.placement().position(),
                 view.topicIds(),
                 view.status(),
                 view.revision(),

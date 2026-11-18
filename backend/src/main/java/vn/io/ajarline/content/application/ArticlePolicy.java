@@ -28,7 +28,8 @@ public class ArticlePolicy {
         String slug = records.normalizeSlug(input.slug());
         String summary = records.normalizeSummary(input.summary());
         records.requireDistinctTopicIds(input.topicIds());
-        return new ArticleContentInput(input.title(), slug, summary, input.bodyMarkdown(), input.topicIds());
+        return new ArticleContentInput(
+                input.title(), slug, summary, input.bodyMarkdown(), input.topicIds(), input.placement());
     }
 
     public void requirePublishable(String summary, String bodyMarkdown) {

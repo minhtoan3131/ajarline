@@ -9,6 +9,7 @@ import java.util.UUID;
 import io.swagger.v3.oas.annotations.media.Schema;
 import tools.jackson.databind.JsonNode;
 import vn.io.ajarline.content.contract.ArticleContentInput;
+import vn.io.ajarline.content.contract.ArticlePlacement;
 
 /**
  * Represents the complete editable Article payload at the Admin HTTP boundary.
@@ -70,7 +71,9 @@ public record ArticleEditable(
     }
 
     ArticleContentInput toContentInput() {
-        return new ArticleContentInput(title, slug, summary, bodyMarkdown, topicIds);
+        // parse() already checked that moduleId and position are both null or both present.
+        ArticlePlacement placement = moduleId == null ? null : new ArticlePlacement(moduleId, position);
+        return new ArticleContentInput(title, slug, summary, bodyMarkdown, topicIds, placement);
     }
 
     private void validateRelationships() {

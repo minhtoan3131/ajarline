@@ -37,6 +37,21 @@ public class ModuleArticleEntity {
         this.position = position;
     }
 
+    /**
+     * Moves a sibling inside the same Module.
+     */
+    public void changePosition(int position) {
+        this.position = position;
+    }
+
+    /**
+     * Moves this Article to a position of a Module. It may be the same Module.
+     */
+    public void moveTo(UUID moduleId, int position) {
+        this.moduleId = moduleId;
+        this.position = position;
+    }
+
     public UUID getArticleId() {
         return articleId;
     }
