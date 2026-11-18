@@ -38,6 +38,10 @@ class ApiDocumentationIT {
             Map.entry("/api/admin/v1/series/{id}", Map.of(
                     "get", "getAdminSeries",
                     "put", "updateSeries")),
+            Map.entry("/api/admin/v1/modules", Map.of("post", "createModule")),
+            Map.entry("/api/admin/v1/modules/{id}", Map.of(
+                    "get", "getAdminModule",
+                    "put", "updateModule")),
             Map.entry("/api/admin/v1/topics", Map.of(
                     "get", "listAdminTopics",
                     "post", "createTopic")),
@@ -356,6 +360,37 @@ class ApiDocumentationIT {
                 .containsExactlyInAnyOrder(
                         "id", "type", "slug", "title", "summary",
                         "topics", "publishedAt", "updatedAt");
+    }
+
+    @Test
+    void openApi_ShouldExposeModuleMetadata_WhenDocumentIsGenerated()
+            throws Exception {
+        JsonNode document = openApiDocument();
+        JsonNode paths = document.get("paths");
+        JsonNode create = operation(paths, "/api/admin/v1/modules", "post");
+        JsonNode get = operation(paths, "/api/admin/v1/modules/{id}", "get");
+        JsonNode update = operation(paths, "/api/admin/v1/modules/{id}", "put");
+
+        for (JsonNode moduleOperation : new JsonNode[]{create, get, update}) {
+            assertThat(hasSecurity(moduleOperation, OpenApiConfiguration.ADMIN_SESSION)).isTrue();
+        }
+        assertThat(parameterNames(create)).contains("X-CSRF-TOKEN");
+        assertThat(parameterNames(update)).contains("X-CSRF-TOKEN", "If-Match");
+        assertThat(requestSchemaRef(create)).endsWith("/ModuleEditable");
+        assertThat(requestSchemaRef(update)).endsWith("/ModuleEditable");
+        assertThat(responseSchemaRef(get, "200")).endsWith("/ModuleAdminDetail");
+        assertThat(create.get("responses").get("201")
+                .get("headers").propertyNames())
+                .contains("Location", "ETag");
+        assertThat(update.get("responses").get("200")
+                .get("headers").has("ETag")).isTrue();
+        assertThat(update.get("responses").propertyNames())
+                .contains("404", "409", "412", "422", "428");
+
+        JsonNode schemas = document.get("components").get("schemas");
+        assertThat(schemas.propertyNames()).contains("ModuleEditable", "ModuleAdminDetail");
+        assertThat(schemas.get("ModuleAdminDetail").get("properties").propertyNames())
+                .contains("seriesId", "position", "articles");
     }
 
     private JsonNode openApiDocument() throws Exception {

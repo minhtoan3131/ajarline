@@ -5,6 +5,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -39,6 +40,29 @@ public class ModuleEntity {
         this.seriesId = seriesId;
         this.position = position;
         this.overviewMarkdown = overviewMarkdown;
+    }
+
+    public boolean hasSameOverview(String overviewMarkdown) {
+        return Objects.equals(this.overviewMarkdown, overviewMarkdown);
+    }
+
+    public void replaceOverview(String overviewMarkdown) {
+        this.overviewMarkdown = overviewMarkdown;
+    }
+
+    /**
+     * Moves a sibling inside the same Series.
+     */
+    public void changePosition(int position) {
+        this.position = position;
+    }
+
+    /**
+     * Moves this Module to a position of a Series. It may be the same Series.
+     */
+    public void moveTo(UUID seriesId, int position) {
+        this.seriesId = seriesId;
+        this.position = position;
     }
 
     public UUID getContentId() {

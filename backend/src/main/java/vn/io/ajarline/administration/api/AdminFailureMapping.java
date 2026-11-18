@@ -21,6 +21,9 @@ final class AdminFailureMapping {
             entry("CONTENT_SUMMARY_REQUIRED", new Problem(422, "Summary is required", "Published content must have a summary.")),
             entry("ARTICLE_BODY_REQUIRED", new Problem(422, "Body is required", "A published Article must have a body.")),
             entry("SERIES_OVERVIEW_REQUIRED", new Problem(422, "Overview is required", "A published Series must have an overview.")),
+            entry("MODULE_OVERVIEW_REQUIRED", new Problem(422, "Overview is required", "A published Module must have an overview.")),
+            entry("SERIES_REFERENCE_NOT_FOUND", new Problem(422, "Series reference was not found", "The Series does not exist.")),
+            entry("INVALID_POSITION", new Problem(422, "Position is invalid", "The position is outside the allowed range.")),
             entry("INVALID_PUBLICATION_STATE", new Problem(409, "Content cannot be unpublished from the current state", "Content cannot be unpublished from the current state."))
     );
 

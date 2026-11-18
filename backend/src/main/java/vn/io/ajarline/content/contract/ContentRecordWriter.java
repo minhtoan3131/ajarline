@@ -45,4 +45,15 @@ public interface ContentRecordWriter {
      *                       then rises even if the common record did not change.
      */
     ContentRecordView replace(EditableRecord record, ContentRecordInput input, boolean subtypeChanged);
+
+    /**
+     * Locks the row of an item that owns an ordered list of children. It checks no revision.
+     * The lock lasts until the transaction ends.
+     *
+     * <p>A caller that locks several items must use the same order everywhere, for example
+     * ascending id. Then two callers cannot wait for each other.</p>
+     *
+     * @return true when the item exists with this type and is now locked
+     */
+    boolean lockStructure(UUID id, ContentType type);
 }

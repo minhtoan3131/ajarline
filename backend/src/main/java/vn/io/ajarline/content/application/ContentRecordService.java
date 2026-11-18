@@ -128,6 +128,14 @@ public class ContentRecordService implements ContentRecordReader, ContentRecordW
 
     @Override
     @Transactional(propagation = Propagation.MANDATORY)
+    public boolean lockStructure(UUID id, ContentType type) {
+        return contentRepository.findByIdForUpdate(id)
+                .filter(item -> item.getType() == type)
+                .isPresent();
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
     public ContentRecordView replace(
             EditableRecord record, ContentRecordInput input, boolean subtypeChanged) {
         UUID id = record.current().id();

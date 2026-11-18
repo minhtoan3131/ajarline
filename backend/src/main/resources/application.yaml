@@ -50,6 +50,8 @@ springdoc:
     - /api/admin/v1/articles/**
     - /api/admin/v1/series
     - /api/admin/v1/series/**
+    - /api/admin/v1/modules
+    - /api/admin/v1/modules/**
     - /api/admin/v1/topics
     - /api/admin/v1/topics/**
     - /api/admin/v1/content/**

@@ -29,4 +29,19 @@ class LearningContentPolicyTest {
         assertThatCode(() -> policy.requirePublishableSeriesOverview("# Overview"))
                 .doesNotThrowAnyException();
     }
+
+    @ParameterizedTest(name = "[{index}] rejects \"{0}\"")
+    @NullAndEmptySource
+    @ValueSource(strings = {" ", "\n\t"})
+    void requirePublishableModuleOverview_ShouldRejectMissingOverview(String overview) {
+        assertThatThrownBy(() -> policy.requirePublishableModuleOverview(overview))
+                .isInstanceOfSatisfying(LearningOperationException.class,
+                        e -> assertThat(e.code()).isEqualTo(LearningFailureCode.MODULE_OVERVIEW_REQUIRED));
+    }
+
+    @Test
+    void requirePublishableModuleOverview_ShouldAcceptPresentOverview() {
+        assertThatCode(() -> policy.requirePublishableModuleOverview("# Overview"))
+                .doesNotThrowAnyException();
+    }
 }

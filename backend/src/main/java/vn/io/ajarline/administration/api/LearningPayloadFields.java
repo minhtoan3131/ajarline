@@ -44,6 +44,13 @@ final class LearningPayloadFields {
         return requiredText(value, field);
     }
 
+    static int requiredInt(JsonNode value, String field) {
+        if (value == null || !value.isIntegralNumber() || !value.canConvertToInt()) {
+            throw AdminApiException.invalidRequest(field + " must be a JSON integer.");
+        }
+        return value.asInt();
+    }
+
     static UUID uuid(JsonNode value, String field) {
         if (value == null || !value.isString() || value.asString().length() != 36) {
             throw AdminApiException.invalidUuid(field);

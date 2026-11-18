@@ -21,4 +21,12 @@ public class LearningContentPolicy {
                     "An overview is required for a published Series.");
         }
     }
+
+    public void requirePublishableModuleOverview(String overviewMarkdown) {
+        if (overviewMarkdown == null || overviewMarkdown.isBlank()) {
+            throw new LearningOperationException(
+                    LearningFailureCode.MODULE_OVERVIEW_REQUIRED,
+                    "An overview is required for a published Module.");
+        }
+    }
 }

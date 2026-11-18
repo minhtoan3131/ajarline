@@ -15,7 +15,7 @@ import vn.io.ajarline.platform.web.ApiProblem;
 import vn.io.ajarline.platform.web.ApiProblemWriter;
 
 @Order(Ordered.HIGHEST_PRECEDENCE)
-@RestControllerAdvice(assignableTypes = AdminSeriesController.class)
+@RestControllerAdvice(assignableTypes = {AdminSeriesController.class, AdminModuleController.class})
 public class AdminLearningExceptionHandler {
 
     private final ApiProblemWriter problems;
