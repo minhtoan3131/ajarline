@@ -2,6 +2,7 @@ import { describe, expect, it } from 'vitest'
 
 import { ApiError } from '../../../shared/api/httpClient'
 import { toLearningEditorFailure } from './learningEditorFailure'
+import { ParentNotReadyError } from './module'
 
 function apiError(status: number, code: string): ApiError {
   return new ApiError(status, { code, requestId: 'req-1' }, null)
@@ -39,5 +40,31 @@ describe('toLearningEditorFailure', () => {
       kind: 'field',
       field: 'topicIds',
     })
+  })
+
+  it('toLearningEditorFailure_ShouldPointAtChildList_WhenOrderSetConflicts', () => {
+    expect(toLearningEditorFailure(apiError(409, 'ORDER_SET_CONFLICT'))).toMatchObject({ kind: 'order' })
+  })
+
+  it('toLearningEditorFailure_ShouldPointAtChildList_WhenModuleHasNoPublicArticle', () => {
+    expect(toLearningEditorFailure(apiError(422, 'MODULE_HAS_NO_PUBLIC_ARTICLE'))).toMatchObject({ kind: 'children' })
+  })
+
+  it('toLearningEditorFailure_ShouldPointAtOverview_WhenModuleOverviewIsRequired', () => {
+    expect(toLearningEditorFailure(apiError(422, 'MODULE_OVERVIEW_REQUIRED'))).toMatchObject({
+      kind: 'field',
+      field: 'overviewMarkdown',
+    })
+  })
+
+  it.each(['SERIES_REFERENCE_NOT_FOUND', 'INVALID_POSITION'])(
+    'toLearningEditorFailure_ShouldPointAtParent_When%s',
+    (code) => {
+      expect(toLearningEditorFailure(apiError(422, code))).toMatchObject({ kind: 'field', field: 'parent' })
+    },
+  )
+
+  it('toLearningEditorFailure_ShouldPointAtParent_WhenParentIsNotReady', () => {
+    expect(toLearningEditorFailure(new ParentNotReadyError())).toMatchObject({ kind: 'field', field: 'parent' })
   })
 })

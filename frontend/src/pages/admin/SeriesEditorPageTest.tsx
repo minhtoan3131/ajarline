@@ -8,13 +8,16 @@ import {
   draftSeries,
   givenSeriesEditorSession,
   givenSeriesList,
+  MODULE_ID,
   moduleChild,
   OTHER_MODULE_ID,
   publicationOfSeries,
   SERIES_API_PATH,
   SERIES_ID,
+  SERIES_ORDER_PATH,
   SERIES_PATH,
   seriesHeaders,
+  seriesOrderResponse,
   seriesPublishPath,
 } from '../../features/admin-learning/fixture/learningAdminFixture'
 import type { SeriesAdminDetail } from '../../features/admin-learning/model/series'
@@ -94,10 +97,9 @@ describe('SeriesEditorPage', () => {
     expect(screen.getByLabelText('Giới thiệu (overview)')).toHaveValue('## Giới thiệu\n\nBắt đầu từ đâu.')
     expect(screen.getByText('Đã lưu mọi thay đổi')).toBeInTheDocument()
     const modules = within(screen.getByRole('list', { name: 'Module của Series' })).getAllByRole('listitem')
-    expect(modules.map((item) => item.textContent)).toEqual([
-      '1.Nền tảngnen-tangĐã xuất bản',
-      '2.Nâng caonang-caoBản nháp',
-    ])
+    expect(modules).toHaveLength(2)
+    expect(modules[0]).toHaveTextContent('1.Nền tảngnen-tangĐã xuất bản')
+    expect(modules[1]).toHaveTextContent('2.Nâng caonang-caoBản nháp')
     expect(api.requestsTo('POST', SERIES_API_PATH)).toHaveLength(0)
   })
 
@@ -279,5 +281,87 @@ describe('SeriesEditorPage', () => {
     expect(await screen.findByLabelText('Tiêu đề')).toBeInTheDocument()
     expect(screen.queryByRole('button', { name: 'Xuất bản' })).toBeNull()
     expect(screen.queryByRole('region', { name: 'Danh sách Module' })).toBeNull()
+  })
+
+  it('render_ShouldLinkToNewModuleAndEachModule_WhenSeriesIsSaved', async () => {
+    givenLoaded(draftSeries({ modules: [moduleChild()] })).install()
+
+    renderAppRoute(EDIT_ROUTE)
+
+    expect(await screen.findByRole('link', { name: 'Thêm Module' })).toHaveAttribute(
+      'href',
+      `/admin/modules/new?seriesId=${SERIES_ID}`,
+    )
+    expect(screen.getByRole('link', { name: 'Nền tảng' })).toHaveAttribute('href', `/admin/modules/${MODULE_ID}`)
+  })
+
+  it('reorder_ShouldSendModuleIdsAndUseNewEtagForNextSave_WhenModuleIsMovedDown', async () => {
+    const series = draftSeries({
+      modules: [moduleChild(), moduleChild({ id: OTHER_MODULE_ID, title: 'Nâng cao', slug: 'nang-cao', position: 2 })],
+    })
+    const saved = draftSeries({ revision: 3, title: 'Tiêu đề sau khi sắp' })
+    const api = givenLoaded(series)
+      .on(
+        'PUT',
+        SERIES_ORDER_PATH,
+        jsonResponse(
+          200,
+          seriesOrderResponse(2, [
+            { id: OTHER_MODULE_ID, position: 1, revision: 2 },
+            { id: MODULE_ID, position: 2, revision: 2 },
+          ]),
+          { ETag: '"2"' },
+        ),
+      )
+      .on('PUT', SERIES_PATH, jsonResponse(200, saved, seriesHeaders(saved)))
+      .install()
+    const user = userEvent.setup()
+    renderAppRoute(EDIT_ROUTE)
+
+    await user.click(await screen.findByRole('button', { name: 'Đưa xuống: Nền tảng' }))
+    await user.click(screen.getByRole('button', { name: 'Lưu thứ tự' }))
+
+    expect(await screen.findByText('Đã lưu thứ tự.')).toBeInTheDocument()
+    const [order] = api.requestsTo('PUT', SERIES_ORDER_PATH)
+    expect(order.body).toEqual({ moduleIds: [OTHER_MODULE_ID, MODULE_ID] })
+    expect(order.headers.get('If-Match')).toBe('"1"')
+    const modules = within(screen.getByRole('list', { name: 'Module của Series' })).getAllByRole('listitem')
+    expect(modules[0]).toHaveTextContent('1.Nâng cao')
+    await user.type(screen.getByLabelText('Tiêu đề'), ' mới')
+    await user.click(screen.getByRole('button', { name: 'Lưu' }))
+    await screen.findByText('Đã lưu.')
+    expect(api.requestsTo('PUT', SERIES_PATH)[0].headers.get('If-Match')).toBe('"2"')
+  })
+
+  it('render_ShouldLockWriteButtons_WhenOrderIsBeingSaved', async () => {
+    const series = draftSeries({
+      modules: [moduleChild(), moduleChild({ id: OTHER_MODULE_ID, title: 'Nâng cao', slug: 'nang-cao', position: 2 })],
+    })
+    givenLoaded(series)
+      .on(
+        'PUT',
+        SERIES_ORDER_PATH,
+        jsonResponse(
+          200,
+          seriesOrderResponse(2, [
+            { id: OTHER_MODULE_ID, position: 1, revision: 2 },
+            { id: MODULE_ID, position: 2, revision: 2 },
+          ]),
+          { ETag: '"2"' },
+        ),
+      )
+      .install()
+    const release = holdRequests('PUT')
+    const user = userEvent.setup()
+    renderAppRoute(EDIT_ROUTE)
+    await user.click(await screen.findByRole('button', { name: 'Đưa xuống: Nền tảng' }))
+
+    await user.click(screen.getByRole('button', { name: 'Lưu thứ tự' }))
+
+    expect(await screen.findByRole('button', { name: 'Đang lưu thứ tự…' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Lưu' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Đưa lên: Nâng cao' })).toBeDisabled()
+    release()
+    expect(await screen.findByText('Đã lưu thứ tự.')).toBeInTheDocument()
   })
 })
