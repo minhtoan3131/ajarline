@@ -7,6 +7,9 @@ import org.junit.jupiter.params.provider.ValueSource;
 import vn.io.ajarline.content.contract.ContentFailureCode;
 import vn.io.ajarline.content.contract.ContentOperationException;
 
+import java.util.List;
+import java.util.UUID;
+
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
@@ -73,5 +76,24 @@ class ContentRecordPolicyTest {
     void requirePublishableSummary_ShouldAcceptPresentSummary() {
         assertThatCode(() -> policy.requirePublishableSummary("A short summary."))
                 .doesNotThrowAnyException();
+    }
+
+    @Test
+    void requireDistinctTopicIds_ShouldReject_WhenATopicIdRepeats() {
+        UUID topicId = UUID.fromString("00000000-0000-0000-0000-000000000001");
+
+        assertThatThrownBy(() -> policy.requireDistinctTopicIds(List.of(topicId, topicId)))
+                .isInstanceOfSatisfying(ContentOperationException.class,
+                        e -> assertThat(e.code()).isEqualTo(ContentFailureCode.VALIDATION_FAILED));
+    }
+
+    @Test
+    void requireDistinctTopicIds_ShouldAccept_WhenTopicIdsAreDistinctOrEmpty() {
+        assertThatCode(() -> {
+            policy.requireDistinctTopicIds(List.of(
+                    UUID.fromString("00000000-0000-0000-0000-000000000001"),
+                    UUID.fromString("00000000-0000-0000-0000-000000000002")));
+            policy.requireDistinctTopicIds(List.of());
+        }).doesNotThrowAnyException();
     }
 }

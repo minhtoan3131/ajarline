@@ -4,7 +4,10 @@ import org.springframework.stereotype.Component;
 import vn.io.ajarline.content.contract.ContentFailureCode;
 import vn.io.ajarline.content.contract.ContentOperationException;
 
+import java.util.HashSet;
+import java.util.List;
 import java.util.Locale;
+import java.util.UUID;
 import java.util.regex.Pattern;
 
 @Component
@@ -39,6 +42,12 @@ public class ContentRecordPolicy {
                     ContentFailureCode.CONTENT_SUMMARY_REQUIRED,
                     "A summary is required for published content."
             );
+        }
+    }
+
+    public void requireDistinctTopicIds(List<UUID> topicIds) {
+        if (new HashSet<>(topicIds).size() != topicIds.size()) {
+            throw validationFailure("Topic ids must not repeat.");
         }
     }
 

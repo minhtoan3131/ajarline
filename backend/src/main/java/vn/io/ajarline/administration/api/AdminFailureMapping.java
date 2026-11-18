@@ -20,6 +20,7 @@ final class AdminFailureMapping {
             entry("INACTIVE_TOPIC_ASSIGNMENT", new Problem(422, "Topic cannot be assigned", "An inactive Topic cannot be newly assigned.")),
             entry("CONTENT_SUMMARY_REQUIRED", new Problem(422, "Summary is required", "Published content must have a summary.")),
             entry("ARTICLE_BODY_REQUIRED", new Problem(422, "Body is required", "A published Article must have a body.")),
+            entry("SERIES_OVERVIEW_REQUIRED", new Problem(422, "Overview is required", "A published Series must have an overview.")),
             entry("INVALID_PUBLICATION_STATE", new Problem(409, "Content cannot be unpublished from the current state", "Content cannot be unpublished from the current state."))
     );
 

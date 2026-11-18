@@ -71,7 +71,13 @@ public class ContentItemEntity {
     public static ContentItemEntity draftArticle(
             UUID id, String slug, String title, String summary, Instant now
     ) {
-        return new ContentItemEntity(id, ContentType.ARTICLE, slug, title, summary, PublicationStatus.DRAFT,
+        return draft(id, ContentType.ARTICLE, slug, title, summary, now);
+    }
+
+    public static ContentItemEntity draft(
+            UUID id, ContentType type, String slug, String title, String summary, Instant now
+    ) {
+        return new ContentItemEntity(id, type, slug, title, summary, PublicationStatus.DRAFT,
                 1, now, now);
     }
 

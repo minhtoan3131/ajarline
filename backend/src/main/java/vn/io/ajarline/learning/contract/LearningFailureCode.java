@@ -7,5 +7,6 @@ package vn.io.ajarline.learning.contract;
 public enum LearningFailureCode {
     VALIDATION_FAILED,
     INVALID_POSITION,
-    ORDER_SET_CONFLICT
+    ORDER_SET_CONFLICT,
+    SERIES_OVERVIEW_REQUIRED
 }

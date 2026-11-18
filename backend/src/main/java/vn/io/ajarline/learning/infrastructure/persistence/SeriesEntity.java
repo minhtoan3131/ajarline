@@ -5,6 +5,7 @@ import jakarta.persistence.Entity;
 import jakarta.persistence.Id;
 import jakarta.persistence.Table;
 
+import java.util.Objects;
 import java.util.UUID;
 
 /**
@@ -30,6 +31,14 @@ public class SeriesEntity {
 
     public SeriesEntity(UUID contentId, String overviewMarkdown) {
         this.contentId = contentId;
+        this.overviewMarkdown = overviewMarkdown;
+    }
+
+    public boolean hasSameOverview(String overviewMarkdown) {
+        return Objects.equals(this.overviewMarkdown, overviewMarkdown);
+    }
+
+    public void replaceOverview(String overviewMarkdown) {
         this.overviewMarkdown = overviewMarkdown;
     }
 

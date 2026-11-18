@@ -5,7 +5,6 @@ import vn.io.ajarline.content.contract.ArticleContentInput;
 import vn.io.ajarline.content.contract.ContentFailureCode;
 import vn.io.ajarline.content.contract.ContentOperationException;
 
-import java.util.HashSet;
 
 @Component
 public class ArticlePolicy {
@@ -28,9 +27,7 @@ public class ArticlePolicy {
         records.requireValidTitle(input.title());
         String slug = records.normalizeSlug(input.slug());
         String summary = records.normalizeSummary(input.summary());
-        if (new HashSet<>(input.topicIds()).size() != input.topicIds().size()) {
-            throw failure(ContentFailureCode.VALIDATION_FAILED, "Topic ids must not repeat.");
-        }
+        records.requireDistinctTopicIds(input.topicIds());
         return new ArticleContentInput(input.title(), slug, summary, input.bodyMarkdown(), input.topicIds());
     }
 

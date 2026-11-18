@@ -34,6 +34,10 @@ class ApiDocumentationIT {
             Map.entry("/api/admin/v1/articles/{id}", Map.of(
                     "get", "getAdminArticle",
                     "put", "updateArticle")),
+            Map.entry("/api/admin/v1/series", Map.of("post", "createSeries")),
+            Map.entry("/api/admin/v1/series/{id}", Map.of(
+                    "get", "getAdminSeries",
+                    "put", "updateSeries")),
             Map.entry("/api/admin/v1/topics", Map.of(
                     "get", "listAdminTopics",
                     "post", "createTopic")),
@@ -140,6 +144,40 @@ class ApiDocumentationIT {
         assertThat(loginSchema.get("properties").get("password")
                 .get("writeOnly").asBoolean()).isTrue();
         assertThat(hasSecurity(logout, OpenApiConfiguration.ADMIN_SESSION)).isTrue();
+    }
+
+    @Test
+    void openApi_ShouldExposeSeriesMetadata_WhenDocumentIsGenerated()
+            throws Exception {
+        JsonNode document = openApiDocument();
+        JsonNode paths = document.get("paths");
+        JsonNode create = operation(paths, "/api/admin/v1/series", "post");
+        JsonNode get = operation(paths, "/api/admin/v1/series/{id}", "get");
+        JsonNode update = operation(paths, "/api/admin/v1/series/{id}", "put");
+
+        for (JsonNode seriesOperation : new JsonNode[]{create, get, update}) {
+            assertThat(hasSecurity(seriesOperation, OpenApiConfiguration.ADMIN_SESSION)).isTrue();
+        }
+        assertThat(parameterNames(create)).contains("X-CSRF-TOKEN");
+        assertThat(parameterNames(update)).contains("X-CSRF-TOKEN", "If-Match");
+        assertThat(requestSchemaRef(create)).endsWith("/SeriesEditable");
+        assertThat(requestSchemaRef(update)).endsWith("/SeriesEditable");
+        assertThat(responseSchemaRef(get, "200")).endsWith("/SeriesAdminDetail");
+        assertThat(create.get("responses").get("201")
+                .get("headers").propertyNames())
+                .contains("Location", "ETag");
+        assertThat(get.get("responses").get("200")
+                .get("headers").has("ETag")).isTrue();
+        assertThat(update.get("responses").get("200")
+                .get("headers").has("ETag")).isTrue();
+        assertThat(get.get("responses").has("404")).isTrue();
+        assertThat(update.get("responses").propertyNames())
+                .contains("404", "409", "412", "422", "428");
+
+        JsonNode schemas = document.get("components").get("schemas");
+        assertThat(schemas.propertyNames()).contains(
+                "SeriesEditable", "SeriesAdminDetail", "AdminChildItem");
+        assertThat(schemas.get("SeriesAdminDetail").get("properties").has("modules")).isTrue();
     }
 
     @Test
