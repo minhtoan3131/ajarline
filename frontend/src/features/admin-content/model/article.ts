@@ -96,7 +96,7 @@ export function sameFields(left: ArticleFields, right: ArticleFields): boolean {
 /** Publication result returned by publish and unpublish. It has no content fields. */
 export interface PublicationState {
   id: string
-  type: 'article'
+  type: 'article' | 'series' | 'module'
   status: PublicationStatus
   revision: number
   publishedAt: string | null

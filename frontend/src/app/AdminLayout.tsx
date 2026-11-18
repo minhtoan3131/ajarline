@@ -58,12 +58,15 @@ function AdminHeader() {
 
 /**
  * Links to the Admin screens, grouped like the information architecture.
- * Only the Organization group exists so far; Content and the vocabulary
- * group come with their own screens.
+ * The Content group has Series so far; the Organization group has Topic.
  */
 function AdminNavigation() {
   return (
     <nav className="admin-nav" aria-label="Điều hướng quản trị">
+      <span className="admin-nav-group">Nội dung</span>
+      <NavLink to="/admin/series" className="admin-nav-link">
+        Series
+      </NavLink>
       <span className="admin-nav-group">Tổ chức</span>
       <NavLink to="/admin/topics" className="admin-nav-link">
         Topic

@@ -32,4 +32,12 @@ describe('AdminLayout', () => {
     expect(await screen.findByLabelText('Tên đăng nhập')).toBeInTheDocument()
     expect(screen.queryByRole('navigation', { name: 'Điều hướng quản trị' })).toBeNull()
   })
+
+  it('render_ShouldShowSeriesLink_WhenAdminIsSignedIn', async () => {
+    givenSignedInAdmin(new StubApiServer()).install()
+
+    renderAppRoute('/admin/khong-co-trang-nay')
+
+    expect(await screen.findByRole('link', { name: 'Series' })).toHaveAttribute('href', '/admin/series')
+  })
 })

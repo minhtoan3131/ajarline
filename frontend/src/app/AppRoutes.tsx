@@ -4,6 +4,8 @@ import { RequireAdminSession } from '../features/admin-auth/components/RequireAd
 import { AdminLoginPage } from '../pages/admin/AdminLoginPage'
 import { AdminNotFoundPage } from '../pages/admin/AdminNotFoundPage'
 import { ArticleEditorPage } from '../pages/admin/ArticleEditorPage'
+import { SeriesEditorPage } from '../pages/admin/SeriesEditorPage'
+import { SeriesListPage } from '../pages/admin/SeriesListPage'
 import { TopicManagementPage } from '../pages/admin/TopicManagementPage'
 import { ArticlePage } from '../pages/ArticlePage'
 import { NotFoundPage } from '../pages/NotFoundPage'
@@ -31,6 +33,9 @@ export function AppRoutes() {
         <Route element={<RequireAdminSession />}>
           <Route path="articles/new" element={<ArticleEditorPage />} />
           <Route path="articles/:articleId" element={<ArticleEditorPage />} />
+          <Route path="series" element={<SeriesListPage />} />
+          <Route path="series/new" element={<SeriesEditorPage />} />
+          <Route path="series/:seriesId" element={<SeriesEditorPage />} />
           <Route path="topics" element={<TopicManagementPage />} />
         </Route>
         <Route path="*" element={<AdminNotFoundPage />} />
