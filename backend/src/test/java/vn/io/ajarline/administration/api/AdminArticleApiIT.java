@@ -67,6 +67,75 @@ class AdminArticleApiIT extends AbstractAdminAuthenticationIT {
         assertDetail(JSON.readTree(response.body()), "loaded-article", "Body", 1);
     }
 
+    @Test
+    void update_ShouldRejectPublishedArticle_WhenSummaryIsRemoved() throws Exception {
+        Browser browser = authenticatedBrowser();
+        String token = csrf(browser);
+        String id = createPublished(browser, token, "summary-removed");
+
+        HttpResponse<String> response = browser.put(
+                ARTICLES + "/" + id, payload("summary-removed", null, "# Body"), token, "\"2\"");
+
+        assertProblem(response, 422, "CONTENT_SUMMARY_REQUIRED");
+        assertThat(browser.get(ARTICLES + "/" + id).headers().firstValue("ETag")).contains("\"2\"");
+    }
+
+    @Test
+    void update_ShouldRejectPublishedArticle_WhenBodyIsRemoved() throws Exception {
+        Browser browser = authenticatedBrowser();
+        String token = csrf(browser);
+        String id = createPublished(browser, token, "body-removed");
+
+        HttpResponse<String> response = browser.put(
+                ARTICLES + "/" + id, payload("body-removed", "A short summary.", null), token, "\"2\"");
+
+        assertProblem(response, 422, "ARTICLE_BODY_REQUIRED");
+        assertThat(browser.get(ARTICLES + "/" + id).headers().firstValue("ETag")).contains("\"2\"");
+    }
+
+    @Test
+    void update_ShouldAcceptPublishedArticle_WhenSummaryAndBodyStayPresent() throws Exception {
+        Browser browser = authenticatedBrowser();
+        String token = csrf(browser);
+        String id = createPublished(browser, token, "still-complete");
+
+        HttpResponse<String> response = browser.put(
+                ARTICLES + "/" + id, payload("still-complete", "A new summary.", "# New body"), token, "\"2\"");
+
+        assertThat(response.statusCode()).isEqualTo(200);
+        assertThat(response.headers().firstValue("ETag")).contains("\"3\"");
+    }
+
+    private String createPublished(Browser browser, String token, String slug) throws Exception {
+        HttpResponse<String> created = browser.post(
+                ARTICLES, payload(slug, "A short summary.", "# Body"), token);
+        String id = JSON.readTree(created.body()).get("id").asString();
+        HttpResponse<String> published = browser.post(
+                "/api/admin/v1/content/" + id + "/publish", null, token, "\"1\"");
+        assertThat(published.statusCode()).isEqualTo(200);
+        return id;
+    }
+
+    private String payload(String slug, String summary, String bodyMarkdown) throws Exception {
+        ObjectNode body = JSON.createObjectNode();
+        body.put("title", "Published Article");
+        body.put("slug", slug);
+        if (summary == null) {
+            body.putNull("summary");
+        } else {
+            body.put("summary", summary);
+        }
+        if (bodyMarkdown == null) {
+            body.putNull("bodyMarkdown");
+        } else {
+            body.put("bodyMarkdown", bodyMarkdown);
+        }
+        body.putNull("moduleId");
+        body.putNull("position");
+        body.putArray("topicIds");
+        return JSON.writeValueAsString(body);
+    }
+
     private String editable(String slug, String bodyMarkdown) throws Exception {
         ObjectNode body = JSON.createObjectNode();
         body.put("title", "First Article");

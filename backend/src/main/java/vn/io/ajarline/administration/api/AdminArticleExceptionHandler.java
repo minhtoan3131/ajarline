@@ -9,7 +9,6 @@ import org.springframework.web.HttpMediaTypeNotSupportedException;
 import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import org.springframework.web.method.annotation.MethodArgumentTypeMismatchException;
-import vn.io.ajarline.content.contract.ContentFailureCode;
 import vn.io.ajarline.content.contract.ContentOperationException;
 import vn.io.ajarline.platform.web.ApiProblem;
 import vn.io.ajarline.platform.web.ApiProblemWriter;
@@ -37,14 +36,7 @@ public class AdminArticleExceptionHandler {
 
     @ExceptionHandler(ContentOperationException.class)
     ResponseEntity<ApiProblem> content(ContentOperationException exception, HttpServletRequest request) {
-        ProblemMapping mapping = mapping(exception.code());
-        return problems.response(
-                request,
-                mapping.status,
-                exception.code().name(),
-                mapping.title,
-                mapping.detail
-        );
+        return AdminFailureMapping.response(problems, request, exception.code().name());
     }
 
     @ExceptionHandler(HttpMessageNotReadableException.class)
@@ -75,26 +67,4 @@ public class AdminArticleExceptionHandler {
                 "Unexpected internal failure", "Unexpected internal failure.");
     }
 
-    private record ProblemMapping(int status, String title, String detail) {
-
-    }
-
-    private ProblemMapping mapping(ContentFailureCode code) {
-        return switch (code) {
-            case CONTENT_NOT_FOUND -> new ProblemMapping(404, "Article was not found",
-                    "Article was not found.");
-            case VALIDATION_FAILED -> new ProblemMapping(422, "Request validation failed",
-                    "One or more fields are invalid.");
-            case SLUG_CONFLICT -> new ProblemMapping(409, "Article slug conflicts",
-                    "An article with this slug already exists.");
-            case SLUG_IMMUTABLE_AFTER_PUBLICATION -> new ProblemMapping(409, "Article slug cannot be changed",
-                    "The slug cannot change after first publication.");
-            case REVISION_CONFLICT ->
-                    new ProblemMapping(412, "Revision conflict", "The resource changed since it was loaded.");
-            case TOPIC_REFERENCE_NOT_FOUND -> new ProblemMapping(422, "Topic reference was not found",
-                    "One or more Topic ids do not exist.");
-            case INACTIVE_TOPIC_ASSIGNMENT -> new ProblemMapping(422, "Topic cannot be assigned",
-                    "An inactive Topic cannot be newly assigned.");
-        };
-    }
 }

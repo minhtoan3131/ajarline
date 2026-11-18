@@ -73,12 +73,12 @@ class PublicationApplicationIT {
         ArticleView noSummary = create("no-summary", null, "# Body");
         ArticleView noBody = create("no-body", "Summary", null);
 
-        assertPublicationFailure(
+        assertContentFailure(
                 () -> publisher.publish(noSummary.id(), 1),
-                PublicationFailureCode.CONTENT_SUMMARY_REQUIRED);
-        assertPublicationFailure(
+                ContentFailureCode.CONTENT_SUMMARY_REQUIRED);
+        assertContentFailure(
                 () -> publisher.publish(noBody.id(), 1),
-                PublicationFailureCode.ARTICLE_BODY_REQUIRED);
+                ContentFailureCode.ARTICLE_BODY_REQUIRED);
 
         assertDraftUnchanged(noSummary.id());
         assertDraftUnchanged(noBody.id());
@@ -211,6 +211,16 @@ class PublicationApplicationIT {
         assertThatThrownBy(action)
                 .isInstanceOfSatisfying(
                         PublicationOperationException.class,
+                        failure -> assertThat(failure.code()).isEqualTo(code));
+    }
+
+    private void assertContentFailure(
+            org.assertj.core.api.ThrowableAssert.ThrowingCallable action,
+            ContentFailureCode code
+    ) {
+        assertThatThrownBy(action)
+                .isInstanceOfSatisfying(
+                        ContentOperationException.class,
                         failure -> assertThat(failure.code()).isEqualTo(code));
     }
 

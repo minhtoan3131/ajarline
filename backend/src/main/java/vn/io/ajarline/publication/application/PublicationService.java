@@ -2,7 +2,7 @@ package vn.io.ajarline.publication.application;
 
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
-import vn.io.ajarline.content.contract.ArticleReader;
+import vn.io.ajarline.content.contract.ContentEligibility;
 import vn.io.ajarline.content.contract.ContentPublicationAccess;
 import vn.io.ajarline.content.contract.ContentRecordView;
 import vn.io.ajarline.content.contract.PublicationStatus;
@@ -14,19 +14,16 @@ import java.util.UUID;
 @Service
 public class PublicationService implements ContentPublisher, ContentUnpublisher {
     private final ContentPublicationAccess access;
-    private final ArticleReader articles;
-    private final ArticlePublicationPolicy policy;
+    private final ContentEligibility eligibility;
     private final Clock clock;
 
     public PublicationService(
             ContentPublicationAccess access,
-            ArticleReader articles,
-            ArticlePublicationPolicy policy,
+            ContentEligibility eligibility,
             Clock clock
     ) {
         this.access = access;
-        this.articles = articles;
-        this.policy = policy;
+        this.eligibility = eligibility;
         this.clock = clock;
     }
 
@@ -38,8 +35,7 @@ public class PublicationService implements ContentPublisher, ContentUnpublisher 
             return PublicationResult.from(current);
         }
 
-        // NOTE: the publish rules need the Article body, which the common record does not carry.
-        policy.validateForPublish(articles.get(id));
+        eligibility.requirePublishable(id);
         ContentRecordView published = access.markPublished(id, expectedRevision, clock.instant());
         return PublicationResult.from(published);
     }

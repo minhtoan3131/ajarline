@@ -106,7 +106,7 @@ public class ArticleApplicationIT {
         ArticleView createdArticle = articleCreator.create(input("published-article", "# body"));
         jdbcTemplate.update("""
                 UPDATE content_item
-                SET status = 'PUBLISHED', published_at = ?
+                SET status = 'PUBLISHED', summary = 'Fixture summary', published_at = ?
                 WHERE id = ?
                 """, OffsetDateTime.ofInstant(CREATED_AT, ZoneOffset.UTC), createdArticle.id());
 

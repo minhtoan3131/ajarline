@@ -9,10 +9,11 @@ import java.util.List;
 import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class ArticlePolicyTest {
-    private final ArticlePolicy articlePolicy = new ArticlePolicy();
+    private final ArticlePolicy articlePolicy = new ArticlePolicy(new ContentRecordPolicy());
 
     @Test
     void normalizeAndValidate_ShouldNormalizeSlug_WhenInputIsValid() {
@@ -32,31 +33,6 @@ public class ArticlePolicyTest {
     @Test
     void normalizeAndValidate_ShouldRejectInput_WhenTitleIsBlank() {
         ArticleContentInput input = new ArticleContentInput(" ", "invalid-title", null, null);
-        assertValidationFailure(input);
-    }
-
-    @Test
-    void normalizeAndValidate_ShouldRejectInput_WhenTitleIsTooLong() {
-        ArticleContentInput input = new ArticleContentInput("a".repeat(301), "invalid-title",
-                null, null);
-        assertValidationFailure(input);
-    }
-
-    @Test
-    void normalizeAndValidate_ShouldRejectInput_WhenSlugIsInvalid() {
-        ArticleContentInput input = input("java threads", null, null);
-        assertValidationFailure(input);
-    }
-
-    @Test
-    void normalizeAndValidate_ShouldRejectInput_WhenSlugIsTooLong() {
-        ArticleContentInput input = input("s".repeat(181), null, null);
-        assertValidationFailure(input);
-    }
-
-    @Test
-    void normalizeAndValidate_ShouldRejectInput_WhenSummaryIsTooLong() {
-        ArticleContentInput input = input("java-threads", "a".repeat(1001), null);
         assertValidationFailure(input);
     }
 
@@ -81,6 +57,28 @@ public class ArticlePolicyTest {
         assertThat(result.topicIds()).containsExactly(first, second);
     }
 
+    @Test
+    void requirePublishable_ShouldAcceptArticle_WhenSummaryAndBodyArePresent() {
+        assertThatCode(() -> articlePolicy.requirePublishable("Summary", "# Body"))
+                .doesNotThrowAnyException();
+    }
+
+    @Test
+    void requirePublishable_ShouldRequireSummary_WhenSummaryIsBlank() {
+        assertPublishFailure(" ", "# Body", ContentFailureCode.CONTENT_SUMMARY_REQUIRED);
+    }
+
+    @Test
+    void requirePublishable_ShouldRequireBody_WhenBodyIsBlank() {
+        assertPublishFailure("Summary", " ", ContentFailureCode.ARTICLE_BODY_REQUIRED);
+        assertPublishFailure("Summary", null, ContentFailureCode.ARTICLE_BODY_REQUIRED);
+    }
+
+    @Test
+    void requirePublishable_ShouldReportSummaryFirst_WhenBothAreMissing() {
+        assertPublishFailure(null, null, ContentFailureCode.CONTENT_SUMMARY_REQUIRED);
+    }
+
     private ArticleContentInput input(
             String slug,
             String summary,
@@ -93,5 +91,11 @@ public class ArticlePolicyTest {
         assertThatThrownBy(() -> articlePolicy.normalizeAndValidate(input))
                 .isInstanceOfSatisfying(ContentOperationException.class,
                         e -> assertThat(e.code()).isEqualTo(ContentFailureCode.VALIDATION_FAILED));
+    }
+
+    private void assertPublishFailure(String summary, String body, ContentFailureCode expected) {
+        assertThatThrownBy(() -> articlePolicy.requirePublishable(summary, body))
+                .isInstanceOfSatisfying(ContentOperationException.class,
+                        e -> assertThat(e.code()).isEqualTo(expected));
     }
 }

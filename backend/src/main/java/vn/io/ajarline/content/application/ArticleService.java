@@ -17,7 +17,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Service
-public class ArticleService implements ArticleCreator, ArticleReader, ArticleEditor, ContentPublicationAccess {
+public class ArticleService implements ArticleCreator, ArticleReader, ArticleEditor, ContentPublicationAccess, ContentEligibility {
     private static final String SLUG_CONSTRAINT = "uk_content_item_type_slug";
     private final ContentItemJpaRepository contentRepository;
     private final ArticleJpaRepository articleRepository;
@@ -180,6 +180,10 @@ public class ArticleService implements ArticleCreator, ArticleReader, ArticleEdi
             );
         }
 
+        if (contentItemEntity.getStatus() == PublicationStatus.PUBLISHED) {
+            policy.requirePublishable(normalizedInput.summary(), normalizedInput.bodyMarkdown());
+        }
+
         boolean hasCommonChanged = !contentItemEntity.hasSameEditableContent(
                 normalizedInput.title(),
                 normalizedInput.slug(),
@@ -238,6 +242,16 @@ public class ArticleService implements ArticleCreator, ArticleReader, ArticleEdi
         locked.content().markUnpublished(changedAt);
         flushCanonicalWrite();
         return toRecordView(locked.content());
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void requirePublishable(UUID id) {
+        ContentItemEntity content = contentRepository.findById(id)
+                .filter(item -> item.getType() == ContentType.ARTICLE)
+                .orElseThrow(() -> notFound(id));
+        ArticleEntity article = requireArticle(id);
+        policy.requirePublishable(content.getSummary(), article.getBodyMarkdown());
     }
 
 
