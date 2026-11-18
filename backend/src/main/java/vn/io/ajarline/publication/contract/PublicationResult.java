@@ -1,6 +1,6 @@
 package vn.io.ajarline.publication.contract;
 
-import vn.io.ajarline.content.contract.ArticleView;
+import vn.io.ajarline.content.contract.ContentRecordView;
 import vn.io.ajarline.content.contract.ContentType;
 import vn.io.ajarline.content.contract.PublicationStatus;
 
@@ -19,15 +19,15 @@ public record PublicationResult(
         Instant unpublishedAt,
         Instant updatedAt
 ) {
-    public static PublicationResult from(ArticleView article) {
+    public static PublicationResult from(ContentRecordView record) {
         return new PublicationResult(
-                article.id(),
-                article.type(),
-                article.status(),
-                article.revision(),
-                article.publishedAt(),
-                article.unpublishedAt(),
-                article.updatedAt()
+                record.id(),
+                record.type(),
+                record.status(),
+                record.revision(),
+                record.publishedAt(),
+                record.unpublishedAt(),
+                record.updatedAt()
         );
     }
 }

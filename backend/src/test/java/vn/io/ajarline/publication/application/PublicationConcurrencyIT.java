@@ -23,11 +23,11 @@ import org.springframework.test.context.bean.override.mockito.MockitoSpyBean;
 import org.springframework.test.util.AopTestUtils;
 import vn.io.ajarline.content.contract.ArticleContentInput;
 import vn.io.ajarline.content.contract.ArticleCreator;
-import vn.io.ajarline.content.contract.ArticlePublicationAccess;
 import vn.io.ajarline.content.contract.ArticleReader;
 import vn.io.ajarline.content.contract.ArticleView;
 import vn.io.ajarline.content.contract.ContentFailureCode;
 import vn.io.ajarline.content.contract.ContentOperationException;
+import vn.io.ajarline.content.contract.ContentPublicationAccess;
 import vn.io.ajarline.content.contract.PublicationStatus;
 import vn.io.ajarline.publication.contract.ContentPublisher;
 import vn.io.ajarline.publication.contract.PublicationResult;
@@ -49,7 +49,7 @@ class PublicationConcurrencyIT {
     @Autowired private JdbcTemplate jdbc;
 
     @MockitoSpyBean
-    private ArticlePublicationAccess publicationAccess;
+    private ContentPublicationAccess publicationAccess;
 
     @BeforeEach
     void clearDatabase() {
@@ -66,13 +66,13 @@ class PublicationConcurrencyIT {
                 "# Body"));
         CyclicBarrier beforeLock = new CyclicBarrier(2);
 
-        ArticlePublicationAccess spy =
+        ContentPublicationAccess spy =
                 AopTestUtils.getUltimateTargetObject(publicationAccess);
 
         doAnswer(invocation -> {
             await(beforeLock);
             return invocation.callRealMethod();
-        }).when(spy).lockForPublication(draft.id(), 1);
+        }).when(spy).lock(draft.id(), 1);
 
         List<ActorOutcome<PublicationResult>> outcomes = runTogether(List.of(
                 () -> publisher.publish(draft.id(), 1),

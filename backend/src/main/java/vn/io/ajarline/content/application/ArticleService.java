@@ -17,7 +17,7 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Service
-public class ArticleService implements ArticleCreator, ArticleReader, ArticleEditor, ArticlePublicationAccess {
+public class ArticleService implements ArticleCreator, ArticleReader, ArticleEditor, ContentPublicationAccess {
     private static final String SLUG_CONSTRAINT = "uk_content_item_type_slug";
     private final ContentItemJpaRepository contentRepository;
     private final ArticleJpaRepository articleRepository;
@@ -136,6 +136,22 @@ public class ArticleService implements ArticleCreator, ArticleReader, ArticleEdi
         );
     }
 
+    private ContentRecordView toRecordView(ContentItemEntity content) {
+        return new ContentRecordView(
+                content.getId(),
+                content.getType(),
+                content.getTitle(),
+                content.getSlug(),
+                content.getSummary(),
+                content.getStatus(),
+                content.getRevision(),
+                content.getPublishedAt(),
+                content.getUnpublishedAt(),
+                content.getCreatedAt(),
+                content.getUpdatedAt()
+        );
+    }
+
     private ContentOperationException notFound(UUID id) {
         return new ContentOperationException(ContentFailureCode.CONTENT_NOT_FOUND,
                 "Article was not found: " + id);
@@ -193,14 +209,14 @@ public class ArticleService implements ArticleCreator, ArticleReader, ArticleEdi
 
     @Override
     @Transactional(propagation = Propagation.MANDATORY)
-    public ArticleView lockForPublication(UUID id, long expectedRevision) {
+    public ContentRecordView lock(UUID id, long expectedRevision) {
         LockedArticle locked = lockArticle(id, expectedRevision);
-        return toView(locked.content(), locked.article());
+        return toRecordView(locked.content());
     }
 
     @Override
     @Transactional(propagation = Propagation.MANDATORY)
-    public ArticleView markPublished(
+    public ContentRecordView markPublished(
             UUID id,
             long expectedRevision,
             Instant changedAt
@@ -208,12 +224,12 @@ public class ArticleService implements ArticleCreator, ArticleReader, ArticleEdi
         LockedArticle locked = lockArticle(id, expectedRevision);
         locked.content().markPublished(changedAt);
         flushCanonicalWrite();
-        return toView(locked.content(), locked.article());
+        return toRecordView(locked.content());
     }
 
     @Override
     @Transactional(propagation = Propagation.MANDATORY)
-    public ArticleView markUnpublished(
+    public ContentRecordView markUnpublished(
             UUID id,
             long expectedRevision,
             Instant changedAt
@@ -221,7 +237,7 @@ public class ArticleService implements ArticleCreator, ArticleReader, ArticleEdi
         LockedArticle locked = lockArticle(id, expectedRevision);
         locked.content().markUnpublished(changedAt);
         flushCanonicalWrite();
-        return toView(locked.content(), locked.article());
+        return toRecordView(locked.content());
     }
 
 
