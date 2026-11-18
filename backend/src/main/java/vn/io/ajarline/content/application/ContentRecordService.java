@@ -102,17 +102,16 @@ public class ContentRecordService implements ContentRecordReader, ContentRecordW
 
     @Override
     @Transactional(propagation = Propagation.MANDATORY)
+    public EditableRecord lockForEdit(UUID id, ContentType type, long expectedRevision) {
+        return new EditableRecord(toView(lockAtRevision(id, type, expectedRevision)));
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
     public EditableRecord lockForEdit(
             UUID id, ContentType type, long expectedRevision, ContentRecordInput input) {
-        ContentItemEntity item = contentRepository.findByIdForUpdate(id)
-                .filter(found -> found.getType() == type)
-                .orElseThrow(() -> notFound(id, type));
+        ContentItemEntity item = lockAtRevision(id, type, expectedRevision);
 
-        if (item.getRevision() != expectedRevision) {
-            throw new ContentOperationException(
-                    ContentFailureCode.REVISION_CONFLICT,
-                    "The revision does not match the expected revision.");
-        }
         // The slug check comes before the summary check: a changed slug cannot be
         // fixed by filling in more fields, so the editor is told first.
         if (item.hasEverBeenPublished() && !item.getSlug().equals(input.slug())) {
@@ -124,6 +123,23 @@ public class ContentRecordService implements ContentRecordReader, ContentRecordW
             policy.requirePublishableSummary(input.summary());
         }
         return new EditableRecord(toView(item));
+    }
+
+    /**
+     * Locks the row, then compares the revision. The row must not be loaded before this call,
+     * or the comparison would use a stale copy.
+     */
+    private ContentItemEntity lockAtRevision(UUID id, ContentType type, long expectedRevision) {
+        ContentItemEntity item = contentRepository.findByIdForUpdate(id)
+                .filter(found -> found.getType() == type)
+                .orElseThrow(() -> notFound(id, type));
+
+        if (item.getRevision() != expectedRevision) {
+            throw new ContentOperationException(
+                    ContentFailureCode.REVISION_CONFLICT,
+                    "The revision does not match the expected revision.");
+        }
+        return item;
     }
 
     @Override

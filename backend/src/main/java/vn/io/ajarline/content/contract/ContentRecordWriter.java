@@ -38,6 +38,16 @@ public interface ContentRecordWriter {
             UUID id, ContentType type, long expectedRevision, ContentRecordInput input);
 
     /**
+     * Locks one item and checks its revision. Use it when the caller changes only its own part
+     * of the item, for example the order of its children, so there is no new text to check.
+     *
+     * @throws ContentOperationException with {@link ContentFailureCode#CONTENT_NOT_FOUND}
+     *         when the id is unknown or the item has another type, or with
+     *         {@link ContentFailureCode#REVISION_CONFLICT} when the revision is not current
+     */
+    EditableRecord lockForEdit(UUID id, ContentType type, long expectedRevision);
+
+    /**
      * Replaces the text fields and Topics of a locked item. The revision rises by one when
      * anything changed. The input must be the one given to {@link #lockForEdit}.
      *

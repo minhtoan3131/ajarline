@@ -42,6 +42,10 @@ class ApiDocumentationIT {
             Map.entry("/api/admin/v1/modules/{id}", Map.of(
                     "get", "getAdminModule",
                     "put", "updateModule")),
+            Map.entry("/api/admin/v1/series/{seriesId}/module-order", Map.of(
+                    "put", "reorderModules")),
+            Map.entry("/api/admin/v1/modules/{moduleId}/article-order", Map.of(
+                    "put", "reorderArticles")),
             Map.entry("/api/admin/v1/topics", Map.of(
                     "get", "listAdminTopics",
                     "post", "createTopic")),
@@ -182,6 +186,28 @@ class ApiDocumentationIT {
         assertThat(schemas.propertyNames()).contains(
                 "SeriesEditable", "SeriesAdminDetail", "AdminChildItem");
         assertThat(schemas.get("SeriesAdminDetail").get("properties").has("modules")).isTrue();
+    }
+
+    @Test
+    void openApi_ShouldExposeReorderMetadata_WhenDocumentIsGenerated()
+            throws Exception {
+        JsonNode document = openApiDocument();
+        JsonNode paths = document.get("paths");
+        JsonNode modules = operation(paths, "/api/admin/v1/series/{seriesId}/module-order", "put");
+        JsonNode articles = operation(paths, "/api/admin/v1/modules/{moduleId}/article-order", "put");
+
+        for (JsonNode reorder : new JsonNode[]{modules, articles}) {
+            assertThat(hasSecurity(reorder, OpenApiConfiguration.ADMIN_SESSION)).isTrue();
+            assertThat(parameterNames(reorder)).contains("X-CSRF-TOKEN", "If-Match");
+            assertThat(reorder.get("responses").get("200")
+                    .get("headers").has("ETag")).isTrue();
+            assertThat(reorder.get("responses").propertyNames())
+                    .contains("404", "409", "412", "422", "428");
+        }
+        assertThat(requestSchemaRef(modules)).endsWith("/ModuleOrderEditable");
+        assertThat(responseSchemaRef(modules, "200")).endsWith("/ModuleOrderResponse");
+        assertThat(requestSchemaRef(articles)).endsWith("/ArticleOrderEditable");
+        assertThat(responseSchemaRef(articles, "200")).endsWith("/ArticleOrderResponse");
     }
 
     @Test

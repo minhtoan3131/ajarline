@@ -25,6 +25,8 @@ import tools.jackson.databind.JsonNode;
 import vn.io.ajarline.learning.contract.SeriesCreator;
 import vn.io.ajarline.learning.contract.SeriesEditor;
 import vn.io.ajarline.learning.contract.SeriesReader;
+import vn.io.ajarline.learning.contract.ChildOrderView;
+import vn.io.ajarline.learning.contract.ModuleOrderEditor;
 import vn.io.ajarline.learning.contract.SeriesView;
 import vn.io.ajarline.platform.web.OpenApiConfiguration;
 
@@ -40,11 +42,14 @@ public class AdminSeriesController {
     private final SeriesCreator creator;
     private final SeriesReader reader;
     private final SeriesEditor editor;
+    private final ModuleOrderEditor orderEditor;
 
-    public AdminSeriesController(SeriesCreator creator, SeriesReader reader, SeriesEditor editor) {
+    public AdminSeriesController(SeriesCreator creator, SeriesReader reader, SeriesEditor editor,
+                                 ModuleOrderEditor orderEditor) {
         this.creator = creator;
         this.reader = reader;
         this.editor = editor;
+        this.orderEditor = orderEditor;
     }
 
     @Operation(
@@ -203,5 +208,78 @@ public class AdminSeriesController {
                 .eTag(RevisionHttpHeaders.etag(updated.record().revision()))
                 .cacheControl(CacheControl.noStore())
                 .body(SeriesAdminDetail.from(updated));
+    }
+
+    @Operation(
+            operationId = "reorderModules",
+            summary = "Replace the order of all Modules of a Series")
+    @Parameter(
+            name = "X-CSRF-TOKEN",
+            in = ParameterIn.HEADER,
+            required = true,
+            description = "Current CSRF token for the authenticated session.")
+    @Parameter(
+            name = "If-Match",
+            in = ParameterIn.HEADER,
+            required = true,
+            description = "Strong decimal revision of the Series, for example \"3\".")
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Order saved, or already as requested",
+                    useReturnTypeSchema = true,
+                    headers = @Header(
+                            name = "ETag",
+                            description = "New strong decimal Series revision")),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request shape, JSON, UUID or If-Match syntax is invalid"),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required"),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "CSRF proof is missing or invalid"),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Series was not found"),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "The ids are not exactly the current Modules of the Series"),
+            @ApiResponse(
+                    responseCode = "412",
+                    description = "If-Match revision is stale"),
+            @ApiResponse(
+                    responseCode = "415",
+                    description = "Content type is not supported"),
+            @ApiResponse(
+                    responseCode = "422",
+                    description = "An id appears more than once"),
+            @ApiResponse(
+                    responseCode = "428",
+                    description = "If-Match is required")
+    })
+    @PutMapping(
+            value = "/{seriesId}/module-order",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public ResponseEntity<ModuleOrderResponse> reorderModules(
+            @PathVariable UUID seriesId,
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    required = true,
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ModuleOrderEditable.class)))
+            @RequestBody(required = false) JsonNode body,
+            @Parameter(hidden = true) HttpServletRequest request) {
+        long expectedRevision = RevisionHttpHeaders.requiredExpectedRevision(request);
+        ModuleOrderEditable editable = ModuleOrderEditable.parse(body);
+        ChildOrderView order = orderEditor.reorderModules(
+                seriesId, expectedRevision, editable.moduleIds());
+        return ResponseEntity.ok()
+                .eTag(RevisionHttpHeaders.etag(order.parentRevision()))
+                .cacheControl(CacheControl.noStore())
+                .body(ModuleOrderResponse.from(order));
     }
 }
