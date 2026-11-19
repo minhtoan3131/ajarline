@@ -4,6 +4,7 @@ import { useHttpClient } from '../../shared/api/HttpClientContext'
 import { useAdminSession } from '../admin-auth/AdminSessionContext'
 import type { Versioned } from '../admin-content/model/article'
 import type { EditorNotice } from '../admin-content/model/articleEditorState'
+import { publishContent, unpublishContent } from '../admin-content/api/articleAdminApi'
 import { createNews, getNews, updateNews } from './api/newsAdminApi'
 import { toEditable, type NewsAdminDetail, type NewsTextField } from './model/news'
 import { toNewsEditorFailure } from './model/newsEditorFailure'
@@ -16,6 +17,8 @@ export interface NewsEditorController {
   changeTopics(topicIds: string[]): void
   save(): Promise<void>
   reload(): Promise<void>
+  publish(): Promise<void>
+  unpublish(): Promise<void>
 }
 
 /**
@@ -77,6 +80,21 @@ export function useNewsEditor(
     }
   }
 
+  async function changePublication(target: 'publish' | 'unpublish') {
+    const current = state.current
+    if (current === null || state.pending !== null) {
+      return
+    }
+    dispatch({ type: 'mutation-started', pending: target === 'publish' ? 'publishing' : 'unpublishing', submitted: null })
+    try {
+      const command = target === 'publish' ? publishContent : unpublishContent
+      const publication = await command(client, current.value.id, current.etag)
+      dispatch({ type: 'publication-changed', publication, notice: target === 'publish' ? 'published' : 'unpublished' })
+    } catch (error) {
+      fail(error)
+    }
+  }
+
   return {
     state,
     dirty: isDirty(state),
@@ -84,5 +102,7 @@ export function useNewsEditor(
     changeTopics: (topicIds) => dispatch({ type: 'topics-changed', topicIds }),
     save,
     reload,
+    publish: () => changePublication('publish'),
+    unpublish: () => changePublication('unpublish'),
   }
 }

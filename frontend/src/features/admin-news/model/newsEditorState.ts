@@ -1,4 +1,4 @@
-import type { Versioned } from '../../admin-content/model/article'
+import type { PublicationState, Versioned } from '../../admin-content/model/article'
 import type { EditorNotice, PendingMutation } from '../../admin-content/model/articleEditorState'
 import {
   EMPTY_NEWS_FIELDS,
@@ -31,6 +31,7 @@ export type NewsEditorAction =
   | { type: 'mutation-started'; pending: PendingMutation; submitted: NewsFields | null }
   | { type: 'news-saved'; news: Versioned<NewsAdminDetail>; notice: EditorNotice }
   | { type: 'news-reloaded'; news: Versioned<NewsAdminDetail> }
+  | { type: 'publication-changed'; publication: Versioned<PublicationState>; notice: EditorNotice }
   | { type: 'mutation-failed'; failure: NewsEditorFailure }
 
 export interface NewsEditorStart {
@@ -109,6 +110,29 @@ export function newsEditorReducer(state: NewsEditorState, action: NewsEditorActi
         submitted: null,
         failure: null,
         notice: 'reloaded',
+      }
+    }
+    case 'publication-changed': {
+      if (state.current === null) {
+        return state
+      }
+      const { value, etag } = action.publication
+      // Publication changes state and revision only; content fields stay.
+      return {
+        ...state,
+        current: {
+          etag,
+          value: {
+            ...state.current.value,
+            status: value.status,
+            revision: value.revision,
+            publishedAt: value.publishedAt,
+            unpublishedAt: value.unpublishedAt,
+            updatedAt: value.updatedAt,
+          },
+        },
+        pending: null,
+        notice: action.notice,
       }
     }
     case 'mutation-failed':

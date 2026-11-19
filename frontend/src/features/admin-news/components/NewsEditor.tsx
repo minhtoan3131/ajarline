@@ -2,7 +2,7 @@ import { useDeferredValue, useId, useState } from 'react'
 
 import { EditorField } from '../../admin-content/components/EditorField'
 import { FullPreviewOverlay } from '../../admin-content/components/FullPreviewOverlay'
-import { PublicationBadge } from '../../admin-content/components/PublicationControls'
+import { PublicationBadge, PublicationControls, PublicationHint } from '../../admin-content/components/PublicationControls'
 import { SaveStatus } from '../../admin-content/components/SaveStatus'
 import { TopicPicker } from '../../admin-content/components/TopicPicker'
 import type { Versioned } from '../../admin-content/model/article'
@@ -42,6 +42,7 @@ export function NewsEditor({ initial, initialNotice, onCreated }: NewsEditorProp
   const [previewOpen, setPreviewOpen] = useState(false)
   // Typing stays responsive; the preview catches up when React is idle.
   const previewFields = useDeferredValue(state.fields)
+  const publishHintId = `${idPrefix}-publish-hint`
 
   function fieldProps(field: NewsTextField) {
     return {
@@ -73,8 +74,17 @@ export function NewsEditor({ initial, initialNotice, onCreated }: NewsEditorProp
             <button type="button" className="admin-button" onClick={() => setPreviewOpen(true)}>
               Xem trước toàn màn hình
             </button>
+            <PublicationControls
+              status={news?.status ?? null}
+              dirty={dirty}
+              pending={state.pending}
+              hintId={publishHintId}
+              onPublish={() => void editor.publish()}
+              onUnpublish={() => void editor.unpublish()}
+            />
           </div>
         </div>
+        <PublicationHint id={publishHintId} status={news?.status ?? null} dirty={dirty} />
         <EditorMessages
           failure={failure}
           notice={state.notice}

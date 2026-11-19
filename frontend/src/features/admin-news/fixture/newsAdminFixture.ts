@@ -1,3 +1,4 @@
+import type { PublicationState } from '../../admin-content/model/article'
 import { givenSignedInAdmin } from '../../admin-auth/fixture/adminSessionFixture'
 import { givenTopicCatalog } from '../../admin-topics/fixture/topicAdminFixture'
 import { jsonResponse, type StubApiServer } from '../../../shared/api/testsupport/StubApiServer'
@@ -32,6 +33,24 @@ export function draftNews(changes: Partial<NewsAdminDetail> = {}): NewsAdminDeta
 /** Response headers the server sends with an Admin News item. */
 export function newsHeaders(news: NewsAdminDetail): Record<string, string> {
   return { ETag: `"${news.revision}"` }
+}
+
+export function newsPublishPath(action: 'publish' | 'unpublish'): string {
+  return `/api/admin/v1/content/${NEWS_ID}/${action}`
+}
+
+/** Publication response for a News item after a publish or unpublish. */
+export function publicationOfNews(news: NewsAdminDetail, changes: Partial<PublicationState>): PublicationState {
+  return {
+    id: news.id,
+    type: 'news',
+    status: news.status,
+    revision: news.revision,
+    publishedAt: news.publishedAt,
+    unpublishedAt: news.unpublishedAt,
+    updatedAt: news.updatedAt,
+    ...changes,
+  }
 }
 
 /** Request path of the News list at one page. The page size is the one the app sends. */

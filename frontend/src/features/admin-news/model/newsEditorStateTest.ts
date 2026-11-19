@@ -1,6 +1,6 @@
 import { describe, expect, it } from 'vitest'
 
-import { draftNews } from '../fixture/newsAdminFixture'
+import { draftNews, publicationOfNews } from '../fixture/newsAdminFixture'
 import { createNewsEditorState, isDirty, newsEditorReducer } from './newsEditorState'
 
 const LOADED = { value: draftNews(), etag: '"1"' }
@@ -92,6 +92,37 @@ describe('newsEditorReducer', () => {
     const edited = newsEditorReducer(state, { type: 'field-changed', field: 'title', value: 'x' })
 
     expect(edited.failure).not.toBeNull()
+  })
+
+  it('reduce_ShouldReplaceEtagAndStatus_WhenPublicationChanges', () => {
+    const state = createNewsEditorState({ initial: LOADED, initialNotice: null })
+
+    const published = newsEditorReducer(state, {
+      type: 'publication-changed',
+      publication: {
+        value: publicationOfNews(draftNews(), { status: 'PUBLISHED', revision: 2, publishedAt: '2026-11-19T03:00:00Z' }),
+        etag: '"2"',
+      },
+      notice: 'published',
+    })
+
+    expect(published.current?.etag).toBe('"2"')
+    expect(published.current?.value).toMatchObject({ status: 'PUBLISHED', revision: 2, publishedAt: '2026-11-19T03:00:00Z' })
+    expect(published.notice).toBe('published')
+  })
+
+  it('reduce_ShouldKeepForm_WhenPublicationChanges', () => {
+    const state = createNewsEditorState({ initial: LOADED, initialNotice: null })
+
+    const published = newsEditorReducer(state, {
+      type: 'publication-changed',
+      publication: { value: publicationOfNews(draftNews(), { status: 'PUBLISHED', revision: 2 }), etag: '"2"' },
+      notice: 'published',
+    })
+
+    expect(published.fields).toEqual(state.fields)
+    expect(published.current?.value.title).toBe(draftNews().title)
+    expect(isDirty(published)).toBe(false)
   })
 
   it('reduce_ShouldDropLocalChanges_WhenNewsIsReloaded', () => {
