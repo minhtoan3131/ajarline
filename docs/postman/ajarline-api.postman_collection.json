@@ -13179,6 +13179,859 @@
               }
             }
           ]
+        },
+        {
+          "name": "V04 · Learn through a Series",
+          "item": [
+            {
+              "name": "01 · Get CSRF token",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/auth/v1/csrf",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "v1",
+                    "csrf"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "02 · Login",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"username\":\"{{username}}\",\"password\":\"{{password}}\"}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/auth/v1/login",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "v1",
+                    "login"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "03 · Get new CSRF token",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/auth/v1/csrf",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "v1",
+                    "csrf"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "04 · Create series",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Demo Series V04\",\n  \"slug\": \"{{seriesSlug}}\",\n  \"summary\": \"Lộ trình dùng để demo học theo Series.\",\n  \"overviewMarkdown\": \"# Tổng quan\\n\\nLộ trình gồm một Module và hai bài.\",\n  \"topicIds\": []\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/series",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "series"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "05 · Create series (duplicate slug)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Demo Series V04\",\n  \"slug\": \"{{seriesSlug}}\",\n  \"summary\": \"Lộ trình dùng để demo học theo Series.\",\n  \"overviewMarkdown\": \"# Tổng quan\\n\\nLộ trình gồm một Module và hai bài.\",\n  \"topicIds\": []\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/series",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "series"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "06 · Create module",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"seriesId\": \"{{seriesId}}\",\n  \"position\": 1,\n  \"title\": \"Module một\",\n  \"slug\": \"{{seriesSlug}}-m1\",\n  \"summary\": \"Module đầu tiên của lộ trình.\",\n  \"overviewMarkdown\": \"Module này có hai bài.\",\n  \"topicIds\": []\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/modules",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "modules"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "07 · Create article 1 in module",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Bài một\",\n  \"slug\": \"{{seriesSlug}}-a1\",\n  \"summary\": \"Bài đầu tiên của Module.\",\n  \"bodyMarkdown\": \"# Bài một\\n\\nNội dung bài một.\",\n  \"moduleId\": \"{{moduleId}}\",\n  \"position\": 1,\n  \"topicIds\": []\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/articles",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "articles"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "08 · Create article 2 in module",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Bài hai\",\n  \"slug\": \"{{seriesSlug}}-a2\",\n  \"summary\": \"Bài thứ hai của Module.\",\n  \"bodyMarkdown\": \"# Bài hai\\n\\nNội dung bài hai.\",\n  \"moduleId\": \"{{moduleId}}\",\n  \"position\": 2,\n  \"topicIds\": []\n}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/articles",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "articles"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "09 · Read public series (nothing public)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/series/{{seriesSlug}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "series",
+                    "{{seriesSlug}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "10 · Get module",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/modules/{{moduleId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "modules",
+                    "{{moduleId}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "11 · Reorder articles (swap)",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"articleIds\":[\"{{article2Id}}\",\"{{article1Id}}\"]}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/modules/{{moduleId}}/article-order",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "modules",
+                    "{{moduleId}}",
+                    "article-order"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "12 · Reorder articles (restore)",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"articleIds\":[\"{{article1Id}}\",\"{{article2Id}}\"]}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/modules/{{moduleId}}/article-order",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "modules",
+                    "{{moduleId}}",
+                    "article-order"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "13 · Reorder articles (stale revision)",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  },
+                  {
+                    "key": "If-Match",
+                    "value": "\"1\""
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"articleIds\":[\"{{article1Id}}\",\"{{article2Id}}\"]}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/modules/{{moduleId}}/article-order",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "modules",
+                    "{{moduleId}}",
+                    "article-order"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "14 · Publish module (no public article)",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/content/{{moduleId}}/publish",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "content",
+                    "{{moduleId}}",
+                    "publish"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "15 · Get article 1",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/articles/{{article1Id}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "articles",
+                    "{{article1Id}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "16 · Publish article 1",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/content/{{article1Id}}/publish",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "content",
+                    "{{article1Id}}",
+                    "publish"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "17 · Get article 2",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/articles/{{article2Id}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "articles",
+                    "{{article2Id}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "18 · Publish article 2",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/content/{{article2Id}}/publish",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "content",
+                    "{{article2Id}}",
+                    "publish"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "19 · Get module",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/modules/{{moduleId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "modules",
+                    "{{moduleId}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "20 · Publish module",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/content/{{moduleId}}/publish",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "content",
+                    "{{moduleId}}",
+                    "publish"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "21 · Get series",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/series/{{seriesId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "series",
+                    "{{seriesId}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "22 · Publish series",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/content/{{seriesId}}/publish",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "content",
+                    "{{seriesId}}",
+                    "publish"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "23 · List public series",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/series?size=50",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "series"
+                  ],
+                  "query": [
+                    {
+                      "key": "size",
+                      "value": "50"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "24 · Read public series",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/series/{{seriesSlug}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "series",
+                    "{{seriesSlug}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "25 · Read public module",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/modules/{{seriesSlug}}-m1",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "modules",
+                    "{{seriesSlug}}-m1"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "26 · Read public article 1",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/articles/{{seriesSlug}}-a1",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "articles",
+                    "{{seriesSlug}}-a1"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "27 · Read public article 2",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/articles/{{seriesSlug}}-a2",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "articles",
+                    "{{seriesSlug}}-a2"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "28 · Get series",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/series/{{seriesId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "series",
+                    "{{seriesId}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "29 · Unpublish series",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/content/{{seriesId}}/unpublish",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "content",
+                    "{{seriesId}}",
+                    "unpublish"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "30 · Read public series (unpublished)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/series/{{seriesSlug}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "series",
+                    "{{seriesSlug}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "31 · Read public module (series hidden)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/modules/{{seriesSlug}}-m1",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "modules",
+                    "{{seriesSlug}}-m1"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "32 · Read public article (series hidden)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/articles/{{seriesSlug}}-a1",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "articles",
+                    "{{seriesSlug}}-a1"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "33 · Logout",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/auth/v1/logout",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "v1",
+                    "logout"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Check each step against the status code that the demo expects.",
+                  "const expected = {",
+                  "  '01': 200, '02': 200, '03': 200, '04': 201, '05': 409, '06': 201, '07': 201,",
+                  "  '08': 201, '09': 404, '10': 200, '11': 200, '12': 200, '13': 412, '14': 422,",
+                  "  '15': 200, '16': 200, '17': 200, '18': 200, '19': 200, '20': 200, '21': 200,",
+                  "  '22': 200, '23': 200, '24': 200, '25': 200, '26': 200, '27': 200, '28': 200,",
+                  "  '29': 200, '30': 404, '31': 200, '32': 200, '33': 204,",
+                  "};",
+                  "const step = pm.info.requestName.slice(0, 2);",
+                  "// The two Articles are created by the same request, so each keeps its id by step.",
+                  "const articleVariables = { '07': 'article1Id', '08': 'article2Id' };",
+                  "if (articleVariables[step] && pm.response.code === 201) {",
+                  "  pm.environment.set(articleVariables[step], pm.response.json().id);",
+                  "}",
+                  "if (expected[step] !== undefined) {",
+                  "  pm.test(`${pm.info.requestName} → ${expected[step]}`, () => {",
+                  "    pm.response.to.have.status(expected[step]);",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
         }
       ]
     }
@@ -13193,13 +14046,16 @@
           "if (method === 'POST' || method === 'PUT' || method === 'DELETE') {",
           "  pm.request.headers.upsert({ key: 'X-CSRF-TOKEN', value: pm.environment.get('csrf') });",
           "  const path = pm.request.url.getPath();",
-          "  const needsRevision = /\\/articles\\/[^/]+$/.test(path) || /\\/(publish|unpublish)$/.test(path);",
+          "  // V04: Series, Module and the two reorder paths need the revision of the parent.",
+          "  const needsRevision =",
+          "    /\\/(articles|series|modules)\\/[^/]+$/.test(path) ||",
+          "    /\\/(module-order|article-order)$/.test(path) ||",
+          "    /\\/(publish|unpublish)$/.test(path);",
           "  // A header typed by hand wins, so a stale revision can be tried on purpose.",
           "  if (needsRevision && !pm.request.headers.has('If-Match')) {",
           "    pm.request.headers.upsert({ key: 'If-Match', value: pm.environment.get('etag') });",
           "  }",
-          "}",
-          ""
+          "}"
         ],
         "type": "text/javascript"
       }
@@ -13217,9 +14073,15 @@
           "if (path.endsWith('/auth/v1/csrf') && pm.response.code === 200) {",
           "  pm.environment.set('csrf', pm.response.json().token);",
           "}",
+          "// V04: each kind of created resource keeps its id in its own variable.",
           "if (pm.request.method === 'POST' && pm.response.code === 201) {",
-          "  const name = path.endsWith('/admin/v1/topics') ? 'topicId' : 'articleId';",
-          "  pm.environment.set(name, pm.response.json().id);",
+          "  const names = {",
+          "    '/admin/v1/topics': 'topicId',",
+          "    '/admin/v1/series': 'seriesId',",
+          "    '/admin/v1/modules': 'moduleId',",
+          "  };",
+          "  const suffix = Object.keys(names).find((p) => path.endsWith(p));",
+          "  pm.environment.set(suffix ? names[suffix] : 'articleId', pm.response.json().id);",
           "}",
           ""
         ],
