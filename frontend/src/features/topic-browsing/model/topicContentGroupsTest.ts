@@ -44,12 +44,16 @@ describe('groupTopicContent', () => {
 })
 
 describe('readerPathOf', () => {
-  it('readerPathOf_ShouldPointToArticlePage_WhenItemIsArticle', () => {
-    expect(readerPathOf(contentItem())).toBe('/articles/hieu-protobuf')
+  it.each([
+    ['article', '/articles/hieu-protobuf'],
+    ['series', '/series/hieu-protobuf'],
+    ['module', '/modules/hieu-protobuf'],
+  ] as const)('readerPathOf_ShouldPointToReaderPage_WhenTypeHasOne (%s)', (type, path) => {
+    expect(readerPathOf(contentItem({ type }))).toBe(path)
   })
 
-  it.each(['series', 'module', 'news'] as const)('readerPathOf_ShouldReturnNull_WhenTypeHasNoReaderPage (%s)', (type) => {
-    expect(readerPathOf(contentItem({ type }))).toBeNull()
+  it('readerPathOf_ShouldReturnNull_WhenItemIsNews', () => {
+    expect(readerPathOf(contentItem({ type: 'news' }))).toBeNull()
   })
 })
 

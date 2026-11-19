@@ -4,6 +4,10 @@ import { describe, expect, it } from 'vitest'
 
 import { renderAppRoute } from '../app/testsupport/renderAppRoute'
 import {
+  publicSeries,
+  seriesApiPath,
+} from '../features/learning-navigation/fixture/publicLearningFixture'
+import {
   contentItem,
   JAVA_TOPIC_REF,
   publicTopic,
@@ -196,5 +200,69 @@ describe('TopicHomePage', () => {
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Hiểu Protobuf với Java' })).toBeInTheDocument()
     expect(screen.getByTestId('location')).toHaveTextContent('/articles/hieu-protobuf')
+  })
+
+  it('render_ShouldLinkSeriesAndModuleItemsWithContext_WhenTopicHasThem', async () => {
+    stubJavaTopic(
+      0,
+      onePage(
+        contentItem({
+          id: 'series-1',
+          type: 'series',
+          slug: 'java-concurrency',
+          title: 'Java Concurrency',
+          summary: 'Học xử lý đồng thời trong Java.',
+        }),
+        contentItem({
+          id: 'module-1',
+          type: 'module',
+          slug: 'thread-co-ban',
+          title: 'Thread cơ bản',
+          summary: 'Làm quen với Thread.',
+          context: {
+            series: { id: 'series-1', slug: 'java-concurrency', title: 'Java Concurrency' },
+            module: null,
+          },
+        }),
+      ),
+    ).install()
+
+    renderAppRoute('/topics/java')
+
+    const seriesGroup = await screen.findByRole('region', { name: 'Series' })
+    expect(within(seriesGroup).getByRole('link', { name: 'Java Concurrency' })).toHaveAttribute(
+      'href',
+      '/series/java-concurrency',
+    )
+    const inSeries = screen.getByRole('region', { name: 'Trong Series' })
+    expect(within(inSeries).getByRole('link', { name: 'Thread cơ bản' })).toHaveAttribute(
+      'href',
+      '/modules/thread-co-ban',
+    )
+    expect(within(inSeries).getByText('Java Concurrency')).toBeInTheDocument()
+  })
+
+  it('navigate_ShouldOpenSeries_WhenSeriesItemIsClicked', async () => {
+    stubJavaTopic(
+      0,
+      onePage(
+        contentItem({
+          id: 'series-1',
+          type: 'series',
+          slug: 'java-concurrency',
+          title: 'Java Concurrency',
+          summary: 'Học xử lý đồng thời trong Java.',
+        }),
+      ),
+    )
+      .on('GET', seriesApiPath('java-concurrency'), jsonResponse(200, publicSeries()))
+      .install()
+    const user = userEvent.setup()
+    renderAppRoute('/topics/java')
+
+    await user.click(await screen.findByRole('link', { name: 'Java Concurrency' }))
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Java Concurrency' })).toBeInTheDocument()
+    expect(screen.getByTestId('location')).toHaveTextContent('/series/java-concurrency')
   })
 })

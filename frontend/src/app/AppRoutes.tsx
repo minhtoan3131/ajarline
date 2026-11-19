@@ -11,7 +11,9 @@ import { TopicManagementPage } from '../pages/admin/TopicManagementPage'
 import { ArticlePage } from '../pages/ArticlePage'
 import { NotFoundPage } from '../pages/NotFoundPage'
 import { HomePage } from '../pages/HomePage'
+import { ModulePage } from '../pages/ModulePage'
 import { SeriesIndexPage } from '../pages/SeriesIndexPage'
+import { SeriesPage } from '../pages/SeriesPage'
 import { StandaloneIndexPage } from '../pages/StandaloneIndexPage'
 import { TopicHomePage } from '../pages/TopicHomePage'
 import { TopicIndexPage } from '../pages/TopicIndexPage'
@@ -26,7 +28,9 @@ export function AppRoutes() {
         <Route index element={<HomePage />} />
         <Route path="articles" element={<StandaloneIndexPage />} />
         <Route path="articles/:slug" element={<ArticlePage />} />
+        <Route path="modules/:slug" element={<ModulePage />} />
         <Route path="series" element={<SeriesIndexPage />} />
+        <Route path="series/:slug" element={<SeriesPage />} />
         <Route path="topics" element={<TopicIndexPage />} />
         <Route path="topics/:slug" element={<TopicHomePage />} />
         <Route path="*" element={<NotFoundPage />} />

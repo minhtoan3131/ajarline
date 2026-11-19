@@ -281,6 +281,20 @@ body {
   font-size: 0.875rem;
 }
 
+.reader-learning-overview {
+  margin: 0 0 40px;
+}
+
+.reader-learning-articles {
+  margin: 12px 0 0;
+  padding-left: 24px;
+  line-height: 1.7;
+}
+
+.reader-learning-articles a {
+  color: var(--reader-ink);
+}
+
 @media (max-width: 640px) {
   .reader-header,
   .reader-main {
