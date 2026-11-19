@@ -5,7 +5,11 @@ import java.time.Instant;
 import java.util.List;
 import java.util.UUID;
 import vn.io.ajarline.content.contract.ArticleView;
+import vn.io.ajarline.content.contract.PublicArticleContext;
+import vn.io.ajarline.content.contract.PublicArticleRef;
 import vn.io.ajarline.content.contract.PublicArticleView;
+import vn.io.ajarline.content.contract.PublicModuleRef;
+import vn.io.ajarline.content.contract.PublicSeriesRef;
 import vn.io.ajarline.content.contract.TopicLabel;
 
 /**
@@ -38,6 +42,7 @@ public record PublicArticleResponse(
 
     static PublicArticleResponse from(PublicArticleView view) {
         ArticleView article = view.article();
+        PublicArticleContext learning = view.learning();
         return new PublicArticleResponse(
                 article.id(),
                 "article",
@@ -46,10 +51,10 @@ public record PublicArticleResponse(
                 article.summary(),
                 article.bodyMarkdown(),
                 view.topics().stream().map(TopicReference::from).toList(),
-                null,
-                null,
-                null,
-                null,
+                SeriesReference.from(learning.context().series()),
+                ModuleReference.from(learning.context().module()),
+                ArticleSequenceReference.from(learning.previous()),
+                ArticleSequenceReference.from(learning.next()),
                 article.publishedAt(),
                 article.updatedAt());
     }
@@ -71,6 +76,9 @@ public record PublicArticleResponse(
             String slug,
             String title
     ) {
+        static SeriesReference from(PublicSeriesRef ref) {
+            return ref == null ? null : new SeriesReference(ref.id(), ref.slug(), ref.title());
+        }
     }
 
     @Schema(requiredProperties = {"id", "slug", "title", "position"})
@@ -80,6 +88,11 @@ public record PublicArticleResponse(
             String title,
             int position
     ) {
+        static ModuleReference from(PublicModuleRef ref) {
+            return ref == null
+                    ? null
+                    : new ModuleReference(ref.id(), ref.slug(), ref.title(), ref.position());
+        }
     }
 
     @Schema(requiredProperties = {"id", "slug", "title", "position"})
@@ -89,5 +102,10 @@ public record PublicArticleResponse(
             String title,
             int position
     ) {
+        static ArticleSequenceReference from(PublicArticleRef ref) {
+            return ref == null
+                    ? null
+                    : new ArticleSequenceReference(ref.id(), ref.slug(), ref.title(), ref.position());
+        }
     }
 }

@@ -100,6 +100,25 @@ public interface ContentItemJpaRepository extends JpaRepository<ContentItemEntit
             @Param("offset") long offset);
 
     /**
+     * Same as {@link #findWindowOfTypeWithStatus}, but leaves out the given ids.
+     * The ids must not be empty, because an empty list is not valid in this SQL.
+     */
+    @Query(value = """
+            SELECT * FROM content_item item
+             WHERE item.type = :type
+               AND item.status = :status
+               AND item.id NOT IN (:excludedIds)
+             ORDER BY item.title, item.id
+             LIMIT :limit OFFSET :offset
+            """, nativeQuery = true)
+    List<ContentItemEntity> findWindowOfTypeWithStatusExcludingIds(
+            @Param("type") String type,
+            @Param("status") String status,
+            @Param("excludedIds") Collection<UUID> excludedIds,
+            @Param("limit") int limit,
+            @Param("offset") long offset);
+
+    /**
      * Returns one window of the content index. The text filter is a literal, case-insensitive
      * search in the title or the slug. An empty text matches every item. Ordering and paging
      * run after filtering, so the same data always gives the same pages.

@@ -6,15 +6,19 @@ import org.springframework.transaction.annotation.Transactional;
 import vn.io.ajarline.content.contract.ContentRecordReader;
 import vn.io.ajarline.content.contract.ContentRecordSummary;
 import vn.io.ajarline.content.contract.ContentType;
+import vn.io.ajarline.content.contract.PublicArticleContext;
+import vn.io.ajarline.content.contract.PublicArticleRef;
 import vn.io.ajarline.content.contract.PublicContentContext;
 import vn.io.ajarline.content.contract.PublicLearningContextPort;
 import vn.io.ajarline.content.contract.PublicModuleRef;
 import vn.io.ajarline.content.contract.PublicSeriesRef;
 import vn.io.ajarline.learning.contract.LearningVisibility;
+import vn.io.ajarline.learning.infrastructure.persistence.ModuleJpaRepository;
 
 import java.util.Collection;
 import java.util.HashMap;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Map;
 import java.util.Set;
 import java.util.UUID;
@@ -33,13 +37,16 @@ public class PublicLearningAdapter implements LearningVisibility, PublicLearning
     private final PublicHierarchyReader reader;
     private final PublicHierarchyPolicy policy;
     private final ContentRecordReader records;
+    private final ModuleJpaRepository moduleRepository;
 
     public PublicLearningAdapter(PublicHierarchyReader reader,
                                  PublicHierarchyPolicy policy,
-                                 ContentRecordReader records) {
+                                 ContentRecordReader records,
+                                 ModuleJpaRepository moduleRepository) {
         this.reader = reader;
         this.policy = policy;
         this.records = records;
+        this.moduleRepository = moduleRepository;
     }
 
     @Override
@@ -78,6 +85,46 @@ public class PublicLearningAdapter implements LearningVisibility, PublicLearning
         Map<UUID, PublicContentContext> contexts = new HashMap<>();
         lineages.forEach((id, lineage) -> contexts.put(id, contextOf(hierarchy, lineage, texts)));
         return contexts;
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY, readOnly = true)
+    public PublicArticleContext articleContextOf(UUID articleId) {
+        PublicHierarchy hierarchy = policy.judge(reader.readAround(List.of(articleId)));
+        Lineage lineage = lineageOf(hierarchy, articleId);
+        if (lineage.moduleId() == null) {
+            return PublicArticleContext.EMPTY;
+        }
+        PublicHierarchyPolicy.Siblings siblings = policy.siblingsOf(hierarchy, lineage.moduleId(), articleId)
+                .orElseThrow(() -> new IllegalStateException("A public Article has no rank: " + articleId));
+
+        Set<UUID> textIds = lineage.parentIds();
+        if (siblings.previous() != null) {
+            textIds.add(siblings.previous().id());
+        }
+        if (siblings.next() != null) {
+            textIds.add(siblings.next().id());
+        }
+        Map<UUID, ContentRecordSummary> texts = records.summariesOf(textIds);
+
+        return new PublicArticleContext(
+                contextOf(hierarchy, lineage, texts),
+                articleRef(siblings.previous(), texts),
+                articleRef(siblings.next(), texts));
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY, readOnly = true)
+    public Set<UUID> articleIdsInPublicModules() {
+        List<UUID> moduleIds = moduleRepository.findAllContentIds();
+        if (moduleIds.isEmpty()) {
+            return Set.of();
+        }
+        PublicHierarchy hierarchy = policy.judge(reader.readDown(moduleIds));
+        return moduleIds.stream()
+                .filter(hierarchy::isPublic)
+                .flatMap(moduleId -> hierarchy.publicChildrenOf(moduleId).stream())
+                .collect(Collectors.toUnmodifiableSet());
     }
 
     /**
@@ -122,6 +169,15 @@ public class PublicLearningAdapter implements LearningVisibility, PublicLearning
                 .flatMap(seriesId -> policy.siblingsOf(hierarchy, seriesId, moduleId))
                 .map(siblings -> siblings.self().position())
                 .orElseThrow(() -> new IllegalStateException("A public Module has no rank: " + moduleId));
+    }
+
+    private static PublicArticleRef articleRef(PublicHierarchyPolicy.RankedChild child,
+                                               Map<UUID, ContentRecordSummary> texts) {
+        if (child == null) {
+            return null;
+        }
+        ContentRecordSummary text = texts.get(child.id());
+        return new PublicArticleRef(text.id(), text.slug(), text.title(), child.position());
     }
 
     /**

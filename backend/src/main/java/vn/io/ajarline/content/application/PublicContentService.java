@@ -84,11 +84,12 @@ public class PublicContentService implements PublicContentQuery {
     }
 
     /**
-     * Returns one page of the public Articles that belong to no Module,
-     * ordered by title and then by id, each with its Topics.
+     * Returns one page of the public Articles that readers see as standalone, ordered by
+     * title and then by id, each with its Topics.
      *
-     * <p>Paging is applied after filtering and ordering. A page after the
-     * last one is empty. The Topics of the whole page are read once.</p>
+     * <p>An Article is standalone when it is in no public Module. This includes an Article of
+     * a Module that readers cannot see. Paging is applied after filtering and ordering. A page
+     * after the last one is empty. The Topics of the whole page are read once.</p>
      *
      * @param page zero-based page number, at least 0
      * @param size number of Articles per page, at least 1
@@ -97,12 +98,15 @@ public class PublicContentService implements PublicContentQuery {
     public StandaloneArticlePage findStandaloneArticles(int page, int size) {
         requireValidPaging(page, size);
 
-        // NOTE: Until Modules exist, every public Article is standalone. When
-        // the learning capability can say which Articles belong to a Module,
-        // exclude them here through LearningContextPort, in the query and
-        // before paging, so the Topic Home group and this list agree.
-        List<ContentItemEntity> window = contentRepository.findWindowOfTypeWithStatus(
-                ContentType.ARTICLE.name(), PUBLIC_STATUS.name(), size + 1, (long) page * size);
+        // Articles of a public Module are left out in the query, before paging.
+        // Then every page is full and hasMore is right.
+        Set<UUID> inPublicModules = learning.articleIdsInPublicModules();
+        long offset = (long) page * size;
+        List<ContentItemEntity> window = inPublicModules.isEmpty()
+                ? contentRepository.findWindowOfTypeWithStatus(
+                        ContentType.ARTICLE.name(), PUBLIC_STATUS.name(), size + 1, offset)
+                : contentRepository.findWindowOfTypeWithStatusExcludingIds(
+                        ContentType.ARTICLE.name(), PUBLIC_STATUS.name(), inPublicModules, size + 1, offset);
 
         List<PublicContentSummary> articles = window.stream()
                 .limit(size)

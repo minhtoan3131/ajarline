@@ -25,12 +25,14 @@ public class ArticleService implements ArticleCreator, ArticleReader, ArticleEdi
     private final TopicAssignmentPort topicAssignment;
     private final ArticlePlacementPort placementPort;
     private final LearningContextPort learningContext;
+    private final PublicLearningContextPort publicLearning;
     private final ContentRevisionCommands revisions;
 
     public ArticleService(ContentItemJpaRepository contentRepository,
                           ArticleJpaRepository articleRepository, ArticlePolicy policy, Clock clock,
                           TopicAssignmentPort topicAssignment, ArticlePlacementPort placementPort,
-                          LearningContextPort learningContext, ContentRevisionCommands revisions) {
+                          LearningContextPort learningContext, PublicLearningContextPort publicLearning,
+                          ContentRevisionCommands revisions) {
         this.contentRepository = contentRepository;
         this.articleRepository = articleRepository;
         this.policy = policy;
@@ -38,6 +40,7 @@ public class ArticleService implements ArticleCreator, ArticleReader, ArticleEdi
         this.topicAssignment = topicAssignment;
         this.placementPort = placementPort;
         this.learningContext = learningContext;
+        this.publicLearning = publicLearning;
         this.revisions = revisions;
     }
 
@@ -93,7 +96,8 @@ public class ArticleService implements ArticleCreator, ArticleReader, ArticleEdi
                         PublicationStatus.PUBLISHED)
                 .map(content -> new PublicArticleView(
                         toView(content, requireArticle(content.getId())),
-                        topicAssignment.topicLabelsOf(content.getId())));
+                        topicAssignment.topicLabelsOf(content.getId()),
+                        publicLearning.articleContextOf(content.getId())));
     }
 
     private ArticleEntity requireArticle(UUID uuid) {

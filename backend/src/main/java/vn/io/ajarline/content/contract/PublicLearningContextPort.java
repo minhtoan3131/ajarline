@@ -23,4 +23,17 @@ public interface PublicLearningContextPort {
      * Every given id has a key. An id with no public parent has an empty context.
      */
     Map<UUID, PublicContentContext> contextsOf(Collection<UUID> articleOrModuleIds);
+
+    /**
+     * Returns what readers can see around one public Article: its public Module and Series, and the
+     * nearest public Articles before and after it in the same Module. When the Module is not public,
+     * the result is empty.
+     */
+    PublicArticleContext articleContextOf(UUID articleId);
+
+    /**
+     * Returns the ids of the Articles that are public and belong to a public Module.
+     * These Articles are not standalone.
+     */
+    Set<UUID> articleIdsInPublicModules();
 }

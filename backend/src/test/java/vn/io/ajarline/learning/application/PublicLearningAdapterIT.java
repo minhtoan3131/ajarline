@@ -9,6 +9,7 @@ import org.springframework.context.annotation.Import;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.transaction.IllegalTransactionStateException;
 import org.springframework.transaction.support.TransactionTemplate;
+import vn.io.ajarline.content.contract.PublicArticleContext;
 import vn.io.ajarline.content.contract.PublicContentContext;
 import vn.io.ajarline.content.contract.PublicLearningContextPort;
 import vn.io.ajarline.learning.contract.LearningVisibility;
@@ -22,6 +23,7 @@ import java.util.UUID;
 
 import static org.assertj.core.api.Assertions.assertThat;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
+import static vn.io.ajarline.support.LearningTestData.ARTICLE_A1;
 import static vn.io.ajarline.support.LearningTestData.ARTICLE_A3;
 import static vn.io.ajarline.support.LearningTestData.ARTICLE_A4;
 import static vn.io.ajarline.support.LearningTestData.ARTICLE_A5;
@@ -130,6 +132,53 @@ class PublicLearningAdapterIT {
     @Test
     void publicModuleIds_ShouldFail_WhenCalledOutsideTransaction() {
         assertThatThrownBy(() -> visibility.publicModuleIds(List.of(MODULE_A1)))
+                .isInstanceOf(IllegalTransactionStateException.class);
+    }
+
+    @Test
+    void articleContextOf_ShouldGiveParentsAndNeighbours_WhenArticleIsInPublicModule() {
+        PublicArticleContext context = transactions.execute(status -> port.articleContextOf(ARTICLE_A3));
+
+        assertThat(context.context().module().slug()).isEqualTo("module-a1");
+        assertThat(context.context().module().position()).isEqualTo(1);
+        assertThat(context.context().series().slug()).isEqualTo("series-a");
+        // Article A2 is a draft between A1 and A3, so the nearest public Article before A3 is A1.
+        assertThat(context.previous().slug()).isEqualTo("article-a1");
+        assertThat(context.previous().position()).isEqualTo(1);
+        assertThat(context.next()).isNull();
+    }
+
+    @Test
+    void articleContextOf_ShouldBeEmpty_WhenModuleIsHidden() {
+        PublicArticleContext context = transactions.execute(status -> port.articleContextOf(ARTICLE_A5));
+
+        assertThat(context).isEqualTo(PublicArticleContext.EMPTY);
+    }
+
+    @Test
+    void articleContextOf_ShouldHaveNoSeries_WhenOnlyTheSeriesIsHidden() {
+        PublicArticleContext context = transactions.execute(status -> port.articleContextOf(ARTICLE_C1));
+
+        assertThat(context.context().module().slug()).isEqualTo("module-c1");
+        assertThat(context.context().series()).isNull();
+    }
+
+    @Test
+    void articleIdsInPublicModules_ShouldReturnPublicArticlesOfPublicModules_WhenSomeModulesAreHidden() {
+        Set<UUID> ids = transactions.execute(status -> port.articleIdsInPublicModules());
+
+        assertThat(ids).containsExactlyInAnyOrder(ARTICLE_A1, ARTICLE_A3, ARTICLE_A4, ARTICLE_C1);
+    }
+
+    @Test
+    void articleContextOf_ShouldFail_WhenCalledOutsideTransaction() {
+        assertThatThrownBy(() -> port.articleContextOf(ARTICLE_A3))
+                .isInstanceOf(IllegalTransactionStateException.class);
+    }
+
+    @Test
+    void articleIdsInPublicModules_ShouldFail_WhenCalledOutsideTransaction() {
+        assertThatThrownBy(() -> port.articleIdsInPublicModules())
                 .isInstanceOf(IllegalTransactionStateException.class);
     }
 }

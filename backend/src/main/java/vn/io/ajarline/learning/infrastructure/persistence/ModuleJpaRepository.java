@@ -1,6 +1,7 @@
 package vn.io.ajarline.learning.infrastructure.persistence;
 
 import org.springframework.data.jpa.repository.JpaRepository;
+import org.springframework.data.jpa.repository.Query;
 
 import java.util.Collection;
 import java.util.List;
@@ -15,4 +16,10 @@ public interface ModuleJpaRepository extends JpaRepository<ModuleEntity, UUID> {
      * and each group is in position order.
      */
     List<ModuleEntity> findBySeriesIdInOrderBySeriesIdAscPositionAsc(Collection<UUID> seriesIds);
+
+    /**
+     * Returns the id of every Module.
+     */
+    @Query("select moduleRow.contentId from ModuleEntity moduleRow")
+    List<UUID> findAllContentIds();
 }
