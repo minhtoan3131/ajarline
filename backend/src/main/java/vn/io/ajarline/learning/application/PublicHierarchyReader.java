@@ -49,6 +49,36 @@ public class PublicHierarchyReader {
     }
 
     /**
+     * Reads the given Articles and Modules, the Modules and Series above them, and everything
+     * below those Series. A Series is read even when it is not published, because a Module
+     * under it needs a rank. An id that matches no item is ignored.
+     */
+    public HierarchyFacts readAround(Collection<UUID> ids) {
+        Map<UUID, ContentRecordSummary> known = new HashMap<>(records.summariesOf(ids));
+
+        // Up from an Article to its Module.
+        Set<UUID> moduleIds = new LinkedHashSet<>(idsOfType(known, ContentType.MODULE));
+        memberRepository.findAllById(idsOfType(known, ContentType.ARTICLE))
+                .forEach(member -> moduleIds.add(member.getModuleId()));
+        learn(known, moduleIds);
+
+        // Up from a Module to its Series.
+        Set<UUID> seriesIds = new LinkedHashSet<>();
+        moduleRepository.findAllById(moduleIds)
+                .forEach(module -> seriesIds.add(module.getSeriesId()));
+        learn(known, seriesIds);
+
+        return assemble(known, seriesIds, moduleIds);
+    }
+
+    private static List<UUID> idsOfType(Map<UUID, ContentRecordSummary> known, ContentType type) {
+        return known.values().stream()
+                .filter(summary -> summary.type() == type)
+                .map(ContentRecordSummary::id)
+                .toList();
+    }
+
+    /**
      * Reads the children of the given Series and Modules, then the Articles of every published Module.
      * Every Module and Series in {@code known} gets its status read first.
      */

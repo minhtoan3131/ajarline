@@ -1,6 +1,7 @@
 package vn.io.ajarline.topic.api;
 
 import io.swagger.v3.oas.annotations.media.Schema;
+import vn.io.ajarline.content.contract.PublicContentContext;
 import vn.io.ajarline.content.contract.PublicContentSummary;
 import vn.io.ajarline.topic.application.PublicTopicContent;
 
@@ -74,10 +75,7 @@ public record TopicContentResponse(
                     entry.topics().stream().map(TopicRef::from).toList(),
                     content.publishedAt(),
                     content.updatedAt(),
-                    // NOTE: the parent context comes from the Series and Module
-                    // hierarchy. No content belongs to one, so every item is shown
-                    // as a standalone destination.
-                    TopicContentContext.STANDALONE);
+                    TopicContentContext.from(content.context()));
         }
     }
 
@@ -90,7 +88,19 @@ public record TopicContentResponse(
             @Schema(nullable = true) SeriesContextRef series,
             @Schema(nullable = true) ModuleContextRef module
     ) {
-        static final TopicContentContext STANDALONE = new TopicContentContext(null, null);
+
+        static TopicContentContext from(PublicContentContext context) {
+            return new TopicContentContext(
+                    context.series() == null ? null : new SeriesContextRef(
+                            context.series().id(),
+                            context.series().slug(),
+                            context.series().title()),
+                    context.module() == null ? null : new ModuleContextRef(
+                            context.module().id(),
+                            context.module().slug(),
+                            context.module().title(),
+                            context.module().position()));
+        }
     }
 
     @Schema(requiredProperties = {"id", "slug", "title"})

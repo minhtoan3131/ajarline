@@ -153,6 +153,21 @@ public final class LearningTestData {
     }
 
     /**
+     * Inserts a public Series with one public Module and one public Article. The ids are
+     * {@code uuid(idBase)}, {@code uuid(idBase + 1)} and {@code uuid(idBase + 2)}. The slugs are
+     * the given slug, then the slug with "-module" and "-article".
+     */
+    public static void insertPublicSeries(
+            JdbcTemplate jdbcTemplate, int idBase, String slug, String title) {
+        insertSeries(jdbcTemplate, uuid(idBase), slug, PUBLISHED, "# Overview");
+        insertModule(jdbcTemplate, uuid(idBase + 1), slug + "-module", uuid(idBase), 1,
+                PUBLISHED, "# Overview");
+        insertArticleIn(jdbcTemplate, uuid(idBase + 2), slug + "-article", PUBLISHED,
+                uuid(idBase + 1), 1);
+        jdbcTemplate.update("UPDATE content_item SET title = ? WHERE id = ?", title, uuid(idBase));
+    }
+
+    /**
      * Deletes all content and hierarchy rows, children first. The hierarchy foreign keys are RESTRICT.
      */
     public static void deleteAll(JdbcTemplate jdbcTemplate) {

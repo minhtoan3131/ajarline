@@ -41,14 +41,14 @@ public interface ContentItemJpaRepository extends JpaRepository<ContentItemEntit
     int advanceRevisions(@Param("ids") Collection<UUID> ids, @Param("changedAt") Instant changedAt);
 
     /**
-     * Returns the ids, among the given ones, of the items in the given status.
+     * Returns the id and the type of the items, among the given ones, in the given status.
      */
     @Query("""
-            select item.id from ContentItemEntity item
+            select item.id as id, item.type as contentType from ContentItemEntity item
              where item.id in :ids
                and item.status = :status
             """)
-    List<UUID> findIdsWithStatus(
+    List<PublishedIdRow> findIdsAndTypesWithStatus(
             @Param("ids") Collection<UUID> ids,
             @Param("status") PublicationStatus status);
 

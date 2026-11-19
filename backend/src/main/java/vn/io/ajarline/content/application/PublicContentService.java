@@ -3,16 +3,22 @@ package vn.io.ajarline.content.application;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.io.ajarline.content.contract.ContentType;
+import vn.io.ajarline.content.contract.PublicContentContext;
 import vn.io.ajarline.content.contract.PublicContentPage;
 import vn.io.ajarline.content.contract.PublicContentQuery;
 import vn.io.ajarline.content.contract.PublicContentSummary;
+import vn.io.ajarline.content.contract.PublicLearningContextPort;
 import vn.io.ajarline.content.contract.PublicationStatus;
 import vn.io.ajarline.content.contract.TopicAssignmentPort;
 import vn.io.ajarline.content.contract.TopicLabel;
 import vn.io.ajarline.content.infrastructure.persistence.ContentItemEntity;
 import vn.io.ajarline.content.infrastructure.persistence.ContentItemJpaRepository;
+import vn.io.ajarline.content.infrastructure.persistence.PublishedIdRow;
 
+import java.util.ArrayList;
 import java.util.Collection;
+import java.util.EnumSet;
+import java.util.HashSet;
 import java.util.List;
 import java.util.Map;
 import java.util.Set;
@@ -24,12 +30,15 @@ public class PublicContentService implements PublicContentQuery {
 
     private final ContentItemJpaRepository contentRepository;
     private final TopicAssignmentPort topicAssignments;
+    private final PublicLearningContextPort learning;
 
     public PublicContentService(
             ContentItemJpaRepository contentRepository,
-            TopicAssignmentPort topicAssignments) {
+            TopicAssignmentPort topicAssignments,
+            PublicLearningContextPort learning) {
         this.contentRepository = contentRepository;
         this.topicAssignments = topicAssignments;
+        this.learning = learning;
     }
 
     @Override
@@ -38,7 +47,7 @@ public class PublicContentService implements PublicContentQuery {
         if (contentIds.isEmpty()) {
             return Set.of();
         }
-        return Set.copyOf(contentRepository.findIdsWithStatus(contentIds, PUBLIC_STATUS));
+        return publicIdsAmong(contentIds, EnumSet.allOf(ContentType.class));
     }
 
     @Override
@@ -53,15 +62,23 @@ public class PublicContentService implements PublicContentQuery {
             return PublicContentPage.empty();
         }
 
+        // Filter first and cut the page after. Then every page is full and hasMore is right.
+        Set<UUID> publicIds = publicIdsAmong(contentIds, types);
+        if (publicIds.isEmpty()) {
+            return PublicContentPage.empty();
+        }
+
         List<String> typeNames = types.stream().map(Enum::name).toList();
         long offset = (long) page * size;
         // One extra row tells whether a next page exists, without a count.
         List<ContentItemEntity> window = contentRepository.findWindowWithStatus(
-                contentIds, PUBLIC_STATUS.name(), typeNames, size + 1, offset);
+                publicIds, PUBLIC_STATUS.name(), typeNames, size + 1, offset);
 
-        List<PublicContentSummary> items = window.stream()
-                .limit(size)
-                .map(this::toSummary)
+        List<ContentItemEntity> pageItems = window.stream().limit(size).toList();
+        Map<UUID, PublicContentContext> contexts = contextsOf(pageItems);
+        List<PublicContentSummary> items = pageItems.stream()
+                .map(item -> toSummary(item).withContext(
+                        contexts.getOrDefault(item.getId(), PublicContentContext.EMPTY)))
                 .toList();
         return new PublicContentPage(items, window.size() > size);
     }
@@ -104,6 +121,42 @@ public class PublicContentService implements PublicContentQuery {
         return new StandaloneArticlePage(entries, window.size() > size);
     }
 
+    /**
+     * Keeps the published items of the given types. A Module or a Series stays only when
+     * readers can see it, as learning decides.
+     */
+    private Set<UUID> publicIdsAmong(Collection<UUID> contentIds, Set<ContentType> types) {
+        Set<UUID> publicIds = new HashSet<>();
+        List<UUID> learningIds = new ArrayList<>();
+        for (PublishedIdRow row : contentRepository.findIdsAndTypesWithStatus(contentIds, PUBLIC_STATUS)) {
+            ContentType type = row.getContentType();
+            if (!types.contains(type)) {
+                continue;
+            }
+            if (type == ContentType.SERIES || type == ContentType.MODULE) {
+                learningIds.add(row.getId());
+            } else {
+                publicIds.add(row.getId());
+            }
+        }
+        if (!learningIds.isEmpty()) {
+            publicIds.addAll(learning.publicAmong(learningIds));
+        }
+        return publicIds;
+    }
+
+    /**
+     * Reads the learning context of the Articles and Modules on the page with one call.
+     * A Series has no parent, so it is not asked.
+     */
+    private Map<UUID, PublicContentContext> contextsOf(List<ContentItemEntity> items) {
+        List<UUID> ids = items.stream()
+                .filter(item -> item.getType() == ContentType.ARTICLE || item.getType() == ContentType.MODULE)
+                .map(ContentItemEntity::getId)
+                .toList();
+        return ids.isEmpty() ? Map.of() : learning.contextsOf(ids);
+    }
+
     private static void requireValidPaging(int page, int size) {
         if (page < 0 || size < 1) {
             throw new IllegalArgumentException("page must be at least 0 and size at least 1.");
@@ -118,6 +171,7 @@ public class PublicContentService implements PublicContentQuery {
                 content.getTitle(),
                 content.getSummary(),
                 content.getPublishedAt(),
-                content.getUpdatedAt());
+                content.getUpdatedAt(),
+                PublicContentContext.EMPTY);
     }
 }
