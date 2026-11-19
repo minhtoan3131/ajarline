@@ -64,6 +64,10 @@ class ApiDocumentationIT {
                     "get", "getPublicArticle")),
             Map.entry("/api/v1/series", Map.of(
                     "get", "listPublicSeries")),
+            Map.entry("/api/v1/series/{slug}", Map.of(
+                    "get", "getPublicSeries")),
+            Map.entry("/api/v1/modules/{slug}", Map.of(
+                    "get", "getPublicModule")),
             Map.entry("/api/v1/topics", Map.of(
                     "get", "listPublicTopics")),
             Map.entry("/api/v1/topics/{slug}", Map.of(
@@ -414,6 +418,39 @@ class ApiDocumentationIT {
                 .containsExactlyInAnyOrder(
                         "id", "type", "slug", "title", "summary",
                         "topics", "publishedAt", "updatedAt");
+    }
+
+    @Test
+    void openApi_ShouldExposeSeriesAndModuleMetadata_WhenDocumentIsGenerated()
+            throws Exception {
+        JsonNode document = openApiDocument();
+        JsonNode paths = document.get("paths");
+        JsonNode series = operation(paths, "/api/v1/series/{slug}", "get");
+        JsonNode module = operation(paths, "/api/v1/modules/{slug}", "get");
+
+        for (JsonNode publicOperation : new JsonNode[]{series, module}) {
+            assertThat(hasSecurity(publicOperation, OpenApiConfiguration.ADMIN_SESSION)).isFalse();
+            assertThat(publicOperation.get("tags")).hasSize(1);
+            assertThat(publicOperation.get("tags").get(0).asString()).isEqualTo("Public Content");
+            assertThat(parameterNames(publicOperation)).containsExactlyInAnyOrder("slug");
+            assertThat(publicOperation.get("responses").has("404")).isTrue();
+        }
+        assertThat(responseSchemaRef(series, "200")).endsWith("/PublicSeriesResponse");
+        assertThat(responseSchemaRef(module, "200")).endsWith("/PublicModuleResponse");
+
+        JsonNode schemas = document.get("components").get("schemas");
+        assertThat(schemas.get("PublicSeriesResponse").get("properties").propertyNames())
+                .containsExactlyInAnyOrder(
+                        "id", "type", "slug", "title", "summary", "overviewMarkdown",
+                        "topics", "modules", "publishedAt", "updatedAt");
+        assertThat(schemas.get("PublicModuleResponse").get("properties").propertyNames())
+                .containsExactlyInAnyOrder(
+                        "id", "type", "slug", "title", "summary", "overviewMarkdown",
+                        "topics", "series", "articles", "publishedAt", "updatedAt");
+        assertThat(schemas.get("ModuleListItem").get("properties").propertyNames())
+                .containsExactlyInAnyOrder("id", "slug", "title", "summary", "position", "articles");
+        assertThat(schemas.get("ArticleListItem").get("properties").propertyNames())
+                .containsExactlyInAnyOrder("id", "slug", "title", "summary", "position");
     }
 
     @Test

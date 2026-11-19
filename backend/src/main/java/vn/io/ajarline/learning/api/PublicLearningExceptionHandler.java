@@ -11,13 +11,24 @@ import vn.io.ajarline.platform.web.ApiProblemWriter;
 import vn.io.ajarline.platform.web.ApiQueryException;
 
 @Order(Ordered.HIGHEST_PRECEDENCE)
-@RestControllerAdvice(assignableTypes = PublicSeriesCollectionController.class)
+@RestControllerAdvice(assignableTypes = {
+        PublicSeriesCollectionController.class,
+        PublicSeriesController.class,
+        PublicModuleController.class
+})
 public class PublicLearningExceptionHandler {
 
     private final ApiProblemWriter problems;
 
     public PublicLearningExceptionHandler(ApiProblemWriter problems) {
         this.problems = problems;
+    }
+
+    @ExceptionHandler(PublicLearningNotFoundException.class)
+    ResponseEntity<ApiProblem> notFound(
+            PublicLearningNotFoundException exception, HttpServletRequest request) {
+        String title = exception.kind().label() + " is not publicly available";
+        return problems.response(request, 404, "CONTENT_NOT_FOUND", title, title + ".");
     }
 
     @ExceptionHandler(ApiQueryException.class)

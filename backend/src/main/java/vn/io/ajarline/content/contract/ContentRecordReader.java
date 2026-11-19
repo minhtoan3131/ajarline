@@ -3,6 +3,7 @@ package vn.io.ajarline.content.contract;
 import java.util.Collection;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -26,4 +27,10 @@ public interface ContentRecordReader {
      * Reads many items with one query. An unknown id has no key.
      */
     Map<UUID, ContentRecordSummary> summariesOf(Collection<UUID> ids);
+
+    /**
+     * Finds the id of the item with this type and slug. It gives nothing when no item has both,
+     * so a slug of another type is the same as an unknown slug.
+     */
+    Optional<UUID> idOf(ContentType type, String slug);
 }

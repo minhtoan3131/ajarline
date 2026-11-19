@@ -23,6 +23,12 @@ public interface ContentItemJpaRepository extends JpaRepository<ContentItemEntit
             PublicationStatus status
     );
 
+    /**
+     * Returns the id of the item with this type and slug. The pair is unique.
+     */
+    @Query("select item.id from ContentItemEntity item where item.type = :type and item.slug = :slug")
+    Optional<UUID> findIdByTypeAndSlug(@Param("type") ContentType type, @Param("slug") String slug);
+
     @Lock(LockModeType.PESSIMISTIC_WRITE)
     @Query("select item from ContentItemEntity item where item.id = :id")
     Optional<ContentItemEntity> findByIdForUpdate(@Param("id") UUID id);

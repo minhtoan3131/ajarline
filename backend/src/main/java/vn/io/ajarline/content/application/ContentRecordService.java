@@ -28,6 +28,7 @@ import java.util.Collection;
 import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
+import java.util.Optional;
 import java.util.UUID;
 
 /**
@@ -84,6 +85,15 @@ public class ContentRecordService
             summaries.put(item.getId(), toSummary(item));
         }
         return summaries;
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public Optional<UUID> idOf(ContentType type, String slug) {
+        if (slug == null) {
+            return Optional.empty();
+        }
+        return contentRepository.findIdByTypeAndSlug(type, slug);
     }
 
     @Override
@@ -307,6 +317,7 @@ public class ContentRecordService
                 item.getType(),
                 item.getTitle(),
                 item.getSlug(),
+                item.getSummary(),
                 item.getStatus(),
                 item.getRevision(),
                 item.getPublishedAt(),

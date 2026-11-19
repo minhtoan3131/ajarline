@@ -11,6 +11,7 @@ public record ContentRecordSummary(
         ContentType type,
         String title,
         String slug,
+        String summary,
         PublicationStatus status,
         long revision,
         Instant publishedAt,
