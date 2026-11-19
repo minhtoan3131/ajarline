@@ -13,7 +13,11 @@ public interface ModuleArticleJpaRepository extends JpaRepository<ModuleArticleE
 
     List<ModuleArticleEntity> findByModuleIdOrderByPositionAsc(UUID moduleId);
 
-    List<ModuleArticleEntity> findByModuleIdIn(Collection<UUID> moduleIds);
+    /**
+     * Reads the memberships of many Modules with one query. They come grouped by Module,
+     * and each group is in position order.
+     */
+    List<ModuleArticleEntity> findByModuleIdInOrderByModuleIdAscPositionAsc(Collection<UUID> moduleIds);
 
     /**
      * Returns the Module of an Article without loading the entity. Then no copy of the row

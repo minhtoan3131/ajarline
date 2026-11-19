@@ -12,11 +12,8 @@ import vn.io.ajarline.learning.infrastructure.persistence.ModuleJpaRepository;
 import vn.io.ajarline.learning.infrastructure.persistence.SeriesEntity;
 import vn.io.ajarline.learning.infrastructure.persistence.SeriesJpaRepository;
 
-import java.util.Collection;
 import java.util.List;
-import java.util.Map;
 import java.util.UUID;
-import java.util.stream.Collectors;
 
 /**
  * Answers the questions that the publication workflow asks about Series and Modules.
@@ -69,17 +66,5 @@ public class LearningStructureService implements LearningEligibility, LearningSt
         return moduleArticleRepository.findByModuleIdOrderByPositionAsc(moduleId).stream()
                 .map(ModuleArticleEntity::getArticleId)
                 .toList();
-    }
-
-    @Override
-    @Transactional(propagation = Propagation.MANDATORY)
-    public Map<UUID, List<UUID>> articleIdsOfModules(Collection<UUID> moduleIds) {
-        if (moduleIds.isEmpty()) {
-            return Map.of();
-        }
-        return moduleArticleRepository.findByModuleIdIn(moduleIds).stream()
-                .collect(Collectors.groupingBy(
-                        ModuleArticleEntity::getModuleId,
-                        Collectors.mapping(ModuleArticleEntity::getArticleId, Collectors.toList())));
     }
 }

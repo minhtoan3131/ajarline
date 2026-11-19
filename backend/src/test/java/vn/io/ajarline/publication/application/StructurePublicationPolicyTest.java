@@ -6,8 +6,10 @@ import static org.assertj.core.api.Assertions.assertThatThrownBy;
 import static vn.io.ajarline.content.contract.PublicationStatus.DRAFT;
 import static vn.io.ajarline.content.contract.PublicationStatus.PUBLISHED;
 import static vn.io.ajarline.content.contract.PublicationStatus.UNPUBLISHED;
+import static vn.io.ajarline.support.TopicTestData.uuid;
 
 import java.util.List;
+import java.util.Set;
 import org.junit.jupiter.api.Test;
 import vn.io.ajarline.publication.contract.PublicationFailureCode;
 import vn.io.ajarline.publication.contract.PublicationOperationException;
@@ -39,33 +41,14 @@ class StructurePublicationPolicyTest {
     }
 
     @Test
-    void requireSeriesPublishable_ShouldPass_WhenOneModuleIsPublishedWithPublicArticle() {
-        List<ModuleCandidate> modules = List.of(
-                new ModuleCandidate(DRAFT, false),
-                new ModuleCandidate(PUBLISHED, true));
-
-        assertThatCode(() -> policy.requireSeriesPublishable(modules)).doesNotThrowAnyException();
+    void requireSeriesPublishable_ShouldPass_WhenOneModuleIsPublic() {
+        assertThatCode(() -> policy.requireSeriesPublishable(Set.of(uuid(1))))
+                .doesNotThrowAnyException();
     }
 
     @Test
-    void requireSeriesPublishable_ShouldReject_WhenSeriesHasNoModule() {
-        assertSeriesRejected(List.of());
-    }
-
-    @Test
-    void requireSeriesPublishable_ShouldReject_WhenPublishedModuleHasNoPublicArticle() {
-        assertSeriesRejected(List.of(new ModuleCandidate(PUBLISHED, false)));
-    }
-
-    @Test
-    void requireSeriesPublishable_ShouldReject_WhenModuleWithPublicArticleIsNotPublished() {
-        assertSeriesRejected(List.of(
-                new ModuleCandidate(DRAFT, true),
-                new ModuleCandidate(UNPUBLISHED, true)));
-    }
-
-    private void assertSeriesRejected(List<ModuleCandidate> modules) {
-        assertThatThrownBy(() -> policy.requireSeriesPublishable(modules))
+    void requireSeriesPublishable_ShouldReject_WhenNoModuleIsPublic() {
+        assertThatThrownBy(() -> policy.requireSeriesPublishable(Set.of()))
                 .isInstanceOfSatisfying(PublicationOperationException.class, failure ->
                         assertThat(failure.code())
                                 .isEqualTo(PublicationFailureCode.SERIES_HAS_NO_PUBLIC_MODULE));
