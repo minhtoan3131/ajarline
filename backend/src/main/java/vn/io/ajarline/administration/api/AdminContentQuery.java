@@ -58,7 +58,6 @@ record AdminContentQuery(
 
     /**
      * Returns the filter for the content module. No token means every type, or every status.
-     * A type token with no matching content type, such as {@code news}, selects nothing.
      */
     ContentIndexFilter toFilter() {
         Set<ContentType> types = EnumSet.noneOf(ContentType.class);

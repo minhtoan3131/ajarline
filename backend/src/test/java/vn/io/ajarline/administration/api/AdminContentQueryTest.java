@@ -98,10 +98,10 @@ class AdminContentQueryTest {
     }
 
     @Test
-    void toFilter_ShouldSelectNoType_WhenOnlyNewsIsNamed() {
+    void toFilter_ShouldSelectNews_WhenOnlyNewsIsNamed() {
         ContentIndexFilter filter = AdminContentQuery.parse("news", null, null, null, null).toFilter();
 
-        assertThat(filter.types()).isEmpty();
+        assertThat(filter.types()).containsExactly(ContentType.NEWS);
     }
 
     private static void assertRejected(

@@ -174,7 +174,7 @@ class AdminContentListApiIT extends AbstractAdminAuthenticationIT {
     }
 
     @Test
-    void list_ShouldReturnEmptyPage_WhenOnlyNewsIsNamed() throws Exception {
+    void list_ShouldReturnEmptyPage_WhenNoNewsExists() throws Exception {
         Browser browser = authenticatedBrowser();
 
         HttpResponse<String> response = browser.get(CONTENT + "?types=news");

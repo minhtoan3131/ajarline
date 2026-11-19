@@ -41,8 +41,8 @@ public class ArticleDatabaseConstraintIT {
     @Test
     void insert_ShouldRejectType_WhenSubtypeIsNotActive() {
         UUID uuid = fixedUuid(3);
-        assertThatThrownBy(() -> insertContentItem(uuid, "future-news", "Future News", "DRAFT",
-                1, "NEWS"))
+        assertThatThrownBy(() -> insertContentItem(uuid, "future-event", "Future Event", "DRAFT",
+                1, "EVENT"))
                 .isInstanceOf(DataIntegrityViolationException.class)
                 .hasMessageContaining("ck_content_item_type");
     }
