@@ -19,6 +19,9 @@ export function ReaderLayout() {
           <NavLink to="/topics" className="reader-nav-link">
             Chủ đề
           </NavLink>
+          <NavLink to="/series" className="reader-nav-link">
+            Series
+          </NavLink>
         </nav>
       </header>
       <main className="reader-main">
