@@ -10,10 +10,14 @@ import org.springframework.web.bind.annotation.ExceptionHandler;
 import org.springframework.web.bind.annotation.RestControllerAdvice;
 import vn.io.ajarline.platform.web.ApiProblem;
 import vn.io.ajarline.platform.web.ApiProblemWriter;
+import vn.io.ajarline.platform.web.ApiQueryException;
 import vn.io.ajarline.platform.web.ApiRequestFilter;
 
 @Order(Ordered.HIGHEST_PRECEDENCE)
-@RestControllerAdvice(assignableTypes = PublicNewsController.class)
+@RestControllerAdvice(assignableTypes = {
+        PublicNewsController.class,
+        PublicNewsCollectionController.class
+})
 public class PublicNewsExceptionHandler {
 
     private static final Logger LOG = LoggerFactory.getLogger(PublicNewsExceptionHandler.class);
@@ -32,6 +36,17 @@ public class PublicNewsExceptionHandler {
                 "CONTENT_NOT_FOUND",
                 "News is not publicly available",
                 "News is not publicly available.");
+    }
+
+    @ExceptionHandler(ApiQueryException.class)
+    ResponseEntity<ApiProblem> invalidQuery(
+            ApiQueryException exception, HttpServletRequest request) {
+        return problems.response(
+                request,
+                400,
+                exception.code(),
+                exception.title(),
+                exception.getMessage());
     }
 
     @ExceptionHandler(Exception.class)

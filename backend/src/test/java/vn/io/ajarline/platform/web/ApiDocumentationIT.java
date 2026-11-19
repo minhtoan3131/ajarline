@@ -66,6 +66,8 @@ class ApiDocumentationIT {
                     "get", "listStandaloneArticles")),
             Map.entry("/api/v1/articles/{slug}", Map.of(
                     "get", "getPublicArticle")),
+            Map.entry("/api/v1/news", Map.of(
+                    "get", "listPublicNews")),
             Map.entry("/api/v1/news/{slug}", Map.of(
                     "get", "getPublicNews")),
             Map.entry("/api/v1/series", Map.of(
@@ -424,6 +426,30 @@ class ApiDocumentationIT {
         assertThat(schemas.get("ArticleCollectionResponse").get("properties").propertyNames())
                 .containsExactlyInAnyOrder("page", "size", "hasMore", "items");
         assertThat(schemas.get("ArticleSummary").get("properties").propertyNames())
+                .containsExactlyInAnyOrder(
+                        "id", "type", "slug", "title", "summary",
+                        "topics", "publishedAt", "updatedAt");
+    }
+
+    @Test
+    void openApi_ShouldExposeNewsCollectionMetadata_WhenDocumentIsGenerated()
+            throws Exception {
+        JsonNode document = openApiDocument();
+        JsonNode list = operation(document.get("paths"), "/api/v1/news", "get");
+
+        assertThat(hasSecurity(list, OpenApiConfiguration.ADMIN_SESSION)).isFalse();
+        assertThat(list.get("tags")).hasSize(1);
+        assertThat(list.get("tags").get(0).asString()).isEqualTo("Public Discovery");
+        assertThat(parameterNames(list)).containsExactlyInAnyOrder("page", "size");
+        assertThat(requiredParameters(list)).isEmpty();
+        assertThat(responseSchemaRef(list, "200")).endsWith("/NewsCollectionResponse");
+        assertThat(list.get("responses").has("400")).isTrue();
+        assertThat(list.get("responses").has("404")).isFalse();
+
+        JsonNode schemas = document.get("components").get("schemas");
+        assertThat(schemas.get("NewsCollectionResponse").get("properties").propertyNames())
+                .containsExactlyInAnyOrder("page", "size", "hasMore", "items");
+        assertThat(schemas.get("NewsSummary").get("properties").propertyNames())
                 .containsExactlyInAnyOrder(
                         "id", "type", "slug", "title", "summary",
                         "topics", "publishedAt", "updatedAt");

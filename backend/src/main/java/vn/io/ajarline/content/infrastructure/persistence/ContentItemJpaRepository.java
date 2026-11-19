@@ -106,6 +106,24 @@ public interface ContentItemJpaRepository extends JpaRepository<ContentItemEntit
             @Param("offset") long offset);
 
     /**
+     * Returns one window of items of the given type and status, newest published first and then
+     * by id. Filtering and ordering happen before the window is cut. The order must stay the
+     * same as the News order of {@link #findWindowWithStatus}.
+     */
+    @Query(value = """
+            SELECT * FROM content_item item
+             WHERE item.type = :type
+               AND item.status = :status
+             ORDER BY item.published_at DESC, item.id
+             LIMIT :limit OFFSET :offset
+            """, nativeQuery = true)
+    List<ContentItemEntity> findWindowOfTypeWithStatusNewestFirst(
+            @Param("type") String type,
+            @Param("status") String status,
+            @Param("limit") int limit,
+            @Param("offset") long offset);
+
+    /**
      * Same as {@link #findWindowOfTypeWithStatus}, but leaves out the given ids.
      * The ids must not be empty, because an empty list is not valid in this SQL.
      */
