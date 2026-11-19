@@ -3,6 +3,7 @@ import { useState, type ComponentProps, type MouseEvent } from 'react'
 import type { Components, ExtraProps } from 'react-markdown'
 
 import { CodeBlock } from './CodeBlock'
+import { ExternalLink } from './ExternalLink'
 import { isExternalHref } from './urlPolicy'
 
 function ArticleLink({ node, href, children, ...attributes }: ComponentProps<'a'> & ExtraProps) {
@@ -11,12 +12,10 @@ function ArticleLink({ node, href, children, ...attributes }: ComponentProps<'a'
     return <span className="md-link-disabled">{children}</span>
   }
   if (isExternalHref(href)) {
-    // NOTE: external links open in the same tab until the new-tab rule is
-    // decided. Change it here so the whole renderer stays consistent.
     return (
-      <a {...attributes} href={href} rel="noopener noreferrer external">
+      <ExternalLink {...attributes} href={href}>
         {children}
-      </a>
+      </ExternalLink>
     )
   }
   return (

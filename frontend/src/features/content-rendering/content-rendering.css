@@ -192,3 +192,25 @@
 .md-content .token.selector { color: #6944a0; }
 .md-content .token.variable,
 .md-content .token.property { color: #34484c; }
+
+/* Mark of a link that opens in a new tab. */
+.external-link-mark {
+  display: inline-block;
+  margin-left: 0.15em;
+  font-size: 0.85em;
+  /* inline-block keeps the underline of the link off the arrow. */
+  text-decoration: none;
+}
+
+/* Text for screen readers only. It is not drawn, but it stays in the name of the link. */
+.external-link-note {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  margin: -1px;
+  padding: 0;
+  overflow: hidden;
+  border: 0;
+  clip-path: inset(50%);
+  white-space: nowrap;
+}
