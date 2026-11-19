@@ -21,6 +21,8 @@ import vn.io.ajarline.content.infrastructure.persistence.ArticleEntity;
 import vn.io.ajarline.content.infrastructure.persistence.ArticleJpaRepository;
 import vn.io.ajarline.content.infrastructure.persistence.ContentItemEntity;
 import vn.io.ajarline.content.infrastructure.persistence.ContentItemJpaRepository;
+import vn.io.ajarline.content.infrastructure.persistence.NewsEntity;
+import vn.io.ajarline.content.infrastructure.persistence.NewsJpaRepository;
 
 import java.time.Clock;
 import java.time.Instant;
@@ -43,21 +45,27 @@ public class ContentRecordService
 
     private final ContentItemJpaRepository contentRepository;
     private final ArticleJpaRepository articleRepository;
+    private final NewsJpaRepository newsRepository;
     private final ContentRecordPolicy policy;
     private final ArticlePolicy articlePolicy;
+    private final NewsPolicy newsPolicy;
     private final Clock clock;
     private final TopicAssignmentPort topicAssignment;
 
     public ContentRecordService(ContentItemJpaRepository contentRepository,
                                 ArticleJpaRepository articleRepository,
+                                NewsJpaRepository newsRepository,
                                 ContentRecordPolicy policy,
                                 ArticlePolicy articlePolicy,
+                                NewsPolicy newsPolicy,
                                 Clock clock,
                                 TopicAssignmentPort topicAssignment) {
         this.contentRepository = contentRepository;
         this.articleRepository = articleRepository;
+        this.newsRepository = newsRepository;
         this.policy = policy;
         this.articlePolicy = articlePolicy;
+        this.newsPolicy = newsPolicy;
         this.clock = clock;
         this.topicAssignment = topicAssignment;
     }
@@ -242,6 +250,13 @@ public class ContentRecordService
             ArticleEntity article = articleRepository.findById(id).orElseThrow(
                     () -> new IllegalStateException("Article subtype row is missing for " + id));
             articlePolicy.requirePublishable(item.getSummary(), article.getBodyMarkdown());
+            return;
+        }
+        if (item.getType() == ContentType.NEWS) {
+            NewsEntity news = newsRepository.findById(id).orElseThrow(
+                    () -> new IllegalStateException("News subtype row is missing for " + id));
+            newsPolicy.requirePublishable(
+                    item.getSummary(), news.getBodyMarkdown(), news.getSourceName(), news.getSourceUrl());
             return;
         }
         policy.requirePublishableSummary(item.getSummary());
