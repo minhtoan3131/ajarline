@@ -66,6 +66,8 @@ class ApiDocumentationIT {
                     "get", "listStandaloneArticles")),
             Map.entry("/api/v1/articles/{slug}", Map.of(
                     "get", "getPublicArticle")),
+            Map.entry("/api/v1/news/{slug}", Map.of(
+                    "get", "getPublicNews")),
             Map.entry("/api/v1/series", Map.of(
                     "get", "listPublicSeries")),
             Map.entry("/api/v1/series/{slug}", Map.of(
@@ -317,6 +319,33 @@ class ApiDocumentationIT {
         assertThat(properties.has("status")).isFalse();
         assertThat(properties.has("revision")).isFalse();
         assertThat(properties.has("unpublishedAt")).isFalse();
+    }
+
+    @Test
+    void openApi_ShouldExposePublicNewsMetadata_WhenDocumentIsGenerated()
+            throws Exception {
+        JsonNode document = openApiDocument();
+        JsonNode publicNews = operation(
+                document.get("paths"),
+                "/api/v1/news/{slug}",
+                "get");
+
+        assertThat(hasSecurity(
+                publicNews,
+                OpenApiConfiguration.ADMIN_SESSION)).isFalse();
+        assertThat(publicNews.get("tags").get(0).asString()).isEqualTo("Public Content");
+        assertThat(responseSchemaRef(publicNews, "200"))
+                .endsWith("/PublicNewsResponse");
+        assertThat(problemSchemaRef(publicNews, "404"))
+                .endsWith("/ApiProblem");
+
+        JsonNode schemas = document.get("components").get("schemas");
+        JsonNode properties = schemas.get("PublicNewsResponse").get("properties");
+        assertThat(properties.propertyNames()).containsExactlyInAnyOrder(
+                "id", "type", "slug", "title", "summary", "bodyMarkdown",
+                "topics", "source", "publishedAt", "updatedAt");
+        assertThat(schemas.get("NewsSourcePublic").get("properties").propertyNames())
+                .containsExactlyInAnyOrder("name", "url", "publishedAt");
     }
 
     @Test

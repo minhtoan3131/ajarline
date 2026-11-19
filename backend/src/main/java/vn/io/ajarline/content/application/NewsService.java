@@ -14,17 +14,21 @@ import vn.io.ajarline.content.contract.NewsEditor;
 import vn.io.ajarline.content.contract.NewsReader;
 import vn.io.ajarline.content.contract.NewsSource;
 import vn.io.ajarline.content.contract.NewsView;
+import vn.io.ajarline.content.contract.PublicNewsView;
 import vn.io.ajarline.content.contract.PublicationStatus;
+import vn.io.ajarline.content.contract.TopicAssignmentPort;
+import vn.io.ajarline.content.infrastructure.persistence.ContentItemJpaRepository;
 import vn.io.ajarline.content.infrastructure.persistence.NewsEntity;
 import vn.io.ajarline.content.infrastructure.persistence.NewsJpaRepository;
 
+import java.util.Optional;
 import java.util.UUID;
 
 /**
  * Creates, reads and edits News.
  *
  * <p>The common record is written through the content port. The body and the source are written
- * here. Both are written in one transaction.</p>
+ * here. Both are written in one transaction. It also reads a published News item for the public.</p>
  */
 @Service
 public class NewsService implements NewsCreator, NewsReader, NewsEditor {
@@ -32,15 +36,21 @@ public class NewsService implements NewsCreator, NewsReader, NewsEditor {
     private final ContentRecordWriter recordWriter;
     private final NewsPolicy policy;
     private final NewsJpaRepository newsRepository;
+    private final ContentItemJpaRepository contentRepository;
+    private final TopicAssignmentPort topicAssignment;
 
     public NewsService(ContentRecordReader recordReader,
                        ContentRecordWriter recordWriter,
                        NewsPolicy policy,
-                       NewsJpaRepository newsRepository) {
+                       NewsJpaRepository newsRepository,
+                       ContentItemJpaRepository contentRepository,
+                       TopicAssignmentPort topicAssignment) {
         this.recordReader = recordReader;
         this.recordWriter = recordWriter;
         this.policy = policy;
         this.newsRepository = newsRepository;
+        this.contentRepository = contentRepository;
+        this.topicAssignment = topicAssignment;
     }
 
     @Override
@@ -62,6 +72,34 @@ public class NewsService implements NewsCreator, NewsReader, NewsEditor {
     public NewsView get(UUID id) {
         ContentRecordView record = recordReader.get(id, ContentType.NEWS);
         return toView(record, requireNews(id));
+    }
+
+    @Override
+    @Transactional(readOnly = true)
+    public Optional<PublicNewsView> findPublishedBySlug(String slug) {
+        if (slug == null) {
+            return Optional.empty();
+        }
+        // One query finds the type, the slug and the status together. So a draft, an
+        // unpublished item and a slug of another type are all just "not found".
+        return contentRepository.findByTypeAndSlugAndStatus(
+                        ContentType.NEWS, slug, PublicationStatus.PUBLISHED)
+                .map(item -> {
+                    NewsEntity news = requireNews(item.getId());
+                    return new PublicNewsView(
+                            item.getId(),
+                            item.getSlug(),
+                            item.getTitle(),
+                            item.getSummary(),
+                            news.getBodyMarkdown(),
+                            new NewsSource(
+                                    news.getSourceName(),
+                                    news.getSourceUrl(),
+                                    news.getSourcePublishedAt()),
+                            topicAssignment.topicLabelsOf(item.getId()),
+                            item.getPublishedAt(),
+                            item.getUpdatedAt());
+                });
     }
 
     @Override
