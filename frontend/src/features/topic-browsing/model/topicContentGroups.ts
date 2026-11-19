@@ -1,5 +1,6 @@
 import { articlePath } from '../../article-reading/articleRoutes'
 import { modulePath, seriesPath } from '../../learning-navigation/learningRoutes'
+import { newsPath } from '../../news-reading/newsRoutes'
 import type { TopicContentItem } from './publicTopic'
 
 export type TopicContentGroupKey = 'series' | 'in-series' | 'standalone' | 'news'
@@ -44,7 +45,7 @@ export function groupTopicContent(items: TopicContentItem[]): TopicContentGroup[
   })).filter((group) => group.items.length > 0)
 }
 
-/** Reader route of an item, or null for a content type that has no Reader page yet. */
+/** Reader route of an item, or null for a content type that has no Reader page. */
 export function readerPathOf(item: TopicContentItem): string | null {
   switch (item.type) {
     case 'series':
@@ -54,7 +55,7 @@ export function readerPathOf(item: TopicContentItem): string | null {
     case 'article':
       return articlePath(item.slug)
     case 'news':
-      return null
+      return newsPath(item.slug)
   }
 }
 

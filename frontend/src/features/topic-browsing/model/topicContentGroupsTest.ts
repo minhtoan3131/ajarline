@@ -48,12 +48,9 @@ describe('readerPathOf', () => {
     ['article', '/articles/hieu-protobuf'],
     ['series', '/series/hieu-protobuf'],
     ['module', '/modules/hieu-protobuf'],
+    ['news', '/news/hieu-protobuf'],
   ] as const)('readerPathOf_ShouldPointToReaderPage_WhenTypeHasOne (%s)', (type, path) => {
     expect(readerPathOf(contentItem({ type }))).toBe(path)
-  })
-
-  it('readerPathOf_ShouldReturnNull_WhenItemIsNews', () => {
-    expect(readerPathOf(contentItem({ type: 'news' }))).toBeNull()
   })
 })
 

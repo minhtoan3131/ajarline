@@ -13,29 +13,37 @@ import {
   seriesCollectionResponse,
   seriesSummary,
 } from '../features/learning-navigation/fixture/publicLearningFixture'
+import {
+  newsCollectionApiPath,
+  newsCollectionResponse,
+  newsSummary,
+} from '../features/news-reading/fixture/publicNewsFixture'
 import { jsonResponse, problemResponse, StubApiServer, type StubResponse } from '../shared/api/testsupport/StubApiServer'
 
 const SOME_STANDALONE = jsonResponse(200, articleCollectionResponse([articleSummary()], { size: 1, hasMore: true }))
 const NO_STANDALONE = jsonResponse(200, articleCollectionResponse([], { size: 1 }))
 const SOME_SERIES = jsonResponse(200, seriesCollectionResponse([seriesSummary()], { size: 1, hasMore: true }))
 const NO_SERIES = jsonResponse(200, seriesCollectionResponse([], { size: 1 }))
+const SOME_NEWS = jsonResponse(200, newsCollectionResponse([newsSummary()], { size: 1, hasMore: true }))
+const NO_NEWS = jsonResponse(200, newsCollectionResponse([], { size: 1 }))
 const FAILURE = problemResponse(500, 'INTERNAL_ERROR')
 
-/** Stubs the two entry requests Home sends, each with its own answer. */
-function stubHome(standalone: StubResponse, series: StubResponse): StubApiServer {
+/** Stubs the three entry requests Home sends, each with its own answer. */
+function stubHome(standalone: StubResponse, series: StubResponse, news: StubResponse = NO_NEWS): StubApiServer {
   return new StubApiServer()
     .on('GET', standaloneArticlesPath(0, 1), standalone)
     .on('GET', seriesCollectionApiPath(0, 1), series)
+    .on('GET', newsCollectionApiPath(0, 1), news)
     .install()
 }
 
 /**
- * Waits until both Home requests were sent, then one more turn of the event
- * loop so their answers are handled. Needed to check that something is
+ * Waits until all three Home requests were sent, then one more turn of the
+ * event loop so their answers are handled. Needed to check that something is
  * absent: there is no element to wait for.
  */
 async function waitForHomeRequests(api: StubApiServer): Promise<void> {
-  await waitFor(() => expect(api.requests).toHaveLength(2))
+  await waitFor(() => expect(api.requests).toHaveLength(3))
   await new Promise((resolve) => setTimeout(resolve, 0))
 }
 
@@ -150,5 +158,64 @@ describe('HomePage', () => {
 
     expect(await screen.findByRole('heading', { level: 1, name: 'Series' })).toBeInTheDocument()
     expect(screen.getByTestId('location')).toHaveTextContent('/series')
+  })
+
+  it('render_ShouldLinkToNewsIndexWithOneNewsRequest_WhenNewsExist', async () => {
+    const api = stubHome(NO_STANDALONE, NO_SERIES, SOME_NEWS)
+
+    renderAppRoute('/')
+
+    const entries = await screen.findByRole('list', { name: 'Lối vào' })
+    expect(within(entries).getByRole('link', { name: 'Tin công nghệ' })).toHaveAttribute('href', '/news')
+    expect(api.requestsTo('GET', newsCollectionApiPath(0, 1))).toHaveLength(1)
+    expect(screen.queryByText('Spring Boot 4.1 ra mắt')).toBeNull()
+  })
+
+  it('render_ShouldShowThreeEntriesInOrder_WhenEveryDestinationHasContent', async () => {
+    stubHome(SOME_STANDALONE, SOME_SERIES, SOME_NEWS)
+
+    renderAppRoute('/')
+
+    await screen.findByRole('link', { name: 'Học theo Series' })
+    await screen.findByRole('link', { name: 'Bài viết độc lập' })
+    const entries = await screen.findByRole('list', { name: 'Lối vào' })
+    await within(entries).findByRole('link', { name: 'Tin công nghệ' })
+    expect(within(entries).getAllByRole('link').map((link) => link.textContent)).toEqual([
+      'Học theo Series',
+      'Bài viết độc lập',
+      'Tin công nghệ',
+    ])
+  })
+
+  it.each([
+    ['empty', NO_NEWS],
+    ['a failure', FAILURE],
+  ])('render_ShouldHideNewsEntry_WhenNewsAnswerIs (%s)', async (_label, news) => {
+    const api = stubHome(SOME_STANDALONE, NO_SERIES, news)
+
+    renderAppRoute('/')
+
+    const entries = await screen.findByRole('list', { name: 'Lối vào' })
+    await waitForHomeRequests(api)
+    expect(within(entries).queryByRole('link', { name: 'Tin công nghệ' })).toBeNull()
+    expect(within(entries).getByRole('link', { name: 'Bài viết độc lập' })).toBeInTheDocument()
+    expect(screen.queryByRole('alert')).toBeNull()
+  })
+
+  it('navigate_ShouldOpenNewsIndex_WhenEntryIsClicked', async () => {
+    new StubApiServer()
+      .on('GET', standaloneArticlesPath(0, 1), NO_STANDALONE)
+      .on('GET', seriesCollectionApiPath(0, 1), NO_SERIES)
+      .on('GET', newsCollectionApiPath(0, 1), SOME_NEWS)
+      .on('GET', newsCollectionApiPath(0), jsonResponse(200, newsCollectionResponse([newsSummary()])))
+      .install()
+    const user = userEvent.setup()
+    renderAppRoute('/')
+
+    const entries = await screen.findByRole('list', { name: 'Lối vào' })
+    await user.click(within(entries).getByRole('link', { name: 'Tin công nghệ' }))
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Tin công nghệ' })).toBeInTheDocument()
+    expect(screen.getByTestId('location')).toHaveTextContent('/news')
   })
 })
