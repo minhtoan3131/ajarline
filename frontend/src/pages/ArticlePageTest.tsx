@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 
 import { renderAppRoute } from '../app/testsupport/renderAppRoute'
-import { EDITORIAL_PROFILE } from '../features/article-reading/editorialProfile'
+import { EDITORIAL_PROFILE } from '../shared/content/editorialProfile'
 import {
   contentItem,
   JAVA_TOPIC_REF,
@@ -58,6 +58,7 @@ describe('ArticlePage', () => {
     expect(screen.getByText('Tóm tắt bài viết.')).toBeInTheDocument()
     expect(screen.getByRole('heading', { level: 2, name: 'Mở đầu' })).toBeInTheDocument()
     expect(screen.getByText(EDITORIAL_PROFILE.displayName)).toBeInTheDocument()
+    expect(document.body).not.toHaveTextContent(EDITORIAL_PROFILE.shortBio)
     expect(api.requests.map((request) => request.path)).toEqual([ARTICLE_PATH])
   })
 

@@ -3,7 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 
 import { renderAppRoute } from '../app/testsupport/renderAppRoute'
-import { EDITORIAL_PROFILE } from '../features/article-reading/editorialProfile'
+import { EDITORIAL_PROFILE } from '../shared/content/editorialProfile'
 import { newsApiPath, publicNews } from '../features/news-reading/fixture/publicNewsFixture'
 import { jsonResponse, problemResponse, StubApiServer } from '../shared/api/testsupport/StubApiServer'
 
@@ -32,6 +32,7 @@ describe('NewsPage', () => {
     expect(screen.getByRole('heading', { level: 2, name: 'Điểm mới' })).toBeInTheDocument()
     expect(screen.getByText(/^Xuất bản/)).toHaveTextContent(/Xuất bản\s+4 tháng 11/)
     expect(screen.getByText(EDITORIAL_PROFILE.displayName)).toBeInTheDocument()
+    expect(document.body).not.toHaveTextContent(EDITORIAL_PROFILE.shortBio)
     const chips = screen.getByRole('list', { name: 'Chủ đề của tin' })
     expect(within(chips).getByRole('link', { name: 'Java' })).toHaveAttribute('href', '/topics/java')
     const source = screen.getByRole('region', { name: 'Nguồn gốc' })

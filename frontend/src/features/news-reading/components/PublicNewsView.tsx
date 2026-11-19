@@ -1,5 +1,5 @@
 import { formatReaderDate } from '../../../shared/lib/formatReaderDate'
-import { EDITORIAL_PROFILE } from '../../article-reading/editorialProfile'
+import { EDITORIAL_PROFILE } from '../../../shared/content/editorialProfile'
 import { MarkdownRenderer } from '../../content-rendering/MarkdownRenderer'
 import { TopicChips } from '../../topic-browsing/components/TopicChips'
 import type { PublicNews } from '../model/publicNews'

@@ -1,7 +1,7 @@
 import { TopicChips } from '../../topic-browsing/components/TopicChips'
 import { MarkdownRenderer } from '../../content-rendering/MarkdownRenderer'
 import { formatReaderDate } from '../../../shared/lib/formatReaderDate'
-import { EDITORIAL_PROFILE } from '../editorialProfile'
+import { EDITORIAL_PROFILE } from '../../../shared/content/editorialProfile'
 import type { PublicArticle } from '../model/publicArticle'
 
 /**
