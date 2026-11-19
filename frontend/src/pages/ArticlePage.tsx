@@ -2,6 +2,9 @@ import { useParams } from 'react-router'
 
 import { PublicArticleView } from '../features/article-reading/components/PublicArticleView'
 import { usePublicArticle } from '../features/article-reading/usePublicArticle'
+import { ArticleLearningTrail } from '../features/learning-navigation/components/ArticleLearningTrail'
+import { ArticleSequenceNav } from '../features/learning-navigation/components/ArticleSequenceNav'
+import { articleContextOf } from '../features/learning-navigation/model/articleLearningContext'
 import { NotFoundPage } from './NotFoundPage'
 
 export function ArticlePage() {
@@ -26,7 +29,15 @@ export function ArticlePage() {
           </button>
         </section>
       )
-    case 'found':
-      return <PublicArticleView article={state.article} />
+    case 'found': {
+      const context = articleContextOf(state.article)
+      return (
+        <>
+          {context !== null && <ArticleLearningTrail context={context} />}
+          <PublicArticleView article={state.article} />
+          <ArticleSequenceNav previous={state.article.previousArticle} next={state.article.nextArticle} />
+        </>
+      )
+    }
   }
 }

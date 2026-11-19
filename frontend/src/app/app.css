@@ -295,6 +295,69 @@ body {
   color: var(--reader-ink);
 }
 
+.reader-learning-trail {
+  margin: 0 0 24px;
+  font-size: 0.875rem;
+}
+
+.reader-learning-crumbs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 0;
+  padding: 0;
+  list-style: none;
+}
+
+.reader-learning-crumbs li + li::before {
+  content: "›";
+  margin-right: 8px;
+  color: var(--reader-muted);
+}
+
+.reader-learning-crumbs a {
+  color: var(--reader-ink);
+}
+
+.reader-learning-rank {
+  margin: 6px 0 0;
+  color: var(--reader-muted);
+}
+
+.reader-sequence {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 16px;
+  margin-top: 32px;
+}
+
+.reader-sequence-link {
+  display: block;
+  flex: 1 1 240px;
+  padding: 14px 16px;
+  border: 1px solid var(--reader-line);
+  background: var(--reader-paper);
+  color: var(--reader-ink);
+  text-decoration: none;
+  overflow-wrap: anywhere;
+}
+
+.reader-sequence-link:hover {
+  border-color: var(--reader-focus);
+}
+
+.reader-sequence-next {
+  margin-left: auto;
+  text-align: right;
+}
+
+.reader-sequence-label {
+  display: block;
+  margin-bottom: 4px;
+  color: var(--reader-muted);
+  font-size: 0.8125rem;
+}
+
 @media (max-width: 640px) {
   .reader-header,
   .reader-main {
