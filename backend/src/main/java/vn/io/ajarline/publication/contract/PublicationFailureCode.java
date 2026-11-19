@@ -1,7 +1,11 @@
 package vn.io.ajarline.publication.contract;
 
+/**
+ * Stable failure codes of the publication capability.
+ * The Admin API maps each name to an HTTP status, so a rename is a breaking change.
+ */
 public enum PublicationFailureCode {
-    CONTENT_SUMMARY_REQUIRED,
-    ARTICLE_BODY_REQUIRED,
-    INVALID_PUBLICATION_STATE
+    INVALID_PUBLICATION_STATE,
+    MODULE_HAS_NO_PUBLIC_ARTICLE,
+    SERIES_HAS_NO_PUBLIC_MODULE
 }

@@ -17,6 +17,7 @@ import vn.io.ajarline.content.contract.ArticleReader;
 import vn.io.ajarline.content.contract.ArticleView;
 import vn.io.ajarline.content.contract.ContentFailureCode;
 import vn.io.ajarline.content.contract.ContentOperationException;
+import vn.io.ajarline.content.contract.PublicArticleView;
 import vn.io.ajarline.content.contract.PublicationStatus;
 import vn.io.ajarline.publication.contract.ContentPublisher;
 import vn.io.ajarline.publication.contract.ContentUnpublisher;
@@ -72,12 +73,12 @@ class PublicationApplicationIT {
         ArticleView noSummary = create("no-summary", null, "# Body");
         ArticleView noBody = create("no-body", "Summary", null);
 
-        assertPublicationFailure(
+        assertContentFailure(
                 () -> publisher.publish(noSummary.id(), 1),
-                PublicationFailureCode.CONTENT_SUMMARY_REQUIRED);
-        assertPublicationFailure(
+                ContentFailureCode.CONTENT_SUMMARY_REQUIRED);
+        assertContentFailure(
                 () -> publisher.publish(noBody.id(), 1),
-                PublicationFailureCode.ARTICLE_BODY_REQUIRED);
+                ContentFailureCode.ARTICLE_BODY_REQUIRED);
 
         assertDraftUnchanged(noSummary.id());
         assertDraftUnchanged(noBody.id());
@@ -185,7 +186,7 @@ class PublicationApplicationIT {
         assertThat(stored.publishedAt()).isEqualTo(FIRST_PUBLISH);
         assertThat(stored.unpublishedAt()).isNull();
         assertThat(stored.updatedAt()).isEqualTo(FIRST_PUBLISH);
-        assertThat(reader.findPublishedBySlug("rollback-unpublish"))
+        assertThat(reader.findPublishedBySlug("rollback-unpublish").map(PublicArticleView::article))
                 .contains(stored);
     }
 
@@ -210,6 +211,16 @@ class PublicationApplicationIT {
         assertThatThrownBy(action)
                 .isInstanceOfSatisfying(
                         PublicationOperationException.class,
+                        failure -> assertThat(failure.code()).isEqualTo(code));
+    }
+
+    private void assertContentFailure(
+            org.assertj.core.api.ThrowableAssert.ThrowingCallable action,
+            ContentFailureCode code
+    ) {
+        assertThatThrownBy(action)
+                .isInstanceOfSatisfying(
+                        ContentOperationException.class,
                         failure -> assertThat(failure.code()).isEqualTo(code));
     }
 

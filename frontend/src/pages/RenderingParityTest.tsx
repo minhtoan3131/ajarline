@@ -21,7 +21,7 @@ describe('Rendering parity', () => {
   it('render_ShouldProduceSameMarkup_WhenPreviewAndPublicPageRenderSameMarkdown', () => {
     // Given
     const preview = render(
-      <ArticlePreview fields={{ title: 'T', slug: 't', summary: 'S', bodyMarkdown: FIXTURE }} />,
+      <ArticlePreview fields={{ title: 'T', slug: 't', summary: 'S', bodyMarkdown: FIXTURE, topicIds: [], placement: null }} />,
     )
     const previewHtml = rendererHtml(preview.container)
     preview.unmount()
@@ -35,6 +35,11 @@ describe('Rendering parity', () => {
           title: 'T',
           summary: 'S',
           bodyMarkdown: FIXTURE,
+          topics: [],
+          series: null,
+          module: null,
+          previousArticle: null,
+          nextArticle: null,
           publishedAt: '2026-11-01T02:00:00Z',
           updatedAt: '2026-11-01T02:00:00Z',
         }}

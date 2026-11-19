@@ -35,7 +35,9 @@ class CapabilityBoundaryTest {
     private static final String[] CAPABILITIES = {
             ROOT + ".content..",
             ROOT + ".publication..",
-            ROOT + ".administration.."
+            ROOT + ".administration..",
+            ROOT + ".topic..",
+            ROOT + ".learning.."
     };
 
     // Importing classes is slow, so all rules share one import.
@@ -56,10 +58,24 @@ class CapabilityBoundaryTest {
     @CsvSource({
             "administration, content",
             "administration, publication",
+            "administration, topic",
             "publication,    content",
             "publication,    administration",
+            "publication,    topic",
             "content,        publication",
-            "content,        administration"
+            "content,        administration",
+            "content,        topic",
+            "topic,          content",
+            "topic,          publication",
+            "topic,          administration",
+            "administration, learning",
+            "publication,    learning",
+            "content,        learning",
+            "topic,          learning",
+            "learning,       content",
+            "learning,       publication",
+            "learning,       administration",
+            "learning,       topic"
     })
     void access_ShouldUseOnlyContract_WhenCapabilityUsesAnotherCapability(
             String consumer, String provider) {
@@ -102,6 +118,65 @@ class CapabilityBoundaryTest {
                 .should().onlyBeAccessed().byAnyPackage(
                         ROOT + ".content.application..",
                         ROOT + ".content.infrastructure..");
+
+        rule.check(PRODUCTION_CLASSES);
+    }
+
+    @Test
+    void topicInfrastructure_ShouldBeUsedOnlyByTopic_WhenOtherPackagesNeedTopics() {
+        // Contracts and API types are not in the allowed list, so an entity
+        // can never leak through them.
+        ArchRule rule = classes()
+                .that().resideInAPackage(ROOT + ".topic.infrastructure..")
+                .should().onlyBeAccessed().byAnyPackage(
+                        ROOT + ".topic.application..",
+                        ROOT + ".topic.infrastructure..");
+
+        rule.check(PRODUCTION_CLASSES);
+    }
+
+    @Test
+    void content_ShouldNotDependOnTopic_WhenContentNeedsTopicBehavior() {
+        // Content reaches Topic only through ports that it defines itself,
+        // so it must not import even the Topic contract.
+        ArchRule rule = noClasses()
+                .that().resideInAPackage(ROOT + ".content..")
+                .should().dependOnClassesThat().resideInAPackage(ROOT + ".topic..");
+
+        rule.check(PRODUCTION_CLASSES);
+    }
+
+    @Test
+    void learningInfrastructure_ShouldBeUsedOnlyByLearning_WhenOtherPackagesNeedHierarchy() {
+        // Contracts and API types are not in the allowed list, so an entity
+        // can never leak through them.
+        ArchRule rule = classes()
+                .that().resideInAPackage(ROOT + ".learning.infrastructure..")
+                .should().onlyBeAccessed().byAnyPackage(
+                        ROOT + ".learning.application..",
+                        ROOT + ".learning.infrastructure..");
+
+        rule.check(PRODUCTION_CLASSES);
+    }
+
+    @Test
+    void content_ShouldNotDependOnLearning_WhenContentNeedsHierarchyBehavior() {
+        // Content reaches Learning only through ports that it defines itself,
+        // so it must not import even the Learning contract.
+        ArchRule rule = noClasses()
+                .that().resideInAPackage(ROOT + ".content..")
+                .should().dependOnClassesThat().resideInAPackage(ROOT + ".learning..");
+
+        rule.check(PRODUCTION_CLASSES);
+    }
+
+    @Test
+    void learning_ShouldNotDependOnTopic_WhenLearningNeedsTopicBehavior() {
+        // Topics of a Series or Module are assigned through the content
+        // capability, so learning never needs the Topic capability.
+        ArchRule rule = noClasses()
+                .that().resideInAPackage(ROOT + ".learning..")
+                .should().dependOnClassesThat().resideInAPackage(ROOT + ".topic..");
 
         rule.check(PRODUCTION_CLASSES);
     }

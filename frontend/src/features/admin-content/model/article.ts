@@ -28,20 +28,42 @@ export interface ArticleAdminDetail extends ArticleEditable {
   updatedAt: string
 }
 
-/** Text fields the editor lets the Admin change. */
+/** The Module an Article sits in and its position there. An Article outside every Module has no placement. */
+export interface Placement {
+  moduleId: string
+  position: number
+}
+
+/** Values the editor lets the Admin change. */
 export interface ArticleFields {
   title: string
   slug: string
   summary: string
   bodyMarkdown: string
+  /** Ids of the chosen Topics. Their order carries no meaning. */
+  topicIds: string[]
+  /** `null` for a standalone Article. */
+  placement: Placement | null
 }
 
-/** Relationship values the editor has no control for. They are sent back unchanged. */
-export type ArticleRelationships = Pick<ArticleEditable, 'moduleId' | 'position' | 'topicIds'>
+/** Fields that are edited as text. The Topic choice and the placement have their own controls. */
+export type ArticleTextField = Exclude<keyof ArticleFields, 'topicIds' | 'placement'>
 
-export const EMPTY_FIELDS: ArticleFields = { title: '', slug: '', summary: '', bodyMarkdown: '' }
+export const EMPTY_FIELDS: ArticleFields = {
+  title: '',
+  slug: '',
+  summary: '',
+  bodyMarkdown: '',
+  topicIds: [],
+  placement: null,
+}
 
-export const STANDALONE: ArticleRelationships = { moduleId: null, position: null, topicIds: [] }
+function placementOf(article: ArticleEditable): Placement | null {
+  // The server keeps both values set or both null.
+  return article.moduleId === null || article.position === null
+    ? null
+    : { moduleId: article.moduleId, position: article.position }
+}
 
 export function fieldsOf(article: ArticleAdminDetail): ArticleFields {
   return {
@@ -49,27 +71,37 @@ export function fieldsOf(article: ArticleAdminDetail): ArticleFields {
     slug: article.slug,
     summary: article.summary ?? '',
     bodyMarkdown: article.bodyMarkdown ?? '',
+    topicIds: [...article.topicIds],
+    placement: placementOf(article),
   }
-}
-
-export function relationshipsOf(article: ArticleAdminDetail): ArticleRelationships {
-  return { moduleId: article.moduleId, position: article.position, topicIds: article.topicIds }
 }
 
 /**
  * Builds the request body. Empty optional text is sent as null, which is
  * how the server stores it, so saving an unchanged form stays a no-op.
  */
-export function toEditable(fields: ArticleFields, relationships: ArticleRelationships): ArticleEditable {
+export function toEditable(fields: ArticleFields): ArticleEditable {
   return {
     title: fields.title,
     slug: fields.slug,
     summary: fields.summary === '' ? null : fields.summary,
     bodyMarkdown: fields.bodyMarkdown === '' ? null : fields.bodyMarkdown,
-    moduleId: relationships.moduleId,
-    position: relationships.position,
-    topicIds: [...relationships.topicIds],
+    moduleId: fields.placement?.moduleId ?? null,
+    position: fields.placement?.position ?? null,
+    topicIds: [...fields.topicIds],
   }
+}
+
+/** True when both lists hold the same ids, whatever their order. */
+export function sameIds(left: string[], right: string[]): boolean {
+  return left.length === right.length && [...left].sort().join(',') === [...right].sort().join(',')
+}
+
+export function samePlacement(left: Placement | null, right: Placement | null): boolean {
+  if (left === null || right === null) {
+    return left === right
+  }
+  return left.moduleId === right.moduleId && left.position === right.position
 }
 
 export function sameFields(left: ArticleFields, right: ArticleFields): boolean {
@@ -77,14 +109,16 @@ export function sameFields(left: ArticleFields, right: ArticleFields): boolean {
     left.title === right.title &&
     left.slug === right.slug &&
     left.summary === right.summary &&
-    left.bodyMarkdown === right.bodyMarkdown
+    left.bodyMarkdown === right.bodyMarkdown &&
+    sameIds(left.topicIds, right.topicIds) &&
+    samePlacement(left.placement, right.placement)
   )
 }
 
 /** Publication result returned by publish and unpublish. It has no content fields. */
 export interface PublicationState {
   id: string
-  type: 'article'
+  type: 'article' | 'series' | 'module'
   status: PublicationStatus
   revision: number
   publishedAt: string | null

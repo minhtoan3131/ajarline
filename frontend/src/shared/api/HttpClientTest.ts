@@ -45,6 +45,20 @@ describe('HttpClient', () => {
     expect(response.etag).toBe('"4"')
   })
 
+  it('request_ShouldSendCsrfHeaderWithoutBody_WhenMethodIsDelete', async () => {
+    const api = new StubApiServer().on('DELETE', '/api/x/1', { status: 204 }).install()
+    const client = new HttpClient()
+    client.setCsrfToken({ headerName: 'X-CSRF-TOKEN', token: 'token-1' })
+
+    const response = await client.request('/api/x/1', { method: 'DELETE' })
+
+    const [request] = api.requests
+    expect(request.method).toBe('DELETE')
+    expect(request.headers.get('X-CSRF-TOKEN')).toBe('token-1')
+    expect(request.headers.has('Content-Type')).toBe(false)
+    expect(response.status).toBe(204)
+  })
+
   it('request_ShouldReturnUndefinedBody_WhenResponseHasNoContent', async () => {
     // Given
     new StubApiServer().on('POST', '/api/x', { status: 204 }).install()

@@ -1,8 +1,14 @@
 import { useLocation, useNavigate, useParams } from 'react-router'
 
-import { ArticleEditor } from '../../features/admin-content/components/ArticleEditor'
+import { ArticleEditor, type PlacementSlot } from '../../features/admin-content/components/ArticleEditor'
 import type { EditorNotice } from '../../features/admin-content/model/articleEditorState'
 import { useAdminArticle } from '../../features/admin-content/useAdminArticle'
+import { ModulePlacementPicker } from '../../features/admin-learning/components/ModulePlacementPicker'
+
+/** Draws the Module picker for the slot of the Article editor. A new Article has no id yet. */
+function placementPicker(articleId: string | null) {
+  return (slot: PlacementSlot) => <ModulePlacementPicker articleId={articleId} {...slot} />
+}
 
 export function ArticleEditorPage() {
   const { articleId } = useParams()
@@ -14,6 +20,7 @@ export function ArticleEditorPage() {
       <ArticleEditor
         initial={null}
         initialNotice={null}
+        renderPlacement={placementPicker(null)}
         onCreated={(id) => {
           // Replace the create URL, so Back does not reopen an empty form.
           void navigate(`/admin/articles/${id}`, { replace: true, state: { notice: 'created' } })
@@ -50,7 +57,9 @@ function ExistingArticleEditor({ articleId, initialNotice }: { articleId: string
         </div>
       )
     case 'ready':
-      return <ArticleEditor initial={load.article} initialNotice={initialNotice} />
+      return (
+        <ArticleEditor initial={load.article} initialNotice={initialNotice} renderPlacement={placementPicker(articleId)} />
+      )
   }
 }
 

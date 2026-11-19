@@ -34,7 +34,6 @@ public record ArticleAdminDetail(
         Instant updatedAt
 ) {
     static ArticleAdminDetail from(ArticleView view) {
-        //TODO: Compose relationship fields from the owning capabilities
         return new ArticleAdminDetail(
                 view.id(),
                 "article",
@@ -42,9 +41,9 @@ public record ArticleAdminDetail(
                 view.slug(),
                 view.summary(),
                 view.bodyMarkdown(),
-                null,
-                null,
-                List.of(),
+                view.placement() == null ? null : view.placement().moduleId(),
+                view.placement() == null ? null : view.placement().position(),
+                view.topicIds(),
                 view.status(),
                 view.revision(),
                 view.publishedAt(),

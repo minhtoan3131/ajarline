@@ -106,11 +106,11 @@ public class ArticleApplicationIT {
         ArticleView createdArticle = articleCreator.create(input("published-article", "# body"));
         jdbcTemplate.update("""
                 UPDATE content_item
-                SET status = 'PUBLISHED', published_at = ?
+                SET status = 'PUBLISHED', summary = 'Fixture summary', published_at = ?
                 WHERE id = ?
                 """, OffsetDateTime.ofInstant(CREATED_AT, ZoneOffset.UTC), createdArticle.id());
 
-        ArticleView found = articleReader.findPublishedBySlug("published-article").orElseThrow();
+        ArticleView found = articleReader.findPublishedBySlug("published-article").orElseThrow().article();
 
         assertThat(found.status()).isEqualTo(PublicationStatus.PUBLISHED);
         assertThat(found.bodyMarkdown()).isEqualTo("# body");

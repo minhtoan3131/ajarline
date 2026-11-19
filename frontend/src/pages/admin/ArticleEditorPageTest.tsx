@@ -11,12 +11,19 @@ import {
   draftArticle,
   revisionHeaders,
 } from '../../features/admin-content/fixture/articleAdminFixture'
+import { givenSeriesList } from '../../features/admin-learning/fixture/learningAdminFixture'
+import { activeTopic, givenTopicCatalog, inactiveTopic } from '../../features/admin-topics/fixture/topicAdminFixture'
 import { jsonResponse, problemResponse, StubApiServer } from '../../shared/api/testsupport/StubApiServer'
 
 const EDIT_ROUTE = `/admin/articles/${ARTICLE_ID}`
 
+/** Session, the Topic list and the Series list that every Article editor loads. */
+function givenSignedInEditor(api: StubApiServer): StubApiServer {
+  return givenSeriesList(givenTopicCatalog(givenSignedInAdmin(api), activeTopic(), inactiveTopic()), [])
+}
+
 function givenLoadedDraft(api: StubApiServer, article = draftArticle()): StubApiServer {
-  return givenSignedInAdmin(api).on('GET', ARTICLE_PATH, jsonResponse(200, article, revisionHeaders(article)))
+  return givenSignedInEditor(api).on('GET', ARTICLE_PATH, jsonResponse(200, article, revisionHeaders(article)))
 }
 
 describe('ArticleEditorPage', () => {
@@ -35,7 +42,7 @@ describe('ArticleEditorPage', () => {
   it('save_ShouldCreateStandaloneDraft_WhenNewArticleIsSaved', async () => {
     // Given
     const created = draftArticle()
-    const api = givenSignedInAdmin(new StubApiServer())
+    const api = givenSignedInEditor(new StubApiServer())
       .on('POST', ARTICLES_PATH, jsonResponse(201, created, { ...revisionHeaders(created), Location: ARTICLE_PATH }))
       .on('GET', ARTICLE_PATH, jsonResponse(200, created, revisionHeaders(created)))
       .install()
@@ -51,6 +58,9 @@ describe('ArticleEditorPage', () => {
     await user.click(screen.getByRole('button', { name: 'Lưu' }))
 
     // Then
+    // Saving moves to the new route, which mounts a fresh editor. Wait for it first,
+    // or the notice is found in the old editor just before it is removed.
+    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent(EDIT_ROUTE))
     expect(await screen.findByText('Đã tạo bản nháp.')).toBeInTheDocument()
     const [create] = api.requestsTo('POST', ARTICLES_PATH)
     expect(create.body).toEqual({
@@ -79,7 +89,6 @@ describe('ArticleEditorPage', () => {
     expect(screen.getByLabelText('Nội dung Markdown')).toHaveValue('## Mở đầu\n\nNội dung bài.')
     expect(screen.getByText('Đã lưu mọi thay đổi')).toBeInTheDocument()
     expect(api.requestsTo('POST', ARTICLES_PATH)).toHaveLength(0)
-    expect(screen.queryByLabelText(/module|chủ đề|topic/i)).toBeNull()
   })
 
   it('save_ShouldSendIfMatchAndUseNewEtag_WhenArticleIsSavedTwice', async () => {
@@ -138,7 +147,7 @@ describe('ArticleEditorPage', () => {
   it('save_ShouldKeepInputAndOfferReload_WhenRevisionIsStale', async () => {
     // Given
     const newer = draftArticle({ revision: 2, title: 'Tiêu đề từ nơi khác' })
-    const api = givenSignedInAdmin(new StubApiServer())
+    const api = givenSignedInEditor(new StubApiServer())
       .on(
         'GET',
         ARTICLE_PATH,

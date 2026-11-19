@@ -2,7 +2,6 @@ package vn.io.ajarline.content.application;
 
 import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
-import org.springframework.transaction.annotation.Propagation;
 import org.springframework.transaction.annotation.Transactional;
 import vn.io.ajarline.content.contract.*;
 import vn.io.ajarline.content.infrastructure.persistence.ArticleEntity;
@@ -17,19 +16,32 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Service
-public class ArticleService implements ArticleCreator, ArticleReader, ArticleEditor, ArticlePublicationAccess {
+public class ArticleService implements ArticleCreator, ArticleReader, ArticleEditor {
     private static final String SLUG_CONSTRAINT = "uk_content_item_type_slug";
     private final ContentItemJpaRepository contentRepository;
     private final ArticleJpaRepository articleRepository;
     private final ArticlePolicy policy;
     private final Clock clock;
+    private final TopicAssignmentPort topicAssignment;
+    private final ArticlePlacementPort placementPort;
+    private final LearningContextPort learningContext;
+    private final PublicLearningContextPort publicLearning;
+    private final ContentRevisionCommands revisions;
 
     public ArticleService(ContentItemJpaRepository contentRepository,
-                          ArticleJpaRepository articleRepository, ArticlePolicy policy, Clock clock) {
+                          ArticleJpaRepository articleRepository, ArticlePolicy policy, Clock clock,
+                          TopicAssignmentPort topicAssignment, ArticlePlacementPort placementPort,
+                          LearningContextPort learningContext, PublicLearningContextPort publicLearning,
+                          ContentRevisionCommands revisions) {
         this.contentRepository = contentRepository;
         this.articleRepository = articleRepository;
         this.policy = policy;
         this.clock = clock;
+        this.topicAssignment = topicAssignment;
+        this.placementPort = placementPort;
+        this.learningContext = learningContext;
+        this.publicLearning = publicLearning;
+        this.revisions = revisions;
     }
 
     @Override
@@ -38,6 +50,10 @@ public class ArticleService implements ArticleCreator, ArticleReader, ArticleEdi
         ArticleContentInput normalizedInput = policy.normalizeAndValidate(input);
         UUID id = UUID.randomUUID();
         Instant now = clock.instant();
+        ArticlePlacement placement = normalizedInput.placement();
+
+        // The parent is locked before anything is written, like in every other writer.
+        placementPort.lockStructure(id, moduleIdOf(placement));
 
         ContentItemEntity contentItemEntity = ContentItemEntity.draftArticle(id, normalizedInput.slug(),
                 normalizedInput.title(), normalizedInput.summary(), now);
@@ -46,6 +62,15 @@ public class ArticleService implements ArticleCreator, ArticleReader, ArticleEdi
         contentRepository.save(contentItemEntity);
         articleRepository.save(articleEntity);
         flushCanonicalWrite();
+        // The Article row must exist before a membership or an assignment can point at it.
+        // A new Article is in no Module yet, so a standalone one has nothing to place.
+        PlacementChange change = placement == null
+                ? PlacementChange.UNCHANGED
+                : placementPort.place(id, placement);
+        topicAssignment.replaceAssignments(id, normalizedInput.topicIds());
+        // Last, because this statement clears the persistence context. The new Article is not
+        // in the set: it starts at revision 1.
+        revisions.advanceRevisions(change.revisionTargets(), now);
         return toView(contentItemEntity, articleEntity);
     }
 
@@ -61,7 +86,7 @@ public class ArticleService implements ArticleCreator, ArticleReader, ArticleEdi
 
     @Override
     @Transactional(readOnly = true)
-    public Optional<ArticleView> findPublishedBySlug(String slug) {
+    public Optional<PublicArticleView> findPublishedBySlug(String slug) {
         if (slug == null) {
             return Optional.empty();
         }
@@ -69,9 +94,10 @@ public class ArticleService implements ArticleCreator, ArticleReader, ArticleEdi
                         ContentType.ARTICLE,
                         slug,
                         PublicationStatus.PUBLISHED)
-                .map(content -> toView(
-                        content,
-                        requireArticle(content.getId())));
+                .map(content -> new PublicArticleView(
+                        toView(content, requireArticle(content.getId())),
+                        topicAssignment.topicLabelsOf(content.getId()),
+                        publicLearning.articleContextOf(content.getId())));
     }
 
     private ArticleEntity requireArticle(UUID uuid) {
@@ -126,8 +152,14 @@ public class ArticleService implements ArticleCreator, ArticleReader, ArticleEdi
                 content.getPublishedAt(),
                 content.getUnpublishedAt(),
                 content.getCreatedAt(),
-                content.getUpdatedAt()
+                content.getUpdatedAt(),
+                topicAssignment.topicIdsOf(content.getId()),
+                learningContext.placementOf(content.getId()).orElse(null)
         );
+    }
+
+    private UUID moduleIdOf(ArticlePlacement placement) {
+        return placement == null ? null : placement.moduleId();
     }
 
     private ContentOperationException notFound(UUID id) {
@@ -139,6 +171,15 @@ public class ArticleService implements ArticleCreator, ArticleReader, ArticleEdi
     @Transactional
     public ArticleView replace(UUID id, long expectedRevision, ArticleContentInput input) {
         ArticleContentInput normalizedInput = policy.normalizeAndValidate(input);
+        ArticlePlacement placement = normalizedInput.placement();
+
+        // Ask the Article table, not the common record. A copy of the common record in the
+        // persistence context would hide the fresh row from the locking read below.
+        if (!articleRepository.existsById(id)) {
+            throw notFound(id);
+        }
+        // Parent before child: lock the Modules first, then the Article.
+        placementPort.lockStructure(id, moduleIdOf(placement));
         LockedArticle locked = lockArticle(id, expectedRevision);
         ContentItemEntity contentItemEntity = locked.content();
         ArticleEntity articleEntity = locked.article();
@@ -158,18 +199,26 @@ public class ArticleService implements ArticleCreator, ArticleReader, ArticleEdi
             );
         }
 
+        if (contentItemEntity.getStatus() == PublicationStatus.PUBLISHED) {
+            policy.requirePublishable(normalizedInput.summary(), normalizedInput.bodyMarkdown());
+        }
+
+        // The place and the Topics are written here, before any decision to return early, so
+        // that one failure rolls back the whole save.
+        PlacementChange change = placementPort.place(id, placement);
         boolean hasCommonChanged = !contentItemEntity.hasSameEditableContent(
                 normalizedInput.title(),
                 normalizedInput.slug(),
                 normalizedInput.summary()
         );
-
         boolean hasBodyChanged = !articleEntity.hasSameBody(normalizedInput.bodyMarkdown());
-        if (!hasCommonChanged && !hasBodyChanged) {
+        boolean hasTopicsChanged = topicAssignment.replaceAssignments(id, normalizedInput.topicIds());
+        if (!hasCommonChanged && !hasBodyChanged && !hasTopicsChanged && !change.changed()) {
             return toView(contentItemEntity, articleEntity);
         }
 
         Instant now = clock.instant();
+        // This also raises the revision when only the place changed.
         contentItemEntity.replaceEditTableContent(
                 normalizedInput.title(),
                 normalizedInput.slug(),
@@ -179,40 +228,10 @@ public class ArticleService implements ArticleCreator, ArticleReader, ArticleEdi
 
         articleEntity.replaceBody(normalizedInput.bodyMarkdown());
         flushCanonicalWrite();
+        // Last, because this statement clears the persistence context. The Article is not in
+        // the set: it rose above.
+        revisions.advanceRevisions(change.revisionTargets(), now);
         return toView(contentItemEntity, articleEntity);
-    }
-
-    @Override
-    @Transactional(propagation = Propagation.MANDATORY)
-    public ArticleView lockForPublication(UUID id, long expectedRevision) {
-        LockedArticle locked = lockArticle(id, expectedRevision);
-        return toView(locked.content(), locked.article());
-    }
-
-    @Override
-    @Transactional(propagation = Propagation.MANDATORY)
-    public ArticleView markPublished(
-            UUID id,
-            long expectedRevision,
-            Instant changedAt
-    ) {
-        LockedArticle locked = lockArticle(id, expectedRevision);
-        locked.content().markPublished(changedAt);
-        flushCanonicalWrite();
-        return toView(locked.content(), locked.article());
-    }
-
-    @Override
-    @Transactional(propagation = Propagation.MANDATORY)
-    public ArticleView markUnpublished(
-            UUID id,
-            long expectedRevision,
-            Instant changedAt
-    ) {
-        LockedArticle locked = lockArticle(id, expectedRevision);
-        locked.content().markUnpublished(changedAt);
-        flushCanonicalWrite();
-        return toView(locked.content(), locked.article());
     }
 
 

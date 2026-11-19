@@ -10,13 +10,14 @@ import {
   draftArticle,
   revisionHeaders,
 } from '../../features/admin-content/fixture/articleAdminFixture'
+import { givenTopicCatalog } from '../../features/admin-topics/fixture/topicAdminFixture'
 import { jsonResponse, StubApiServer } from '../../shared/api/testsupport/StubApiServer'
 
 const EDIT_ROUTE = `/admin/articles/${ARTICLE_ID}`
 
 function givenLoadedDraft(): StubApiServer {
   const article = draftArticle()
-  return givenSignedInAdmin(new StubApiServer())
+  return givenTopicCatalog(givenSignedInAdmin(new StubApiServer()))
     .on('GET', ARTICLE_PATH, jsonResponse(200, article, revisionHeaders(article)))
     .install()
 }

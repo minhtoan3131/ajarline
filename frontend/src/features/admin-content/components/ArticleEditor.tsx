@@ -1,18 +1,36 @@
-import { useDeferredValue, useId, useState, type ChangeEvent } from 'react'
+import { useDeferredValue, useId, useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
 
 import { ArticlePreview } from './ArticlePreview'
+import { EditorField } from './EditorField'
 import { FullPreviewOverlay } from './FullPreviewOverlay'
-import type { ArticleAdminDetail, ArticleFields, PublicationStatus, Versioned } from '../model/article'
-import type { EditorNotice, PendingMutation } from '../model/articleEditorState'
+import { PublicationBadge, PublicationControls, PublicationHint } from './PublicationControls'
+import { SaveStatus } from './SaveStatus'
+import { TopicPicker } from './TopicPicker'
+import { articlePath } from '../../article-reading/articleRoutes'
+import { useTopicList } from '../../admin-topics/useTopicList'
+import type { ArticleAdminDetail, ArticleTextField, Placement, Versioned } from '../model/article'
+import type { EditorNotice } from '../model/articleEditorState'
 import type { EditorFailure } from '../model/editorFailure'
 import { useArticleEditor } from '../useArticleEditor'
+
+/** What the editor hands to the control that chooses the Module of the Article. */
+export interface PlacementSlot {
+  value: Placement | null
+  onChange: (placement: Placement | null) => void
+  /** Error of the placement field, for example a Module that no longer exists. */
+  error: string | null
+  /** True while a request runs. The control must not change the placement then. */
+  disabled: boolean
+}
 
 export interface ArticleEditorProps {
   /** Loaded Article, or null when the Admin creates a new one. */
   initial: Versioned<ArticleAdminDetail> | null
   initialNotice: EditorNotice | null
   onCreated?: (articleId: string) => void
+  /** Draws the control for the Module and position. The editor does not know Series or Module. */
+  renderPlacement?: (slot: PlacementSlot) => ReactNode
 }
 
 /**
@@ -21,9 +39,14 @@ export interface ArticleEditorProps {
  * Save and publication are separate actions. The form never reports success
  * before the server answers, and it keeps the typed text on every failure.
  */
-export function ArticleEditor({ initial, initialNotice, onCreated }: ArticleEditorProps) {
+export function ArticleEditor({ initial, initialNotice, onCreated, renderPlacement }: ArticleEditorProps) {
   const editor = useArticleEditor(initial, initialNotice, onCreated)
   const { state, dirty } = editor
+  const topicList = useTopicList()
+  const topicError =
+    state.failure?.kind === 'field' && state.failure.field === 'topicIds' ? state.failure.message : null
+  const placementError =
+    state.failure?.kind === 'field' && state.failure.field === 'placement' ? state.failure.message : null
   const article = state.current?.value ?? null
   // The public URL must stay stable once readers may have seen it.
   const slugLocked = article !== null && article.publishedAt !== null
@@ -33,10 +56,9 @@ export function ArticleEditor({ initial, initialNotice, onCreated }: ArticleEdit
   // Typing stays responsive; the preview catches up when React is idle.
   const previewFields = useDeferredValue(state.fields)
   const publishHintId = `${idPrefix}-publish-hint`
-  const canPublish = article !== null && article.status !== 'PUBLISHED'
-  const canUnpublish = article !== null && article.status === 'PUBLISHED'
+  const published = article !== null && article.status === 'PUBLISHED'
 
-  function fieldProps(field: keyof ArticleFields) {
+  function fieldProps(field: ArticleTextField) {
     const failure = state.failure
     return {
       id: `${idPrefix}-${field}`,
@@ -67,39 +89,22 @@ export function ArticleEditor({ initial, initialNotice, onCreated }: ArticleEdit
             <button type="button" className="admin-button" onClick={() => setPreviewOpen(true)}>
               Xem trước toàn màn hình
             </button>
-            {canPublish && (
-              <button
-                type="button"
-                className="admin-button"
-                disabled={state.pending !== null || dirty}
-                aria-describedby={dirty ? publishHintId : undefined}
-                onClick={() => void editor.publish()}
-              >
-                {state.pending === 'publishing' ? 'Đang xuất bản…' : 'Xuất bản'}
-              </button>
-            )}
-            {canUnpublish && (
-              <button
-                type="button"
-                className="admin-button"
-                disabled={state.pending !== null}
-                onClick={() => void editor.unpublish()}
-              >
-                {state.pending === 'unpublishing' ? 'Đang gỡ xuất bản…' : 'Gỡ xuất bản'}
-              </button>
-            )}
-            {canUnpublish && (
-              <Link className="article-public-link" to={`/articles/${encodeURIComponent(article.slug)}`}>
+            <PublicationControls
+              status={article?.status ?? null}
+              dirty={dirty}
+              pending={state.pending}
+              hintId={publishHintId}
+              onPublish={() => void editor.publish()}
+              onUnpublish={() => void editor.unpublish()}
+            />
+            {published && (
+              <Link className="article-public-link" to={articlePath(article.slug)}>
                 Mở trang công khai
               </Link>
             )}
           </div>
         </div>
-        {canPublish && dirty && (
-          <p id={publishHintId} className="admin-field-hint">
-            Lưu thay đổi trước khi xuất bản. Xuất bản chỉ áp dụng cho bản đã lưu.
-          </p>
-        )}
+        <PublicationHint id={publishHintId} status={article?.status ?? null} dirty={dirty} />
         <EditorMessages
           failure={state.failure}
           notice={state.notice}
@@ -133,6 +138,21 @@ export function ArticleEditor({ initial, initialNotice, onCreated }: ArticleEdit
               }
             />
             <EditorField label="Tóm tắt" {...fieldProps('summary')} rows={3} />
+            <TopicPicker
+              load={topicList.load}
+              selectedIds={state.fields.topicIds}
+              attachedIds={state.baseline.topicIds}
+              error={topicError}
+              disabled={state.pending !== null}
+              onChange={editor.changeTopics}
+              onRetry={topicList.reload}
+            />
+            {renderPlacement?.({
+              value: state.fields.placement,
+              onChange: editor.changePlacement,
+              error: placementError,
+              disabled: state.pending !== null,
+            })}
             <EditorField label="Nội dung Markdown" {...fieldProps('bodyMarkdown')} rows={24} monospace />
           </section>
           <section className="article-editor-preview" aria-label="Xem trước trực tiếp">
@@ -142,84 +162,6 @@ export function ArticleEditor({ initial, initialNotice, onCreated }: ArticleEdit
       </form>
       {previewOpen && <FullPreviewOverlay fields={state.fields} onClose={() => setPreviewOpen(false)} />}
     </>
-  )
-}
-
-interface EditorFieldProps {
-  id: string
-  label: string
-  value: string
-  error: string | null
-  onChange: (value: string) => void
-  hint?: string
-  readOnly?: boolean
-  rows?: number
-  monospace?: boolean
-}
-
-function EditorField({ id, label, value, error, onChange, hint, readOnly = false, rows, monospace = false }: EditorFieldProps) {
-  const hintId = `${id}-hint`
-  const errorId = `${id}-error`
-  const describedBy = [hint === undefined ? null : hintId, error === null ? null : errorId]
-    .filter((part) => part !== null)
-    .join(' ')
-  const control = {
-    id,
-    value,
-    readOnly,
-    className: monospace ? 'admin-input admin-input-mono' : 'admin-input',
-    'aria-invalid': error !== null,
-    'aria-describedby': describedBy === '' ? undefined : describedBy,
-    onChange: (event: ChangeEvent<HTMLInputElement | HTMLTextAreaElement>) => onChange(event.target.value),
-  }
-
-  return (
-    <div className="admin-field">
-      <label htmlFor={id}>{label}</label>
-      {rows === undefined ? (
-        <input type="text" {...control} />
-      ) : (
-        <textarea rows={rows} spellCheck={!monospace} {...control} />
-      )}
-      {hint !== undefined && (
-        <p id={hintId} className="admin-field-hint">
-          {hint}
-        </p>
-      )}
-      {error !== null && (
-        <p id={errorId} className="admin-field-error">
-          Lỗi: {error}
-        </p>
-      )}
-    </div>
-  )
-}
-
-const STATUS_LABELS: Record<PublicationStatus, string> = {
-  DRAFT: 'Bản nháp',
-  PUBLISHED: 'Đã xuất bản',
-  UNPUBLISHED: 'Đã gỡ xuất bản',
-}
-
-function PublicationBadge({ status }: { status: PublicationStatus | null }) {
-  const label = status === null ? 'Chưa lưu lần nào' : STATUS_LABELS[status]
-  const variant = status === null ? 'new' : status.toLowerCase()
-  return <span className={`admin-badge admin-badge-${variant}`}>Trạng thái: {label}</span>
-}
-
-function SaveStatus({ pending, dirty, saved }: { pending: PendingMutation | null; dirty: boolean; saved: boolean }) {
-  let text = 'Đã lưu mọi thay đổi'
-  if (pending === 'saving') {
-    text = 'Đang lưu…'
-  } else if (dirty) {
-    text = 'Có thay đổi chưa lưu'
-  } else if (!saved) {
-    text = 'Chưa có nội dung'
-  }
-  return (
-    <p className="article-save-status" aria-live="polite">
-      {text}
-    </p>
   )
 }
 

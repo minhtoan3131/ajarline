@@ -13,13 +13,14 @@ import {
   revisionHeaders,
 } from '../../features/admin-content/fixture/articleAdminFixture'
 import type { ArticleAdminDetail } from '../../features/admin-content/model/article'
+import { givenTopicCatalog } from '../../features/admin-topics/fixture/topicAdminFixture'
 import { jsonResponse, problemResponse, StubApiServer } from '../../shared/api/testsupport/StubApiServer'
 
 const EDIT_ROUTE = `/admin/articles/${ARTICLE_ID}`
 const PUBLISHED_AT = '2026-11-10T03:00:00Z'
 
 function givenLoaded(article: ArticleAdminDetail): StubApiServer {
-  return givenSignedInAdmin(new StubApiServer()).on('GET', ARTICLE_PATH, jsonResponse(200, article, revisionHeaders(article)))
+  return givenTopicCatalog(givenSignedInAdmin(new StubApiServer())).on('GET', ARTICLE_PATH, jsonResponse(200, article, revisionHeaders(article)))
 }
 
 describe('Article editor publication', () => {
@@ -110,7 +111,7 @@ describe('Article editor publication', () => {
 
   it('render_ShouldHidePublicationActions_WhenArticleIsNew', async () => {
     // Given
-    givenSignedInAdmin(new StubApiServer()).install()
+    givenTopicCatalog(givenSignedInAdmin(new StubApiServer())).install()
 
     // When
     renderAppRoute('/admin/articles/new')

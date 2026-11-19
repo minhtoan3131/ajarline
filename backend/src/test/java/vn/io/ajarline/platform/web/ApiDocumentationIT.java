@@ -25,21 +25,55 @@ class ApiDocumentationIT {
 
     private static final ObjectMapper JSON = JsonMapper.builder().build();
 
-    private static final Map<String, Map<String, String>> OPERATIONS = Map.of(
-            "/api/auth/v1/csrf", Map.of("get", "getCsrfToken"),
-            "/api/auth/v1/session", Map.of("get", "getSessionState"),
-            "/api/auth/v1/login", Map.of("post", "loginAdmin"),
-            "/api/auth/v1/logout", Map.of("post", "logoutAdmin"),
-            "/api/admin/v1/articles", Map.of("post", "createArticle"),
-            "/api/admin/v1/articles/{id}", Map.of(
+    private static final Map<String, Map<String, String>> OPERATIONS = Map.ofEntries(
+            Map.entry("/api/auth/v1/csrf", Map.of("get", "getCsrfToken")),
+            Map.entry("/api/auth/v1/session", Map.of("get", "getSessionState")),
+            Map.entry("/api/auth/v1/login", Map.of("post", "loginAdmin")),
+            Map.entry("/api/auth/v1/logout", Map.of("post", "logoutAdmin")),
+            Map.entry("/api/admin/v1/articles", Map.of("post", "createArticle")),
+            Map.entry("/api/admin/v1/articles/{id}", Map.of(
                     "get", "getAdminArticle",
-                    "put", "updateArticle"),
-            "/api/admin/v1/content/{id}/publish", Map.of(
-                    "post", "publishContent"),
-            "/api/admin/v1/content/{id}/unpublish", Map.of(
-                    "post", "unpublishContent"),
-            "/api/v1/articles/{slug}", Map.of(
-                    "get", "getPublicArticle"));
+                    "put", "updateArticle")),
+            Map.entry("/api/admin/v1/series", Map.of("post", "createSeries")),
+            Map.entry("/api/admin/v1/series/{id}", Map.of(
+                    "get", "getAdminSeries",
+                    "put", "updateSeries")),
+            Map.entry("/api/admin/v1/modules", Map.of("post", "createModule")),
+            Map.entry("/api/admin/v1/modules/{id}", Map.of(
+                    "get", "getAdminModule",
+                    "put", "updateModule")),
+            Map.entry("/api/admin/v1/series/{seriesId}/module-order", Map.of(
+                    "put", "reorderModules")),
+            Map.entry("/api/admin/v1/modules/{moduleId}/article-order", Map.of(
+                    "put", "reorderArticles")),
+            Map.entry("/api/admin/v1/topics", Map.of(
+                    "get", "listAdminTopics",
+                    "post", "createTopic")),
+            Map.entry("/api/admin/v1/topics/{id}", Map.of(
+                    "put", "updateTopic",
+                    "delete", "deleteTopic")),
+            Map.entry("/api/admin/v1/content", Map.of(
+                    "get", "listAdminContent")),
+            Map.entry("/api/admin/v1/content/{id}/publish", Map.of(
+                    "post", "publishContent")),
+            Map.entry("/api/admin/v1/content/{id}/unpublish", Map.of(
+                    "post", "unpublishContent")),
+            Map.entry("/api/v1/articles", Map.of(
+                    "get", "listStandaloneArticles")),
+            Map.entry("/api/v1/articles/{slug}", Map.of(
+                    "get", "getPublicArticle")),
+            Map.entry("/api/v1/series", Map.of(
+                    "get", "listPublicSeries")),
+            Map.entry("/api/v1/series/{slug}", Map.of(
+                    "get", "getPublicSeries")),
+            Map.entry("/api/v1/modules/{slug}", Map.of(
+                    "get", "getPublicModule")),
+            Map.entry("/api/v1/topics", Map.of(
+                    "get", "listPublicTopics")),
+            Map.entry("/api/v1/topics/{slug}", Map.of(
+                    "get", "getPublicTopic")),
+            Map.entry("/api/v1/topics/{slug}/content", Map.of(
+                    "get", "listPublicTopicContent")));
 
     @LocalServerPort
     private int port;
@@ -126,6 +160,62 @@ class ApiDocumentationIT {
         assertThat(loginSchema.get("properties").get("password")
                 .get("writeOnly").asBoolean()).isTrue();
         assertThat(hasSecurity(logout, OpenApiConfiguration.ADMIN_SESSION)).isTrue();
+    }
+
+    @Test
+    void openApi_ShouldExposeSeriesMetadata_WhenDocumentIsGenerated()
+            throws Exception {
+        JsonNode document = openApiDocument();
+        JsonNode paths = document.get("paths");
+        JsonNode create = operation(paths, "/api/admin/v1/series", "post");
+        JsonNode get = operation(paths, "/api/admin/v1/series/{id}", "get");
+        JsonNode update = operation(paths, "/api/admin/v1/series/{id}", "put");
+
+        for (JsonNode seriesOperation : new JsonNode[]{create, get, update}) {
+            assertThat(hasSecurity(seriesOperation, OpenApiConfiguration.ADMIN_SESSION)).isTrue();
+        }
+        assertThat(parameterNames(create)).contains("X-CSRF-TOKEN");
+        assertThat(parameterNames(update)).contains("X-CSRF-TOKEN", "If-Match");
+        assertThat(requestSchemaRef(create)).endsWith("/SeriesEditable");
+        assertThat(requestSchemaRef(update)).endsWith("/SeriesEditable");
+        assertThat(responseSchemaRef(get, "200")).endsWith("/SeriesAdminDetail");
+        assertThat(create.get("responses").get("201")
+                .get("headers").propertyNames())
+                .contains("Location", "ETag");
+        assertThat(get.get("responses").get("200")
+                .get("headers").has("ETag")).isTrue();
+        assertThat(update.get("responses").get("200")
+                .get("headers").has("ETag")).isTrue();
+        assertThat(get.get("responses").has("404")).isTrue();
+        assertThat(update.get("responses").propertyNames())
+                .contains("404", "409", "412", "422", "428");
+
+        JsonNode schemas = document.get("components").get("schemas");
+        assertThat(schemas.propertyNames()).contains(
+                "SeriesEditable", "SeriesAdminDetail", "AdminChildItem");
+        assertThat(schemas.get("SeriesAdminDetail").get("properties").has("modules")).isTrue();
+    }
+
+    @Test
+    void openApi_ShouldExposeReorderMetadata_WhenDocumentIsGenerated()
+            throws Exception {
+        JsonNode document = openApiDocument();
+        JsonNode paths = document.get("paths");
+        JsonNode modules = operation(paths, "/api/admin/v1/series/{seriesId}/module-order", "put");
+        JsonNode articles = operation(paths, "/api/admin/v1/modules/{moduleId}/article-order", "put");
+
+        for (JsonNode reorder : new JsonNode[]{modules, articles}) {
+            assertThat(hasSecurity(reorder, OpenApiConfiguration.ADMIN_SESSION)).isTrue();
+            assertThat(parameterNames(reorder)).contains("X-CSRF-TOKEN", "If-Match");
+            assertThat(reorder.get("responses").get("200")
+                    .get("headers").has("ETag")).isTrue();
+            assertThat(reorder.get("responses").propertyNames())
+                    .contains("404", "409", "412", "422", "428");
+        }
+        assertThat(requestSchemaRef(modules)).endsWith("/ModuleOrderEditable");
+        assertThat(responseSchemaRef(modules, "200")).endsWith("/ModuleOrderResponse");
+        assertThat(requestSchemaRef(articles)).endsWith("/ArticleOrderEditable");
+        assertThat(responseSchemaRef(articles, "200")).endsWith("/ArticleOrderResponse");
     }
 
     @Test
@@ -225,6 +315,174 @@ class ApiDocumentationIT {
         assertThat(properties.has("unpublishedAt")).isFalse();
     }
 
+    @Test
+    void openApi_ShouldExposeTopicMetadata_WhenDocumentIsGenerated()
+            throws Exception {
+        JsonNode document = openApiDocument();
+        JsonNode paths = document.get("paths");
+        JsonNode list = operation(paths, "/api/admin/v1/topics", "get");
+        JsonNode create = operation(paths, "/api/admin/v1/topics", "post");
+        JsonNode update = operation(paths, "/api/admin/v1/topics/{id}", "put");
+        JsonNode delete = operation(paths, "/api/admin/v1/topics/{id}", "delete");
+
+        for (JsonNode topicOperation : new JsonNode[]{list, create, update, delete}) {
+            assertThat(hasSecurity(topicOperation, OpenApiConfiguration.ADMIN_SESSION)).isTrue();
+        }
+        for (JsonNode mutation : new JsonNode[]{create, update, delete}) {
+            assertThat(parameterNames(mutation)).contains("X-CSRF-TOKEN");
+        }
+        assertThat(parameterNames(update)).doesNotContain("If-Match");
+        assertThat(requestSchemaRef(create)).endsWith("/TopicCreatable");
+        assertThat(requestSchemaRef(update)).endsWith("/TopicEditable");
+        assertThat(responseSchemaRef(list, "200")).endsWith("/TopicAdminList");
+        assertThat(create.get("responses").get("201").get("headers").propertyNames())
+                .contains("Location");
+        assertThat(create.get("responses").get("201").get("headers").has("ETag")).isFalse();
+        assertThat(delete.get("responses").has("204")).isTrue();
+        assertThat(delete.get("responses").has("409")).isTrue();
+
+        JsonNode schemas = document.get("components").get("schemas");
+        assertThat(schemas.propertyNames()).contains(
+                "TopicCreatable", "TopicEditable", "TopicAdminItem", "TopicAdminList");
+        assertThat(schemas.get("TopicEditable").get("properties").has("slug")).isFalse();
+    }
+
+    @Test
+    void openApi_ShouldExposePublicTopicMetadata_WhenDocumentIsGenerated()
+            throws Exception {
+        JsonNode document = openApiDocument();
+        JsonNode paths = document.get("paths");
+        JsonNode list = operation(paths, "/api/v1/topics", "get");
+        JsonNode get = operation(paths, "/api/v1/topics/{slug}", "get");
+        JsonNode content = operation(paths, "/api/v1/topics/{slug}/content", "get");
+
+        for (JsonNode publicOperation : new JsonNode[]{list, get, content}) {
+            assertThat(hasSecurity(publicOperation, OpenApiConfiguration.ADMIN_SESSION)).isFalse();
+        }
+        assertThat(responseSchemaRef(list, "200")).endsWith("/TopicDiscoveryResponse");
+        assertThat(responseSchemaRef(get, "200")).endsWith("/PublicTopicResponse");
+        assertThat(responseSchemaRef(content, "200")).endsWith("/TopicContentResponse");
+        assertThat(get.get("responses").has("404")).isTrue();
+        assertThat(content.get("responses").has("400")).isTrue();
+        assertThat(content.get("responses").has("404")).isTrue();
+        assertThat(parameterNames(content)).contains("slug", "types", "page", "size");
+
+        JsonNode schemas = document.get("components").get("schemas");
+        assertThat(schemas.get("PublicTopicResponse").get("properties").propertyNames())
+                .containsExactlyInAnyOrder("id", "slug", "name", "description");
+    }
+
+    @Test
+    void openApi_ShouldExposeStandaloneArticleMetadata_WhenDocumentIsGenerated()
+            throws Exception {
+        JsonNode document = openApiDocument();
+        JsonNode list = operation(document.get("paths"), "/api/v1/articles", "get");
+
+        assertThat(hasSecurity(list, OpenApiConfiguration.ADMIN_SESSION)).isFalse();
+        assertThat(list.get("tags")).hasSize(1);
+        assertThat(list.get("tags").get(0).asString()).isEqualTo("Public Discovery");
+        assertThat(parameterNames(list)).containsExactlyInAnyOrder("standalone", "page", "size");
+        assertThat(requiredParameters(list)).containsExactly("standalone");
+        assertThat(responseSchemaRef(list, "200")).endsWith("/ArticleCollectionResponse");
+        assertThat(list.get("responses").has("400")).isTrue();
+        assertThat(list.get("responses").has("404")).isFalse();
+
+        JsonNode schemas = document.get("components").get("schemas");
+        assertThat(schemas.get("ArticleCollectionResponse").get("properties").propertyNames())
+                .containsExactlyInAnyOrder("page", "size", "hasMore", "items");
+        assertThat(schemas.get("ArticleSummary").get("properties").propertyNames())
+                .containsExactlyInAnyOrder(
+                        "id", "type", "slug", "title", "summary",
+                        "topics", "publishedAt", "updatedAt");
+    }
+
+    @Test
+    void openApi_ShouldExposeSeriesCollectionMetadata_WhenDocumentIsGenerated()
+            throws Exception {
+        JsonNode document = openApiDocument();
+        JsonNode list = operation(document.get("paths"), "/api/v1/series", "get");
+
+        assertThat(hasSecurity(list, OpenApiConfiguration.ADMIN_SESSION)).isFalse();
+        assertThat(list.get("tags")).hasSize(1);
+        assertThat(list.get("tags").get(0).asString()).isEqualTo("Public Discovery");
+        assertThat(parameterNames(list)).containsExactlyInAnyOrder("page", "size");
+        assertThat(requiredParameters(list)).isEmpty();
+        assertThat(responseSchemaRef(list, "200")).endsWith("/SeriesCollectionResponse");
+        assertThat(list.get("responses").has("400")).isTrue();
+        assertThat(list.get("responses").has("404")).isFalse();
+
+        JsonNode schemas = document.get("components").get("schemas");
+        assertThat(schemas.get("SeriesCollectionResponse").get("properties").propertyNames())
+                .containsExactlyInAnyOrder("page", "size", "hasMore", "items");
+        assertThat(schemas.get("SeriesSummary").get("properties").propertyNames())
+                .containsExactlyInAnyOrder(
+                        "id", "type", "slug", "title", "summary",
+                        "topics", "publishedAt", "updatedAt");
+    }
+
+    @Test
+    void openApi_ShouldExposeSeriesAndModuleMetadata_WhenDocumentIsGenerated()
+            throws Exception {
+        JsonNode document = openApiDocument();
+        JsonNode paths = document.get("paths");
+        JsonNode series = operation(paths, "/api/v1/series/{slug}", "get");
+        JsonNode module = operation(paths, "/api/v1/modules/{slug}", "get");
+
+        for (JsonNode publicOperation : new JsonNode[]{series, module}) {
+            assertThat(hasSecurity(publicOperation, OpenApiConfiguration.ADMIN_SESSION)).isFalse();
+            assertThat(publicOperation.get("tags")).hasSize(1);
+            assertThat(publicOperation.get("tags").get(0).asString()).isEqualTo("Public Content");
+            assertThat(parameterNames(publicOperation)).containsExactlyInAnyOrder("slug");
+            assertThat(publicOperation.get("responses").has("404")).isTrue();
+        }
+        assertThat(responseSchemaRef(series, "200")).endsWith("/PublicSeriesResponse");
+        assertThat(responseSchemaRef(module, "200")).endsWith("/PublicModuleResponse");
+
+        JsonNode schemas = document.get("components").get("schemas");
+        assertThat(schemas.get("PublicSeriesResponse").get("properties").propertyNames())
+                .containsExactlyInAnyOrder(
+                        "id", "type", "slug", "title", "summary", "overviewMarkdown",
+                        "topics", "modules", "publishedAt", "updatedAt");
+        assertThat(schemas.get("PublicModuleResponse").get("properties").propertyNames())
+                .containsExactlyInAnyOrder(
+                        "id", "type", "slug", "title", "summary", "overviewMarkdown",
+                        "topics", "series", "articles", "publishedAt", "updatedAt");
+        assertThat(schemas.get("ModuleListItem").get("properties").propertyNames())
+                .containsExactlyInAnyOrder("id", "slug", "title", "summary", "position", "articles");
+        assertThat(schemas.get("ArticleListItem").get("properties").propertyNames())
+                .containsExactlyInAnyOrder("id", "slug", "title", "summary", "position");
+    }
+
+    @Test
+    void openApi_ShouldExposeModuleMetadata_WhenDocumentIsGenerated()
+            throws Exception {
+        JsonNode document = openApiDocument();
+        JsonNode paths = document.get("paths");
+        JsonNode create = operation(paths, "/api/admin/v1/modules", "post");
+        JsonNode get = operation(paths, "/api/admin/v1/modules/{id}", "get");
+        JsonNode update = operation(paths, "/api/admin/v1/modules/{id}", "put");
+
+        for (JsonNode moduleOperation : new JsonNode[]{create, get, update}) {
+            assertThat(hasSecurity(moduleOperation, OpenApiConfiguration.ADMIN_SESSION)).isTrue();
+        }
+        assertThat(parameterNames(create)).contains("X-CSRF-TOKEN");
+        assertThat(parameterNames(update)).contains("X-CSRF-TOKEN", "If-Match");
+        assertThat(requestSchemaRef(create)).endsWith("/ModuleEditable");
+        assertThat(requestSchemaRef(update)).endsWith("/ModuleEditable");
+        assertThat(responseSchemaRef(get, "200")).endsWith("/ModuleAdminDetail");
+        assertThat(create.get("responses").get("201")
+                .get("headers").propertyNames())
+                .contains("Location", "ETag");
+        assertThat(update.get("responses").get("200")
+                .get("headers").has("ETag")).isTrue();
+        assertThat(update.get("responses").propertyNames())
+                .contains("404", "409", "412", "422", "428");
+
+        JsonNode schemas = document.get("components").get("schemas");
+        assertThat(schemas.propertyNames()).contains("ModuleEditable", "ModuleAdminDetail");
+        assertThat(schemas.get("ModuleAdminDetail").get("properties").propertyNames())
+                .contains("seriesId", "position", "articles");
+    }
 
     private JsonNode openApiDocument() throws Exception {
         HttpResponse<String> response = send(get("/v3/api-docs"));
@@ -242,6 +500,16 @@ class ApiDocumentationIT {
         JsonNode parameters = operation.get("parameters");
         if (parameters != null) {
             for (JsonNode parameter : parameters) {
+                names.add(parameter.get("name").asString());
+            }
+        }
+        return names;
+    }
+
+    private static Set<String> requiredParameters(JsonNode operation) {
+        Set<String> names = new HashSet<>();
+        for (JsonNode parameter : operation.get("parameters")) {
+            if (parameter.has("required") && parameter.get("required").asBoolean()) {
                 names.add(parameter.get("name").asString());
             }
         }

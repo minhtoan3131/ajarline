@@ -1,3 +1,4 @@
+import { TopicChips } from '../../topic-browsing/components/TopicChips'
 import { MarkdownRenderer } from '../../content-rendering/MarkdownRenderer'
 import { EDITORIAL_PROFILE } from '../editorialProfile'
 import type { PublicArticle } from '../model/publicArticle'
@@ -37,6 +38,7 @@ export function PublicArticleView({ article }: { article: PublicArticle }) {
         <p className="reader-attribution">
           {EDITORIAL_PROFILE.responsibilityLabel}: <strong>{EDITORIAL_PROFILE.displayName}</strong>
         </p>
+        <TopicChips topics={article.topics} label="Chủ đề của bài viết" />
       </header>
       {article.bodyMarkdown && (
         <div className="reader-article-body">

@@ -5,11 +5,15 @@ import vn.io.ajarline.content.contract.ArticleContentInput;
 import vn.io.ajarline.content.contract.ContentFailureCode;
 import vn.io.ajarline.content.contract.ContentOperationException;
 
+import java.util.List;
+import java.util.UUID;
+
 import static org.assertj.core.api.Assertions.assertThat;
+import static org.assertj.core.api.Assertions.assertThatCode;
 import static org.assertj.core.api.Assertions.assertThatThrownBy;
 
 public class ArticlePolicyTest {
-    private final ArticlePolicy articlePolicy = new ArticlePolicy();
+    private final ArticlePolicy articlePolicy = new ArticlePolicy(new ContentRecordPolicy());
 
     @Test
     void normalizeAndValidate_ShouldNormalizeSlug_WhenInputIsValid() {
@@ -33,28 +37,46 @@ public class ArticlePolicyTest {
     }
 
     @Test
-    void normalizeAndValidate_ShouldRejectInput_WhenTitleIsTooLong() {
-        ArticleContentInput input = new ArticleContentInput("a".repeat(301), "invalid-title",
-                null, null);
+    void normalizeAndValidate_ShouldRejectInput_WhenTopicIdsRepeat() {
+        UUID topicId = UUID.randomUUID();
+        ArticleContentInput input = new ArticleContentInput(
+                "Java threads", "java-threads", null, null, List.of(topicId, topicId));
+
         assertValidationFailure(input);
     }
 
     @Test
-    void normalizeAndValidate_ShouldRejectInput_WhenSlugIsInvalid() {
-        ArticleContentInput input = input("java threads", null, null);
-        assertValidationFailure(input);
+    void normalizeAndValidate_ShouldKeepTopicIds_WhenInputIsValid() {
+        UUID first = UUID.randomUUID();
+        UUID second = UUID.randomUUID();
+        ArticleContentInput input = new ArticleContentInput(
+                "Java threads", "java-threads", null, null, List.of(first, second));
+
+        ArticleContentInput result = articlePolicy.normalizeAndValidate(input);
+
+        assertThat(result.topicIds()).containsExactly(first, second);
     }
 
     @Test
-    void normalizeAndValidate_ShouldRejectInput_WhenSlugIsTooLong() {
-        ArticleContentInput input = input("s".repeat(181), null, null);
-        assertValidationFailure(input);
+    void requirePublishable_ShouldAcceptArticle_WhenSummaryAndBodyArePresent() {
+        assertThatCode(() -> articlePolicy.requirePublishable("Summary", "# Body"))
+                .doesNotThrowAnyException();
     }
 
     @Test
-    void normalizeAndValidate_ShouldRejectInput_WhenSummaryIsTooLong() {
-        ArticleContentInput input = input("java-threads", "a".repeat(1001), null);
-        assertValidationFailure(input);
+    void requirePublishable_ShouldRequireSummary_WhenSummaryIsBlank() {
+        assertPublishFailure(" ", "# Body", ContentFailureCode.CONTENT_SUMMARY_REQUIRED);
+    }
+
+    @Test
+    void requirePublishable_ShouldRequireBody_WhenBodyIsBlank() {
+        assertPublishFailure("Summary", " ", ContentFailureCode.ARTICLE_BODY_REQUIRED);
+        assertPublishFailure("Summary", null, ContentFailureCode.ARTICLE_BODY_REQUIRED);
+    }
+
+    @Test
+    void requirePublishable_ShouldReportSummaryFirst_WhenBothAreMissing() {
+        assertPublishFailure(null, null, ContentFailureCode.CONTENT_SUMMARY_REQUIRED);
     }
 
     private ArticleContentInput input(
@@ -69,5 +91,11 @@ public class ArticlePolicyTest {
         assertThatThrownBy(() -> articlePolicy.normalizeAndValidate(input))
                 .isInstanceOfSatisfying(ContentOperationException.class,
                         e -> assertThat(e.code()).isEqualTo(ContentFailureCode.VALIDATION_FAILED));
+    }
+
+    private void assertPublishFailure(String summary, String body, ContentFailureCode expected) {
+        assertThatThrownBy(() -> articlePolicy.requirePublishable(summary, body))
+                .isInstanceOfSatisfying(ContentOperationException.class,
+                        e -> assertThat(e.code()).isEqualTo(expected));
     }
 }

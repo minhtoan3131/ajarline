@@ -102,6 +102,24 @@ public class ArticleDatabaseConstraintIT {
                 .hasMessageContaining("fk_article_content_id");
     }
 
+    @Test
+    void insert_ShouldRejectPublishedContent_WhenSummaryIsNull() {
+        UUID uuid = fixedUuid(9);
+        assertThatThrownBy(() -> insertContentItem(uuid, "published-without-summary",
+                "Published without summary", "PUBLISHED", 1))
+                .isInstanceOf(DataIntegrityViolationException.class)
+                .hasMessageContaining("ck_content_item_published_summary");
+    }
+
+    @Test
+    void insert_ShouldAcceptUnpublishedItem_WhenSummaryIsNull() {
+        UUID uuid = fixedUuid(10);
+        insertContentItem(uuid, "unpublished-without-summary", "Unpublished without summary", "UNPUBLISHED", 1);
+
+        assertThat(jdbcTemplate.queryForObject(
+                "SELECT count(*) FROM content_item WHERE id = ?", Long.class, uuid)).isEqualTo(1L);
+    }
+
 
     private void insertContentItem(
             UUID id,
