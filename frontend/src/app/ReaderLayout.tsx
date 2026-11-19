@@ -22,6 +22,9 @@ export function ReaderLayout() {
           <NavLink to="/series" className="reader-nav-link">
             Series
           </NavLink>
+          <NavLink to="/news" className="reader-nav-link">
+            Tin công nghệ
+          </NavLink>
         </nav>
       </header>
       <main className="reader-main">

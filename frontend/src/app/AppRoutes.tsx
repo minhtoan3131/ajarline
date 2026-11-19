@@ -14,6 +14,8 @@ import { ArticlePage } from '../pages/ArticlePage'
 import { NotFoundPage } from '../pages/NotFoundPage'
 import { HomePage } from '../pages/HomePage'
 import { ModulePage } from '../pages/ModulePage'
+import { NewsIndexPage } from '../pages/NewsIndexPage'
+import { NewsPage } from '../pages/NewsPage'
 import { SeriesIndexPage } from '../pages/SeriesIndexPage'
 import { SeriesPage } from '../pages/SeriesPage'
 import { StandaloneIndexPage } from '../pages/StandaloneIndexPage'
@@ -31,6 +33,8 @@ export function AppRoutes() {
         <Route path="articles" element={<StandaloneIndexPage />} />
         <Route path="articles/:slug" element={<ArticlePage />} />
         <Route path="modules/:slug" element={<ModulePage />} />
+        <Route path="news" element={<NewsIndexPage />} />
+        <Route path="news/:slug" element={<NewsPage />} />
         <Route path="series" element={<SeriesIndexPage />} />
         <Route path="series/:slug" element={<SeriesPage />} />
         <Route path="topics" element={<TopicIndexPage />} />

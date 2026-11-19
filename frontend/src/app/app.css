@@ -358,15 +358,81 @@ body {
   font-size: 0.8125rem;
 }
 
+.reader-type-label {
+  display: inline-block;
+  padding: 1px 8px;
+  border: 1px solid var(--reader-line);
+  color: var(--reader-muted);
+  font-size: 0.75rem;
+  font-weight: 600;
+  letter-spacing: 0.04em;
+}
+
+.reader-news-label {
+  margin: 0 0 12px;
+}
+
+.reader-content-meta {
+  margin: 8px 0 0;
+  color: var(--reader-muted);
+  font-size: 0.8125rem;
+}
+
+.reader-news-source {
+  margin-top: 24px;
+  padding: 20px 24px;
+  border: 1px solid var(--reader-line);
+  border-left: 4px solid var(--reader-focus);
+  background: var(--reader-paper);
+}
+
+.reader-news-source h2 {
+  margin: 0 0 8px;
+  font-size: 1rem;
+}
+
+.reader-news-source-name {
+  margin: 0 0 4px;
+  font-weight: 600;
+  overflow-wrap: anywhere;
+}
+
+.reader-news-source-name a {
+  display: inline-block;
+  /* A tap target of about 44px, so the link is easy to hit on a phone. */
+  padding: 10px 0;
+  color: var(--reader-ink);
+}
+
+.reader-news-source-url {
+  margin: 0 0 8px;
+  color: var(--reader-muted);
+  font-size: 0.875rem;
+  overflow-wrap: anywhere;
+}
+
 @media (max-width: 640px) {
   .reader-header,
   .reader-main {
     width: calc(100% - 26px);
   }
 
+  /* Four navigation links do not fit one line on a phone, so the header may wrap. */
+  .reader-header {
+    flex-wrap: wrap;
+    height: auto;
+    min-height: 68px;
+    padding: 10px 0;
+  }
+
   .reader-nav {
-    gap: 16px;
+    flex-wrap: wrap;
+    gap: 4px 16px;
     margin-left: auto;
+  }
+
+  .reader-nav-link {
+    white-space: nowrap;
   }
 
   .reader-article-body {
@@ -375,6 +441,10 @@ body {
 
   .reader-article-body .md-content {
     font-size: 0.96875rem;
+  }
+
+  .reader-news-source {
+    padding: 16px;
   }
 }
 

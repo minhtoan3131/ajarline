@@ -1,14 +1,8 @@
 import { TopicChips } from '../../topic-browsing/components/TopicChips'
 import { MarkdownRenderer } from '../../content-rendering/MarkdownRenderer'
+import { formatReaderDate } from '../../../shared/lib/formatReaderDate'
 import { EDITORIAL_PROFILE } from '../editorialProfile'
 import type { PublicArticle } from '../model/publicArticle'
-
-const DATE_FORMAT = new Intl.DateTimeFormat('vi-VN', {
-  dateStyle: 'long',
-  // Ajarline is a Vietnamese site; dates must not change with the reader's
-  // device time zone.
-  timeZone: 'Asia/Ho_Chi_Minh',
-})
 
 /**
  * Reading view of one public Article.
@@ -17,8 +11,8 @@ const DATE_FORMAT = new Intl.DateTimeFormat('vi-VN', {
  * series, module or previous/next area at all, not even an empty one.
  */
 export function PublicArticleView({ article }: { article: PublicArticle }) {
-  const published = DATE_FORMAT.format(new Date(article.publishedAt))
-  const updated = DATE_FORMAT.format(new Date(article.updatedAt))
+  const published = formatReaderDate(article.publishedAt)
+  const updated = formatReaderDate(article.updatedAt)
 
   return (
     <article className="reader-article">

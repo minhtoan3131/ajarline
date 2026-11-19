@@ -7,6 +7,11 @@ import {
   seriesCollectionResponse,
   seriesSummary,
 } from '../features/learning-navigation/fixture/publicLearningFixture'
+import {
+  newsCollectionApiPath,
+  newsCollectionResponse,
+  newsSummary,
+} from '../features/news-reading/fixture/publicNewsFixture'
 import { JAVA_TOPIC_REF, topicDiscovery, TOPICS_PATH } from '../features/topic-browsing/fixture/publicTopicFixture'
 import { jsonResponse, StubApiServer } from '../shared/api/testsupport/StubApiServer'
 import { renderAppRoute } from './testsupport/renderAppRoute'
@@ -68,6 +73,34 @@ describe('ReaderLayout', () => {
     expect(await screen.findByRole('heading', { level: 1, name: 'Series' })).toBeInTheDocument()
     expect(screen.getByTestId('location')).toHaveTextContent('/series')
     expect(within(mainNavigation()).getByRole('link', { name: 'Series' })).toHaveAttribute('aria-current', 'page')
+    expect(within(mainNavigation()).getByRole('link', { name: 'Trang chủ' })).not.toHaveAttribute('aria-current')
+  })
+
+  it('render_ShouldLinkNews_WhenTheApiHasNotAnswered', () => {
+    vi.stubGlobal('fetch', () => new Promise<Response>(() => {}))
+
+    renderAppRoute('/')
+
+    const news = within(mainNavigation()).getByRole('link', { name: 'Tin công nghệ' })
+    expect(news).toHaveAttribute('href', '/news')
+    expect(news).not.toHaveAttribute('aria-current')
+  })
+
+  it('navigate_ShouldOpenNewsIndex_WhenNewsLinkIsClicked', async () => {
+    new StubApiServer()
+      .on('GET', newsCollectionApiPath(0), jsonResponse(200, newsCollectionResponse([newsSummary()])))
+      .install()
+    const user = userEvent.setup()
+    renderAppRoute('/')
+
+    await user.click(within(mainNavigation()).getByRole('link', { name: 'Tin công nghệ' }))
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Tin công nghệ' })).toBeInTheDocument()
+    expect(screen.getByTestId('location')).toHaveTextContent('/news')
+    expect(within(mainNavigation()).getByRole('link', { name: 'Tin công nghệ' })).toHaveAttribute(
+      'aria-current',
+      'page',
+    )
     expect(within(mainNavigation()).getByRole('link', { name: 'Trang chủ' })).not.toHaveAttribute('aria-current')
   })
 })
