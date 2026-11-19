@@ -160,7 +160,11 @@ export function ArticleEditor({ initial, initialNotice, onCreated, renderPlaceme
           </section>
         </div>
       </form>
-      {previewOpen && <FullPreviewOverlay fields={state.fields} onClose={() => setPreviewOpen(false)} />}
+      {previewOpen && (
+        <FullPreviewOverlay title="Xem trước bài viết" onClose={() => setPreviewOpen(false)}>
+          <ArticlePreview fields={state.fields} />
+        </FullPreviewOverlay>
+      )}
     </>
   )
 }

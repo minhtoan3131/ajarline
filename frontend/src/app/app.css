@@ -926,3 +926,31 @@ a.admin-button {
   justify-content: flex-end;
   gap: 8px;
 }
+
+.news-source {
+  margin: 0 0 16px;
+  padding: 12px 16px;
+  border: 1px solid var(--admin-border-strong);
+  border-radius: 4px;
+  background: var(--admin-surface);
+}
+
+.news-source legend { padding: 0 6px; font-weight: 600; }
+
+.news-source-invalid {
+  border-color: var(--admin-error);
+  background: var(--admin-error-bg);
+}
+
+/* The preview also shows inside the overlay, outside .admin-scope: literal colors. */
+.news-preview-source {
+  margin: 0 0 24px;
+  padding: 12px 16px;
+  border: 1px solid #d7d2c8;
+  border-radius: 4px;
+  background: #f3f0e8;
+}
+
+.news-preview-source p { margin: 0 0 4px; }
+.news-preview-url { overflow-wrap: anywhere; }
+.news-preview-warning { color: #8a5b16; font-size: 0.875rem; }
