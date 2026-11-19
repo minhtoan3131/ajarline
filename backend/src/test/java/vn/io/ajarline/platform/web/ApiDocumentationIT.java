@@ -62,6 +62,8 @@ class ApiDocumentationIT {
                     "get", "listStandaloneArticles")),
             Map.entry("/api/v1/articles/{slug}", Map.of(
                     "get", "getPublicArticle")),
+            Map.entry("/api/v1/series", Map.of(
+                    "get", "listPublicSeries")),
             Map.entry("/api/v1/topics", Map.of(
                     "get", "listPublicTopics")),
             Map.entry("/api/v1/topics/{slug}", Map.of(
@@ -385,6 +387,30 @@ class ApiDocumentationIT {
         assertThat(schemas.get("ArticleCollectionResponse").get("properties").propertyNames())
                 .containsExactlyInAnyOrder("page", "size", "hasMore", "items");
         assertThat(schemas.get("ArticleSummary").get("properties").propertyNames())
+                .containsExactlyInAnyOrder(
+                        "id", "type", "slug", "title", "summary",
+                        "topics", "publishedAt", "updatedAt");
+    }
+
+    @Test
+    void openApi_ShouldExposeSeriesCollectionMetadata_WhenDocumentIsGenerated()
+            throws Exception {
+        JsonNode document = openApiDocument();
+        JsonNode list = operation(document.get("paths"), "/api/v1/series", "get");
+
+        assertThat(hasSecurity(list, OpenApiConfiguration.ADMIN_SESSION)).isFalse();
+        assertThat(list.get("tags")).hasSize(1);
+        assertThat(list.get("tags").get(0).asString()).isEqualTo("Public Discovery");
+        assertThat(parameterNames(list)).containsExactlyInAnyOrder("page", "size");
+        assertThat(requiredParameters(list)).isEmpty();
+        assertThat(responseSchemaRef(list, "200")).endsWith("/SeriesCollectionResponse");
+        assertThat(list.get("responses").has("400")).isTrue();
+        assertThat(list.get("responses").has("404")).isFalse();
+
+        JsonNode schemas = document.get("components").get("schemas");
+        assertThat(schemas.get("SeriesCollectionResponse").get("properties").propertyNames())
+                .containsExactlyInAnyOrder("page", "size", "hasMore", "items");
+        assertThat(schemas.get("SeriesSummary").get("properties").propertyNames())
                 .containsExactlyInAnyOrder(
                         "id", "type", "slug", "title", "summary",
                         "topics", "publishedAt", "updatedAt");
