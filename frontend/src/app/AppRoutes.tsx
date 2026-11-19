@@ -10,6 +10,7 @@ import { NewsListPage } from '../pages/admin/NewsListPage'
 import { SeriesEditorPage } from '../pages/admin/SeriesEditorPage'
 import { SeriesListPage } from '../pages/admin/SeriesListPage'
 import { TopicManagementPage } from '../pages/admin/TopicManagementPage'
+import { AboutPage } from '../pages/AboutPage'
 import { ArticlePage } from '../pages/ArticlePage'
 import { NotFoundPage } from '../pages/NotFoundPage'
 import { HomePage } from '../pages/HomePage'
@@ -30,6 +31,7 @@ export function AppRoutes() {
     <Routes>
       <Route element={<ReaderLayout />}>
         <Route index element={<HomePage />} />
+        <Route path="about" element={<AboutPage />} />
         <Route path="articles" element={<StandaloneIndexPage />} />
         <Route path="articles/:slug" element={<ArticlePage />} />
         <Route path="modules/:slug" element={<ModulePage />} />

@@ -103,4 +103,33 @@ describe('ReaderLayout', () => {
     )
     expect(within(mainNavigation()).getByRole('link', { name: 'Trang chủ' })).not.toHaveAttribute('aria-current')
   })
+
+  it('render_ShouldListAboutLastAndMarkIt_WhenAboutIsOpened', () => {
+    renderAppRoute('/about')
+
+    const links = within(mainNavigation()).getAllByRole('link')
+    expect(links.map((link) => link.textContent)).toEqual([
+      'Trang chủ',
+      'Chủ đề',
+      'Series',
+      'Tin công nghệ',
+      'Về Ajarline',
+    ])
+    const about = within(mainNavigation()).getByRole('link', { name: 'Về Ajarline' })
+    expect(about).toHaveAttribute('href', '/about')
+    expect(about).toHaveAttribute('aria-current', 'page')
+    expect(within(mainNavigation()).getByRole('link', { name: 'Trang chủ' })).not.toHaveAttribute('aria-current')
+  })
+
+  it('navigate_ShouldOpenAbout_WhenAboutLinkIsClicked', async () => {
+    vi.stubGlobal('fetch', () => new Promise<Response>(() => {}))
+    const user = userEvent.setup()
+    renderAppRoute('/')
+
+    await user.click(within(mainNavigation()).getByRole('link', { name: 'Về Ajarline' }))
+
+    expect(screen.getByRole('heading', { level: 1, name: 'Về Ajarline' })).toBeInTheDocument()
+    expect(screen.getByTestId('location')).toHaveTextContent('/about')
+    expect(within(mainNavigation()).getByRole('link', { name: 'Về Ajarline' })).toHaveAttribute('aria-current', 'page')
+  })
 })
