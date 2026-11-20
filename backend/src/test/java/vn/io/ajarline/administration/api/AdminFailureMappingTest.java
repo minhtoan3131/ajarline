@@ -33,6 +33,13 @@ class AdminFailureMappingTest {
     }
 
     @Test
+    void response_ShouldBeConflict_WhenContentWasPublishedOnce() {
+        ResponseEntity<ApiProblem> response = map(ContentFailureCode.CONTENT_ALREADY_EVER_PUBLISHED.name());
+
+        assertThat(response.getStatusCode().value()).isEqualTo(409);
+    }
+
+    @Test
     void response_ShouldBeInternalError_WhenCodeIsUnknown() {
         ResponseEntity<ApiProblem> response = map("NOT_A_REAL_CODE");
 

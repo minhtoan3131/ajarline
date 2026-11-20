@@ -14,6 +14,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.CacheControl;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,6 +26,7 @@ import tools.jackson.databind.JsonNode;
 import vn.io.ajarline.content.contract.NewsCreator;
 import vn.io.ajarline.content.contract.NewsEditor;
 import vn.io.ajarline.content.contract.NewsReader;
+import vn.io.ajarline.content.contract.NewsRemover;
 import vn.io.ajarline.content.contract.NewsView;
 import vn.io.ajarline.platform.web.OpenApiConfiguration;
 
@@ -40,11 +42,14 @@ public class AdminNewsController {
     private final NewsCreator creator;
     private final NewsReader reader;
     private final NewsEditor editor;
+    private final NewsRemover remover;
 
-    public AdminNewsController(NewsCreator creator, NewsReader reader, NewsEditor editor) {
+    public AdminNewsController(NewsCreator creator, NewsReader reader, NewsEditor editor,
+                               NewsRemover remover) {
         this.creator = creator;
         this.reader = reader;
         this.editor = editor;
+        this.remover = remover;
     }
 
     @Operation(
@@ -204,5 +209,55 @@ public class AdminNewsController {
                 .eTag(RevisionHttpHeaders.etag(updated.record().revision()))
                 .cacheControl(CacheControl.noStore())
                 .body(NewsAdminDetail.from(updated));
+    }
+
+    @Operation(
+            operationId = "deleteNews",
+            summary = "Hard-delete a never-published Draft News")
+    @Parameter(
+            name = "X-CSRF-TOKEN",
+            in = ParameterIn.HEADER,
+            required = true,
+            description = "Current CSRF token for the authenticated session.")
+    @Parameter(
+            name = "If-Match",
+            in = ParameterIn.HEADER,
+            required = true,
+            description = "Strong decimal revision returned in ETag, for example \"3\".")
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "204",
+                    description = "News hard-deleted"),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "News id is not a valid UUID, or If-Match syntax is invalid"),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required"),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "CSRF proof is missing or invalid"),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "News was not found"),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "News was published once, so it cannot be deleted"),
+            @ApiResponse(
+                    responseCode = "412",
+                    description = "If-Match revision is stale"),
+            @ApiResponse(
+                    responseCode = "428",
+                    description = "If-Match is required")
+    })
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(
+            @PathVariable UUID id,
+            @Parameter(hidden = true) HttpServletRequest request) {
+        long expectedRevision = RevisionHttpHeaders.requiredExpectedRevision(request);
+        remover.delete(id, expectedRevision);
+        return ResponseEntity.noContent()
+                .cacheControl(CacheControl.noStore())
+                .build();
     }
 }
