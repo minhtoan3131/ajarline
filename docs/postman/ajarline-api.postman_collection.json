@@ -14032,6 +14032,685 @@
               }
             }
           ]
+        },
+        {
+          "name": "V05 · Read news with its source",
+          "item": [
+            {
+              "name": "01 · Get CSRF token",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/auth/v1/csrf",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "v1",
+                    "csrf"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "02 · Login",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"username\":\"{{username}}\",\"password\":\"{{password}}\"}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/auth/v1/login",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "v1",
+                    "login"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "03 · Get new CSRF token",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/auth/v1/csrf",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "v1",
+                    "csrf"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "04 · Create topic",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"slug\": \"{{topicSlug}}\",\n  \"name\": \"Demo Topic V05\",\n  \"description\": \"Chủ đề dùng để demo tin công nghệ.\",\n  \"active\": true\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/topics",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "topics"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "05 · Create news (unsafe source URL)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Tin demo V05\",\n  \"slug\": \"{{newsSlug}}-unsafe\",\n  \"summary\": \"Tin dùng để thử URL nguồn nguy hiểm.\",\n  \"bodyMarkdown\": \"Nội dung tin.\",\n  \"source\": {\n    \"name\": \"Nguồn thử\",\n    \"url\": \"javascript:alert(1)\",\n    \"publishedAt\": null\n  },\n  \"topicIds\": []\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/news",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "news"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "06 · Create news (draft, no source)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Tin demo V05\",\n  \"slug\": \"{{newsSlug}}\",\n  \"summary\": \"Tóm tắt một tin công nghệ dùng để demo.\",\n  \"bodyMarkdown\": \"Phần nhận xét của Ajarline về tin này.\\n\\nNgười đọc kiểm chứng ở khối nguồn.\",\n  \"source\": {\n    \"name\": null,\n    \"url\": null,\n    \"publishedAt\": null\n  },\n  \"topicIds\": [\"{{topicId}}\"]\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/news",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "news"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "07 · Create news (duplicate slug)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Tin demo V05\",\n  \"slug\": \"{{newsSlug}}\",\n  \"summary\": \"Tóm tắt một tin công nghệ dùng để demo.\",\n  \"bodyMarkdown\": \"Phần nhận xét của Ajarline về tin này.\\n\\nNgười đọc kiểm chứng ở khối nguồn.\",\n  \"source\": {\n    \"name\": null,\n    \"url\": null,\n    \"publishedAt\": null\n  },\n  \"topicIds\": [\"{{topicId}}\"]\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/news",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "news"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "08 · Read public news (draft)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/news/{{newsSlug}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "news",
+                    "{{newsSlug}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "09 · Get news",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/news/{{newsId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "news",
+                    "{{newsId}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "10 · Publish news (no source)",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/content/{{newsId}}/publish",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "content",
+                    "{{newsId}}",
+                    "publish"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "11 · Update news (add source)",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Tin demo V05\",\n  \"slug\": \"{{newsSlug}}\",\n  \"summary\": \"Tóm tắt một tin công nghệ dùng để demo.\",\n  \"bodyMarkdown\": \"Phần nhận xét của Ajarline về tin này.\\n\\nNgười đọc kiểm chứng ở khối nguồn.\",\n  \"source\": {\n    \"name\": \"Ví dụ Tech\",\n    \"url\": \"https://example.com/tin-demo\",\n    \"publishedAt\": \"2026-11-10T08:00:00Z\"\n  },\n  \"topicIds\": [\"{{topicId}}\"]\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/news/{{newsId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "news",
+                    "{{newsId}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "12 · Publish news",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/content/{{newsId}}/publish",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "content",
+                    "{{newsId}}",
+                    "publish"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "13 · List public news",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/news?size=50",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "news"
+                  ],
+                  "query": [
+                    {
+                      "key": "size",
+                      "value": "50"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "14 · Read public news",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/news/{{newsSlug}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "news",
+                    "{{newsSlug}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "15 · Read public topic",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/topics/{{topicSlug}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "topics",
+                    "{{topicSlug}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "16 · List topic content (news)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/topics/{{topicSlug}}/content?types=news",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "topics",
+                    "{{topicSlug}}",
+                    "content"
+                  ],
+                  "query": [
+                    {
+                      "key": "types",
+                      "value": "news"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "17 · Get news",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/news/{{newsId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "news",
+                    "{{newsId}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "18 · Update news (no source date)",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Tin demo V05\",\n  \"slug\": \"{{newsSlug}}\",\n  \"summary\": \"Tóm tắt một tin công nghệ dùng để demo.\",\n  \"bodyMarkdown\": \"Phần nhận xét của Ajarline về tin này.\\n\\nNgười đọc kiểm chứng ở khối nguồn.\",\n  \"source\": {\n    \"name\": \"Ví dụ Tech\",\n    \"url\": \"https://example.com/tin-demo\",\n    \"publishedAt\": null\n  },\n  \"topicIds\": [\"{{topicId}}\"]\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/news/{{newsId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "news",
+                    "{{newsId}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "19 · Update news (lose the source)",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Tin demo V05\",\n  \"slug\": \"{{newsSlug}}\",\n  \"summary\": \"Tóm tắt một tin công nghệ dùng để demo.\",\n  \"bodyMarkdown\": \"Phần nhận xét của Ajarline về tin này.\\n\\nNgười đọc kiểm chứng ở khối nguồn.\",\n  \"source\": {\n    \"name\": \"\",\n    \"url\": \"\",\n    \"publishedAt\": null\n  },\n  \"topicIds\": [\"{{topicId}}\"]\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/news/{{newsId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "news",
+                    "{{newsId}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "20 · Read public news (no source date)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/news/{{newsSlug}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "news",
+                    "{{newsSlug}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "21 · Unpublish news",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/content/{{newsId}}/unpublish",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "content",
+                    "{{newsId}}",
+                    "unpublish"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "22 · Update news (remove topic)",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\n  \"title\": \"Tin demo V05\",\n  \"slug\": \"{{newsSlug}}\",\n  \"summary\": \"Tóm tắt một tin công nghệ dùng để demo.\",\n  \"bodyMarkdown\": \"Phần nhận xét của Ajarline về tin này.\\n\\nNgười đọc kiểm chứng ở khối nguồn.\",\n  \"source\": {\n    \"name\": \"Ví dụ Tech\",\n    \"url\": \"https://example.com/tin-demo\",\n    \"publishedAt\": null\n  },\n  \"topicIds\": []\n}"
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/news/{{newsId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "news",
+                    "{{newsId}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "23 · Read public news (unpublished)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/news/{{newsSlug}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "news",
+                    "{{newsSlug}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "24 · List public news (unpublished)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/news?size=50",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "news"
+                  ],
+                  "query": [
+                    {
+                      "key": "size",
+                      "value": "50"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "25 · Read public topic (nothing public)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/v1/topics/{{topicSlug}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "v1",
+                    "topics",
+                    "{{topicSlug}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "26 · Delete topic",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/topics/{{topicId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "topics",
+                    "{{topicId}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "27 · Logout",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/auth/v1/logout",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "v1",
+                    "logout"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Check each step against the status code that the demo expects.",
+                  "const expected = {",
+                  "  '01': 200, '02': 200, '03': 200, '04': 201, '05': 422, '06': 201, '07': 409,",
+                  "  '08': 404, '09': 200, '10': 422, '11': 200, '12': 200, '13': 200, '14': 200,",
+                  "  '15': 200, '16': 200, '17': 200, '18': 200, '19': 422, '20': 200, '21': 200,",
+                  "  '22': 200, '23': 404, '24': 200, '25': 404, '26': 204, '27': 204,",
+                  "};",
+                  "const step = pm.info.requestName.slice(0, 2);",
+                  "if (expected[step] !== undefined) {",
+                  "  pm.test(`${pm.info.requestName} → ${expected[step]}`, () => {",
+                  "    pm.response.to.have.status(expected[step]);",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
         }
       ]
     }
