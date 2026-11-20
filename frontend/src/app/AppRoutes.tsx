@@ -4,6 +4,7 @@ import { RequireAdminSession } from '../features/admin-auth/components/RequireAd
 import { AdminLoginPage } from '../pages/admin/AdminLoginPage'
 import { AdminNotFoundPage } from '../pages/admin/AdminNotFoundPage'
 import { ArticleEditorPage } from '../pages/admin/ArticleEditorPage'
+import { ContentIndexPage } from '../pages/admin/ContentIndexPage'
 import { ModuleEditorPage } from '../pages/admin/ModuleEditorPage'
 import { NewsEditorPage } from '../pages/admin/NewsEditorPage'
 import { NewsListPage } from '../pages/admin/NewsListPage'
@@ -46,6 +47,7 @@ export function AppRoutes() {
       <Route path="admin" element={<AdminLayout />}>
         <Route path="login" element={<AdminLoginPage />} />
         <Route element={<RequireAdminSession />}>
+          <Route path="content" element={<ContentIndexPage />} />
           <Route path="articles/new" element={<ArticleEditorPage />} />
           <Route path="articles/:articleId" element={<ArticleEditorPage />} />
           <Route path="series" element={<SeriesListPage />} />
