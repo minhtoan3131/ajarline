@@ -6990,7 +6990,7 @@
       "name": "Demo",
       "item": [
         {
-          "name": "V02 · Article lifecycle",
+          "name": "Article lifecycle",
           "item": [
             {
               "name": "01 · Get CSRF token",
@@ -12630,7 +12630,7 @@
           ]
         },
         {
-          "name": "V03 · Browse without Search",
+          "name": "Browse without Search",
           "item": [
             {
               "name": "01 · Get CSRF token",
@@ -13181,7 +13181,7 @@
           ]
         },
         {
-          "name": "V04 · Learn through a Series",
+          "name": "Learn through a Series",
           "item": [
             {
               "name": "01 · Get CSRF token",
@@ -14034,7 +14034,7 @@
           ]
         },
         {
-          "name": "V05 · Read news with its source",
+          "name": "Read news with its source",
           "item": [
             {
               "name": "01 · Get CSRF token",
@@ -14725,7 +14725,7 @@
           "if (method === 'POST' || method === 'PUT' || method === 'DELETE') {",
           "  pm.request.headers.upsert({ key: 'X-CSRF-TOKEN', value: pm.environment.get('csrf') });",
           "  const path = pm.request.url.getPath();",
-          "  // V04: Series, Module and the two reorder paths need the revision of the parent.",
+          "  // Series, Module and the two reorder paths need the revision of the parent.",
           "  const needsRevision =",
           "    /\\/(articles|series|modules)\\/[^/]+$/.test(path) ||",
           "    /\\/(module-order|article-order)$/.test(path) ||",
@@ -14752,7 +14752,7 @@
           "if (path.endsWith('/auth/v1/csrf') && pm.response.code === 200) {",
           "  pm.environment.set('csrf', pm.response.json().token);",
           "}",
-          "// V04: each kind of created resource keeps its id in its own variable.",
+          "// Each kind of created resource keeps its id in its own variable.",
           "if (pm.request.method === 'POST' && pm.response.code === 201) {",
           "  const names = {",
           "    '/admin/v1/topics': 'topicId',",

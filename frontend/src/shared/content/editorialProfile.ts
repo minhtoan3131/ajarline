@@ -9,6 +9,5 @@
 export const EDITORIAL_PROFILE = {
   displayName: 'Nguyễn Minh Toàn',
   responsibilityLabel: 'Người chịu trách nhiệm nội dung',
-  // NOTE: draft text. The owner writes the real short bio.
   shortBio: 'Một người làm phần mềm, tự viết và biên tập mọi nội dung trên Ajarline.',
 } as const

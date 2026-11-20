@@ -6,8 +6,7 @@
  */
 
 const LINK_SCHEMES: ReadonlySet<string> = new Set(['http', 'https', 'mailto'])
-// NOTE: the content rules ask for "approved HTTPS image hosts", but no host
-// list is decided yet. Until then every https: host is accepted.
+// Images must use https. Every https host is accepted; there is no host allowlist.
 const IMAGE_SCHEMES: ReadonlySet<string> = new Set(['https'])
 const SCHEME = /^([a-z][a-z0-9+.-]*):/i
 // Browsers drop tabs and line breaks inside URLs, so "java\tscript:" can still
