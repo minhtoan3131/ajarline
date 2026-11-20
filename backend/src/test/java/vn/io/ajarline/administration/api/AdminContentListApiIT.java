@@ -174,6 +174,39 @@ class AdminContentListApiIT extends AbstractAdminAuthenticationIT {
     }
 
     @Test
+    void list_ShouldMatchOnlyItemsWithAPercentSign_WhenTextIsAPercentSign() throws Exception {
+        ContentTestData.insertArticle(jdbcTemplate, uuid(6), "growth-tips",
+                "Growth of 100% in speed", PublicationStatus.DRAFT);
+        Browser browser = authenticatedBrowser();
+
+        JsonNode body = JSON.readTree(browser.get(CONTENT + "?q=%25").body());
+
+        assertThat(slugs(body.get("items"))).containsExactly("growth-tips");
+    }
+
+    @Test
+    void list_ShouldMatchOnlyItemsWithAnUnderscore_WhenTextIsAnUnderscore() throws Exception {
+        ContentTestData.insertArticle(jdbcTemplate, uuid(7), "snake-case-tips",
+                "Use snake_case names", PublicationStatus.DRAFT);
+        Browser browser = authenticatedBrowser();
+
+        JsonNode body = JSON.readTree(browser.get(CONTENT + "?q=_").body());
+
+        assertThat(slugs(body.get("items"))).containsExactly("snake-case-tips");
+    }
+
+    @Test
+    void list_ShouldMatchTheSlug_WhenTheTitleDoesNotHaveTheText() throws Exception {
+        ContentTestData.insertArticle(jdbcTemplate, uuid(8), "only-in-slug",
+                "Zeta", PublicationStatus.DRAFT);
+        Browser browser = authenticatedBrowser();
+
+        JsonNode body = JSON.readTree(browser.get(CONTENT + "?q=only-in").body());
+
+        assertThat(slugs(body.get("items"))).containsExactly("only-in-slug");
+    }
+
+    @Test
     void list_ShouldReturnEmptyPage_WhenNoNewsExists() throws Exception {
         Browser browser = authenticatedBrowser();
 
