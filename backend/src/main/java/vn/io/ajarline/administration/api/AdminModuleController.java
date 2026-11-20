@@ -14,6 +14,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.CacheControl;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -27,6 +28,7 @@ import vn.io.ajarline.learning.contract.ChildOrderView;
 import vn.io.ajarline.learning.contract.ModuleCreator;
 import vn.io.ajarline.learning.contract.ModuleEditor;
 import vn.io.ajarline.learning.contract.ModuleReader;
+import vn.io.ajarline.learning.contract.ModuleRemover;
 import vn.io.ajarline.learning.contract.ModuleView;
 import vn.io.ajarline.platform.web.OpenApiConfiguration;
 
@@ -43,13 +45,15 @@ public class AdminModuleController {
     private final ModuleReader reader;
     private final ModuleEditor editor;
     private final ArticleOrderEditor orderEditor;
+    private final ModuleRemover remover;
 
     public AdminModuleController(ModuleCreator creator, ModuleReader reader, ModuleEditor editor,
-                                 ArticleOrderEditor orderEditor) {
+                                 ArticleOrderEditor orderEditor, ModuleRemover remover) {
         this.creator = creator;
         this.reader = reader;
         this.editor = editor;
         this.orderEditor = orderEditor;
+        this.remover = remover;
     }
 
     @Operation(
@@ -208,6 +212,57 @@ public class AdminModuleController {
                 .eTag(RevisionHttpHeaders.etag(updated.record().revision()))
                 .cacheControl(CacheControl.noStore())
                 .body(ModuleAdminDetail.from(updated));
+    }
+
+    @Operation(
+            operationId = "deleteModule",
+            summary = "Hard-delete a never-published Draft Module that has no Article")
+    @Parameter(
+            name = "X-CSRF-TOKEN",
+            in = ParameterIn.HEADER,
+            required = true,
+            description = "Current CSRF token for the authenticated session.")
+    @Parameter(
+            name = "If-Match",
+            in = ParameterIn.HEADER,
+            required = true,
+            description = "Strong decimal revision returned in ETag, for example \"3\".")
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "204",
+                    description = "Module hard-deleted"),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Module id is not a valid UUID, or If-Match syntax is invalid"),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required"),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "CSRF proof is missing or invalid"),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Module was not found"),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "Module was published once (CONTENT_ALREADY_EVER_PUBLISHED), "
+                            + "or still has an Article (CONTENT_IN_USE)"),
+            @ApiResponse(
+                    responseCode = "412",
+                    description = "If-Match revision is stale"),
+            @ApiResponse(
+                    responseCode = "428",
+                    description = "If-Match is required")
+    })
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(
+            @PathVariable UUID id,
+            @Parameter(hidden = true) HttpServletRequest request) {
+        long expectedRevision = RevisionHttpHeaders.requiredExpectedRevision(request);
+        remover.delete(id, expectedRevision);
+        return ResponseEntity.noContent()
+                .cacheControl(CacheControl.noStore())
+                .build();
     }
 
     @Operation(

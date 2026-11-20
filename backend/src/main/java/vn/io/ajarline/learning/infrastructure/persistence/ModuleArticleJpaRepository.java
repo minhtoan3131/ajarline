@@ -28,4 +28,9 @@ public interface ModuleArticleJpaRepository extends JpaRepository<ModuleArticleE
              where membership.articleId = :articleId
             """)
     Optional<UUID> findModuleIdByArticleId(@Param("articleId") UUID articleId);
+
+    /**
+     * Tells whether the Module has at least one Article.
+     */
+    boolean existsByModuleId(UUID moduleId);
 }

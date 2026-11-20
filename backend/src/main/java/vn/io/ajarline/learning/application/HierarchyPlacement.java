@@ -192,6 +192,23 @@ public class HierarchyPlacement {
     }
 
     /**
+     * Closes the gap that a Module leaves in its Series. The Series must be locked.
+     * The row of the Module itself is not touched. The caller deletes it.
+     */
+    @Transactional(propagation = Propagation.MANDATORY)
+    public PlacementChange detachModule(UUID moduleId) {
+        ModuleEntity module = moduleRepository.findById(moduleId)
+                .orElseThrow(() -> new IllegalStateException("The Module row is missing: " + moduleId));
+
+        UUID seriesId = module.getSeriesId();
+        List<ModuleEntity> siblings = siblingsOf(seriesId);
+        List<PositionAssignment> closing = positions.detach(moduleIdsOf(siblings), moduleId);
+        applyToModules(siblings, closing);
+
+        return PlacementChange.of(revisionTargets(moduleId, List.of(seriesId), closing));
+    }
+
+    /**
      * This and its callers are the only code that locks parents. It sorts the ids first,
      * so two callers can never wait for each other.
      */
