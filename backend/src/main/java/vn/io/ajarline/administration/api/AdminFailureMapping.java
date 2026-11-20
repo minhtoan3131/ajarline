@@ -31,7 +31,8 @@ final class AdminFailureMapping {
             entry("INVALID_PUBLICATION_STATE", new Problem(409, "Content cannot be unpublished from the current state", "Content cannot be unpublished from the current state.")),
             entry("MODULE_HAS_NO_PUBLIC_ARTICLE", new Problem(422, "Module has no public Article", "A Module needs at least one published Article before it can be published.")),
             entry("SERIES_HAS_NO_PUBLIC_MODULE", new Problem(422, "Series has no public Module", "A Series needs at least one published Module with a published Article before it can be published.")),
-            entry("CONTENT_ALREADY_EVER_PUBLISHED", new Problem(409, "Content cannot be hard-deleted in its current state", "Content cannot be hard-deleted in its current state."))
+            entry("CONTENT_ALREADY_EVER_PUBLISHED", new Problem(409, "Content cannot be hard-deleted in its current state", "Content cannot be hard-deleted in its current state.")),
+            entry("CONTENT_IN_USE", new Problem(409, "Content cannot be hard-deleted in its current state", "Content cannot be hard-deleted in its current state."))
     );
 
     private AdminFailureMapping() {

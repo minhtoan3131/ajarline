@@ -43,7 +43,8 @@ class ApiDocumentationIT {
             Map.entry("/api/admin/v1/series", Map.of("post", "createSeries")),
             Map.entry("/api/admin/v1/series/{id}", Map.of(
                     "get", "getAdminSeries",
-                    "put", "updateSeries")),
+                    "put", "updateSeries",
+                    "delete", "deleteSeries")),
             Map.entry("/api/admin/v1/modules", Map.of("post", "createModule")),
             Map.entry("/api/admin/v1/modules/{id}", Map.of(
                     "get", "getAdminModule",

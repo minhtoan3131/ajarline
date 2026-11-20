@@ -12,6 +12,11 @@ public interface ModuleJpaRepository extends JpaRepository<ModuleEntity, UUID> {
     List<ModuleEntity> findBySeriesIdOrderByPositionAsc(UUID seriesId);
 
     /**
+     * Tells whether the Series has at least one Module.
+     */
+    boolean existsBySeriesId(UUID seriesId);
+
+    /**
      * Reads the Modules of many Series with one query. They come grouped by Series,
      * and each group is in position order.
      */
