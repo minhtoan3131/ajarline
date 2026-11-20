@@ -64,6 +64,38 @@ describe('TopicHomePage', () => {
     expect(api.requests.map((request) => request.path)).toEqual([topicPath('java'), topicContentPath('java', 0)])
   })
 
+  it('render_ShouldLinkNewsAndPlaceItLast_WhenTopicHasNewsAndLearningContent', async () => {
+    const series = contentItem({
+      id: '1f0b6c2e-3a47-4d58-9e61-7b8c9d0e1f23',
+      type: 'series',
+      slug: 'java-concurrency',
+      title: 'Java Concurrency',
+    })
+    const news = contentItem({
+      id: '6b2d8e40-1a97-4c35-b8f2-3d5e7a9c0b14',
+      type: 'news',
+      slug: 'spring-boot-4-1',
+      title: 'Spring Boot 4.1 ra mắt',
+      summary: 'Tin ngắn.',
+    })
+    stubJavaTopic(0, onePage(series, contentItem(), news)).install()
+
+    renderAppRoute('/topics/java')
+
+    await screen.findByRole('heading', { level: 1, name: 'Java' })
+    expect(screen.getAllByRole('heading', { level: 2 }).map((heading) => heading.textContent)).toEqual([
+      'Series',
+      'Bài viết độc lập',
+      'Tin công nghệ',
+    ])
+    const group = screen.getByRole('region', { name: 'Tin công nghệ' })
+    expect(within(group).getByRole('link', { name: 'Spring Boot 4.1 ra mắt' })).toHaveAttribute(
+      'href',
+      '/news/spring-boot-4-1',
+    )
+    expect(within(group).queryByText('Tin')).toBeNull()
+  })
+
   it('render_ShouldShowOnlyOtherTopics_WhenItemHasSeveralTopics', async () => {
     stubJavaTopic(0, onePage(contentItem({ topics: [JAVA_TOPIC_REF, SPRING_TOPIC_REF] }))).install()
 

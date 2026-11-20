@@ -4,6 +4,8 @@ import { standaloneIndexPath } from '../features/article-browsing/articleRoutes'
 import { useStandaloneEntry } from '../features/article-browsing/useStandaloneEntry'
 import { seriesIndexPath } from '../features/learning-navigation/learningRoutes'
 import { useSeriesEntry } from '../features/learning-navigation/useSeriesEntry'
+import { newsIndexPath } from '../features/news-reading/newsRoutes'
+import { useNewsEntry } from '../features/news-reading/useNewsEntry'
 
 /**
  * Home. It links to a destination only when that destination has public
@@ -12,6 +14,7 @@ import { useSeriesEntry } from '../features/learning-navigation/useSeriesEntry'
 export function HomePage() {
   const seriesEntry = useSeriesEntry()
   const standaloneEntry = useStandaloneEntry()
+  const newsEntry = useNewsEntry()
 
   return (
     <section className="reader-browse" aria-labelledby="home-title">
@@ -20,7 +23,7 @@ export function HomePage() {
         <h1 id="home-title">Ajarline</h1>
         <p className="reader-browse-intro">Đọc và tự học công nghệ bằng tiếng Việt.</p>
       </header>
-      {(seriesEntry === 'visible' || standaloneEntry === 'visible') && (
+      {(seriesEntry === 'visible' || standaloneEntry === 'visible' || newsEntry === 'visible') && (
         <ul className="reader-topic-list" aria-label="Lối vào">
           {seriesEntry === 'visible' && (
             <li>
@@ -33,6 +36,13 @@ export function HomePage() {
             <li>
               <Link to={standaloneIndexPath()} className="reader-topic-link">
                 Bài viết độc lập
+              </Link>
+            </li>
+          )}
+          {newsEntry === 'visible' && (
+            <li>
+              <Link to={newsIndexPath()} className="reader-topic-link">
+                Tin công nghệ
               </Link>
             </li>
           )}

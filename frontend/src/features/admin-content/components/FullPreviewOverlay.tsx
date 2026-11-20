@@ -1,14 +1,14 @@
-import { useEffect, useId, useRef, type KeyboardEvent, type MouseEvent } from 'react'
+import { useEffect, useId, useRef, type KeyboardEvent, type MouseEvent, type ReactNode } from 'react'
 import { createPortal } from 'react-dom'
-
-import type { ArticleFields } from '../model/article'
-import { ArticlePreview } from './ArticlePreview'
 
 const FOCUSABLE =
   'a[href], button:not([disabled]), input:not([disabled]), textarea:not([disabled]), select:not([disabled]), [tabindex]:not([tabindex="-1"])'
 
 export interface FullPreviewOverlayProps {
-  fields: ArticleFields
+  /** Title of the dialog, for example "Xem trước bài viết". */
+  title: string
+  /** The preview of the current editor values. */
+  children: ReactNode
   onClose: () => void
 }
 
@@ -18,7 +18,7 @@ export interface FullPreviewOverlayProps {
  * It does not change the URL, history, editor state or call the server.
  * Focus stays inside while it is open and returns to the opener on close.
  */
-export function FullPreviewOverlay({ fields, onClose }: FullPreviewOverlayProps) {
+export function FullPreviewOverlay({ title, children, onClose }: FullPreviewOverlayProps) {
   const dialogRef = useRef<HTMLDivElement>(null)
   const closeRef = useRef<HTMLButtonElement>(null)
   const titleId = useId()
@@ -79,13 +79,13 @@ export function FullPreviewOverlay({ fields, onClose }: FullPreviewOverlayProps)
         onKeyDown={handleKeyDown}
       >
         <div className="preview-overlay-bar">
-          <h2 id={titleId}>Xem trước bài viết</h2>
+          <h2 id={titleId}>{title}</h2>
           <button ref={closeRef} type="button" className="preview-overlay-close" aria-label="Đóng xem trước" onClick={onClose}>
             ×
           </button>
         </div>
         <div className="preview-overlay-body">
-          <ArticlePreview fields={fields} />
+          {children}
         </div>
       </div>
     </div>,

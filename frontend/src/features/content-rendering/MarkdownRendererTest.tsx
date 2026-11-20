@@ -74,19 +74,32 @@ describe('MarkdownRenderer', () => {
   })
 
   it('render_ShouldMarkOnlyAbsoluteHttpLinksAsExternal_WhenMarkdownHasLinks', () => {
-    // When
     renderMarkdown('[Trong site](/articles/a), [Bên ngoài](https://example.com) và https://example.org')
 
-    // Then
     expect(screen.getByRole('link', { name: 'Trong site' })).not.toHaveAttribute('rel')
-    expect(screen.getByRole('link', { name: 'Bên ngoài' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'Bên ngoài (mở trong tab mới)' })).toHaveAttribute(
       'rel',
       'noopener noreferrer external',
     )
-    expect(screen.getByRole('link', { name: 'https://example.org' })).toHaveAttribute(
+    expect(screen.getByRole('link', { name: 'https://example.org (mở trong tab mới)' })).toHaveAttribute(
       'href',
       'https://example.org',
     )
+  })
+
+  it('render_ShouldOpenExternalLinkInNewTabAndKeepOthersInSameTab_WhenMarkdownHasLinks', () => {
+    renderMarkdown('[Trong site](/articles/a), [Bên ngoài](https://example.com), [Gửi thư](mailto:a@example.com)')
+
+    expect(screen.getByRole('link', { name: 'Bên ngoài (mở trong tab mới)' })).toHaveAttribute('target', '_blank')
+    expect(screen.getByRole('link', { name: 'Trong site' })).not.toHaveAttribute('target')
+    expect(screen.getByRole('link', { name: 'Gửi thư' })).not.toHaveAttribute('target')
+    expect(screen.getByRole('link', { name: 'Gửi thư' })).not.toHaveAttribute('rel')
+  })
+
+  it('render_ShouldKeepFootnoteLinkInSameTab_WhenMarkdownHasFootnote', () => {
+    const { container } = renderMarkdown('Câu có chú thích[^1].\n\n[^1]: Nội dung chú thích.')
+
+    expect(container.querySelector('a[data-footnote-ref]')).not.toHaveAttribute('target')
   })
 
   it('render_ShouldRenderImage_WhenImageUrlIsApproved', () => {

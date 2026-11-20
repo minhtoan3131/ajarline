@@ -20,6 +20,8 @@ final class AdminFailureMapping {
             entry("INACTIVE_TOPIC_ASSIGNMENT", new Problem(422, "Topic cannot be assigned", "An inactive Topic cannot be newly assigned.")),
             entry("CONTENT_SUMMARY_REQUIRED", new Problem(422, "Summary is required", "Published content must have a summary.")),
             entry("ARTICLE_BODY_REQUIRED", new Problem(422, "Body is required", "A published Article must have a body.")),
+            entry("NEWS_BODY_REQUIRED", new Problem(422, "Body is required", "A published News item must have a body.")),
+            entry("NEWS_SOURCE_REQUIRED", new Problem(422, "Source is required", "A published News item must have a source name and a valid source URL.")),
             entry("SERIES_OVERVIEW_REQUIRED", new Problem(422, "Overview is required", "A published Series must have an overview.")),
             entry("MODULE_OVERVIEW_REQUIRED", new Problem(422, "Overview is required", "A published Module must have an overview.")),
             entry("SERIES_REFERENCE_NOT_FOUND", new Problem(422, "Series reference was not found", "The Series does not exist.")),

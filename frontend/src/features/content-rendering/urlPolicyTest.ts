@@ -32,6 +32,21 @@ describe('urlPolicy', () => {
     expect(safeLinkHref(url)).toBeNull()
   })
 
+  // Keep this list equal to the "valid" list in SourceUrlPolicyTest.java. The renderer must keep
+  // every link that the server accepts.
+  it.each([
+    'http://example.com',
+    'https://example.com',
+    'HTTPS://EXAMPLE.COM/Path',
+    'https://example.com:8080/a/b?x=1&y=2#top',
+    'https://user:secret@example.com/x',
+    'https://[::1]/status',
+    'https://example.com/a|b{c}',
+    'https://example.com/bai-viet/tiếng-việt',
+  ])('safeLinkHref_ShouldKeepUrl_WhenServerAcceptsSourceUrl [%s]', (url) => {
+    expect(safeLinkHref(url)).toBe(url)
+  })
+
   it.each(['https://cdn.example.com/a.png', '/images/a.png'])(
     'safeImageSrc_ShouldKeepUrl_WhenSourceIsApproved [%s]',
     (url) => {

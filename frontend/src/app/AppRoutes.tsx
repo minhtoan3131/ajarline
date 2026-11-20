@@ -5,13 +5,18 @@ import { AdminLoginPage } from '../pages/admin/AdminLoginPage'
 import { AdminNotFoundPage } from '../pages/admin/AdminNotFoundPage'
 import { ArticleEditorPage } from '../pages/admin/ArticleEditorPage'
 import { ModuleEditorPage } from '../pages/admin/ModuleEditorPage'
+import { NewsEditorPage } from '../pages/admin/NewsEditorPage'
+import { NewsListPage } from '../pages/admin/NewsListPage'
 import { SeriesEditorPage } from '../pages/admin/SeriesEditorPage'
 import { SeriesListPage } from '../pages/admin/SeriesListPage'
 import { TopicManagementPage } from '../pages/admin/TopicManagementPage'
+import { AboutPage } from '../pages/AboutPage'
 import { ArticlePage } from '../pages/ArticlePage'
 import { NotFoundPage } from '../pages/NotFoundPage'
 import { HomePage } from '../pages/HomePage'
 import { ModulePage } from '../pages/ModulePage'
+import { NewsIndexPage } from '../pages/NewsIndexPage'
+import { NewsPage } from '../pages/NewsPage'
 import { SeriesIndexPage } from '../pages/SeriesIndexPage'
 import { SeriesPage } from '../pages/SeriesPage'
 import { StandaloneIndexPage } from '../pages/StandaloneIndexPage'
@@ -26,9 +31,12 @@ export function AppRoutes() {
     <Routes>
       <Route element={<ReaderLayout />}>
         <Route index element={<HomePage />} />
+        <Route path="about" element={<AboutPage />} />
         <Route path="articles" element={<StandaloneIndexPage />} />
         <Route path="articles/:slug" element={<ArticlePage />} />
         <Route path="modules/:slug" element={<ModulePage />} />
+        <Route path="news" element={<NewsIndexPage />} />
+        <Route path="news/:slug" element={<NewsPage />} />
         <Route path="series" element={<SeriesIndexPage />} />
         <Route path="series/:slug" element={<SeriesPage />} />
         <Route path="topics" element={<TopicIndexPage />} />
@@ -43,6 +51,9 @@ export function AppRoutes() {
           <Route path="series" element={<SeriesListPage />} />
           <Route path="series/new" element={<SeriesEditorPage />} />
           <Route path="series/:seriesId" element={<SeriesEditorPage />} />
+          <Route path="news" element={<NewsListPage />} />
+          <Route path="news/new" element={<NewsEditorPage />} />
+          <Route path="news/:newsId" element={<NewsEditorPage />} />
           <Route path="modules/new" element={<ModuleEditorPage />} />
           <Route path="modules/:moduleId" element={<ModuleEditorPage />} />
           <Route path="topics" element={<TopicManagementPage />} />

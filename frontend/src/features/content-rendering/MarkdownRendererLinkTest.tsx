@@ -54,7 +54,7 @@ describe('Markdown links', () => {
     const open = vi.spyOn(window, 'open').mockReturnValue(null)
     render(<MarkdownRenderer markdown="[Tài liệu](https://example.com/docs)" linkBehavior="preview" />)
 
-    const followed = fireEvent.click(screen.getByRole('link', { name: 'Tài liệu' }))
+    const followed = fireEvent.click(screen.getByRole('link', { name: 'Tài liệu (mở trong tab mới)' }))
 
     expect(followed).toBe(false)
     expect(open).toHaveBeenCalledWith('https://example.com/docs', '_blank', 'noopener,noreferrer')
@@ -83,5 +83,16 @@ describe('Markdown links', () => {
 
     expect(followed).toBe(true)
     expect(open).not.toHaveBeenCalled()
+  })
+
+  it('render_ShouldGiveSameExternalLinkMarkup_WhenModeIsPreviewOrNavigate', () => {
+    const markdown = '[Tài liệu](https://example.com/docs)'
+    const reading = render(<MarkdownRenderer markdown={markdown} />)
+    const readingHtml = reading.container.innerHTML
+    reading.unmount()
+
+    const preview = render(<MarkdownRenderer markdown={markdown} linkBehavior="preview" />)
+
+    expect(preview.container.innerHTML).toBe(readingHtml)
   })
 })

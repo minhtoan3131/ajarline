@@ -93,6 +93,9 @@ public class PublicationService implements ContentPublisher, ContentUnpublisher 
         switch (current.type()) {
             case ARTICLE -> {
             }
+            case NEWS -> {
+                // News has no children, so no child rule applies.
+            }
             case MODULE -> {
                 learningEligibility.requirePublishableModule(id);
                 structurePolicy.requireModulePublishable(articleStatusesOf(id));

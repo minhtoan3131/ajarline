@@ -126,6 +126,42 @@ public class PublicContentService implements PublicContentQuery {
     }
 
     /**
+     * Returns one page of the public News items, newest published first and then by id, each
+     * with its Topics.
+     *
+     * <p>Paging is applied after filtering and ordering. A page after the last one is empty.
+     * The Topics of the whole page are read once. The News body and source are not read.</p>
+     *
+     * @param page zero-based page number, at least 0
+     * @param size number of News items per page, at least 1
+     */
+    @Transactional(readOnly = true)
+    public PublicNewsPage findPublicNews(int page, int size) {
+        requireValidPaging(page, size);
+
+        long offset = (long) page * size;
+        // One extra row tells whether a next page exists, without a count.
+        List<ContentItemEntity> window = contentRepository.findWindowOfTypeWithStatusNewestFirst(
+                ContentType.NEWS.name(), PUBLIC_STATUS.name(), size + 1, offset);
+
+        List<PublicContentSummary> news = window.stream()
+                .limit(size)
+                .map(this::toSummary)
+                .toList();
+        if (news.isEmpty()) {
+            return PublicNewsPage.empty();
+        }
+
+        List<UUID> newsIds = news.stream().map(PublicContentSummary::id).toList();
+        Map<UUID, List<TopicLabel>> topics = topicAssignments.topicLabelsOf(newsIds);
+        List<PublicNewsPage.Entry> entries = news.stream()
+                .map(item -> new PublicNewsPage.Entry(
+                        item, topics.getOrDefault(item.id(), List.of())))
+                .toList();
+        return new PublicNewsPage(entries, window.size() > size);
+    }
+
+    /**
      * Keeps the published items of the given types. A Module or a Series stays only when
      * readers can see it, as learning decides.
      */

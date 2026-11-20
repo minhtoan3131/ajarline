@@ -40,4 +40,12 @@ describe('AdminLayout', () => {
 
     expect(await screen.findByRole('link', { name: 'Series' })).toHaveAttribute('href', '/admin/series')
   })
+
+  it('render_ShouldShowNewsLink_WhenAdminIsSignedIn', async () => {
+    givenSignedInAdmin(new StubApiServer()).install()
+
+    renderAppRoute('/admin/khong-co-trang-nay')
+
+    expect(await screen.findByRole('link', { name: 'Tin' })).toHaveAttribute('href', '/admin/news')
+  })
 })

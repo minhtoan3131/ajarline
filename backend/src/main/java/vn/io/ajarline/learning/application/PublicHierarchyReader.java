@@ -103,6 +103,7 @@ public class PublicHierarchyReader {
                 case SERIES -> modulesOfSeries.getOrDefault(id, List.of());
                 case MODULE -> articlesOfModule.getOrDefault(id, List.of());
                 case ARTICLE -> List.of();
+                case NEWS -> List.of();
             };
             facts.put(id, new HierarchyFacts.Fact(summary.type(), summary.status(), children));
         });

@@ -34,6 +34,10 @@ class ApiDocumentationIT {
             Map.entry("/api/admin/v1/articles/{id}", Map.of(
                     "get", "getAdminArticle",
                     "put", "updateArticle")),
+            Map.entry("/api/admin/v1/news", Map.of("post", "createNews")),
+            Map.entry("/api/admin/v1/news/{id}", Map.of(
+                    "get", "getAdminNews",
+                    "put", "updateNews")),
             Map.entry("/api/admin/v1/series", Map.of("post", "createSeries")),
             Map.entry("/api/admin/v1/series/{id}", Map.of(
                     "get", "getAdminSeries",
@@ -62,6 +66,10 @@ class ApiDocumentationIT {
                     "get", "listStandaloneArticles")),
             Map.entry("/api/v1/articles/{slug}", Map.of(
                     "get", "getPublicArticle")),
+            Map.entry("/api/v1/news", Map.of(
+                    "get", "listPublicNews")),
+            Map.entry("/api/v1/news/{slug}", Map.of(
+                    "get", "getPublicNews")),
             Map.entry("/api/v1/series", Map.of(
                     "get", "listPublicSeries")),
             Map.entry("/api/v1/series/{slug}", Map.of(
@@ -316,6 +324,33 @@ class ApiDocumentationIT {
     }
 
     @Test
+    void openApi_ShouldExposePublicNewsMetadata_WhenDocumentIsGenerated()
+            throws Exception {
+        JsonNode document = openApiDocument();
+        JsonNode publicNews = operation(
+                document.get("paths"),
+                "/api/v1/news/{slug}",
+                "get");
+
+        assertThat(hasSecurity(
+                publicNews,
+                OpenApiConfiguration.ADMIN_SESSION)).isFalse();
+        assertThat(publicNews.get("tags").get(0).asString()).isEqualTo("Public Content");
+        assertThat(responseSchemaRef(publicNews, "200"))
+                .endsWith("/PublicNewsResponse");
+        assertThat(problemSchemaRef(publicNews, "404"))
+                .endsWith("/ApiProblem");
+
+        JsonNode schemas = document.get("components").get("schemas");
+        JsonNode properties = schemas.get("PublicNewsResponse").get("properties");
+        assertThat(properties.propertyNames()).containsExactlyInAnyOrder(
+                "id", "type", "slug", "title", "summary", "bodyMarkdown",
+                "topics", "source", "publishedAt", "updatedAt");
+        assertThat(schemas.get("NewsSourcePublic").get("properties").propertyNames())
+                .containsExactlyInAnyOrder("name", "url", "publishedAt");
+    }
+
+    @Test
     void openApi_ShouldExposeTopicMetadata_WhenDocumentIsGenerated()
             throws Exception {
         JsonNode document = openApiDocument();
@@ -391,6 +426,30 @@ class ApiDocumentationIT {
         assertThat(schemas.get("ArticleCollectionResponse").get("properties").propertyNames())
                 .containsExactlyInAnyOrder("page", "size", "hasMore", "items");
         assertThat(schemas.get("ArticleSummary").get("properties").propertyNames())
+                .containsExactlyInAnyOrder(
+                        "id", "type", "slug", "title", "summary",
+                        "topics", "publishedAt", "updatedAt");
+    }
+
+    @Test
+    void openApi_ShouldExposeNewsCollectionMetadata_WhenDocumentIsGenerated()
+            throws Exception {
+        JsonNode document = openApiDocument();
+        JsonNode list = operation(document.get("paths"), "/api/v1/news", "get");
+
+        assertThat(hasSecurity(list, OpenApiConfiguration.ADMIN_SESSION)).isFalse();
+        assertThat(list.get("tags")).hasSize(1);
+        assertThat(list.get("tags").get(0).asString()).isEqualTo("Public Discovery");
+        assertThat(parameterNames(list)).containsExactlyInAnyOrder("page", "size");
+        assertThat(requiredParameters(list)).isEmpty();
+        assertThat(responseSchemaRef(list, "200")).endsWith("/NewsCollectionResponse");
+        assertThat(list.get("responses").has("400")).isTrue();
+        assertThat(list.get("responses").has("404")).isFalse();
+
+        JsonNode schemas = document.get("components").get("schemas");
+        assertThat(schemas.get("NewsCollectionResponse").get("properties").propertyNames())
+                .containsExactlyInAnyOrder("page", "size", "hasMore", "items");
+        assertThat(schemas.get("NewsSummary").get("properties").propertyNames())
                 .containsExactlyInAnyOrder(
                         "id", "type", "slug", "title", "summary",
                         "topics", "publishedAt", "updatedAt");

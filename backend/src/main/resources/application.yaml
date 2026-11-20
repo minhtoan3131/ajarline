@@ -49,6 +49,8 @@ springdoc:
     - /api/auth/v1/**
     - /api/admin/v1/articles
     - /api/admin/v1/articles/**
+    - /api/admin/v1/news
+    - /api/admin/v1/news/**
     - /api/admin/v1/series
     - /api/admin/v1/series/**
     - /api/admin/v1/modules
@@ -58,6 +60,8 @@ springdoc:
     - /api/admin/v1/content
     - /api/admin/v1/content/**
     - /api/v1/articles/**
+    - /api/v1/news
+    - /api/v1/news/**
     - /api/v1/modules/**
     - /api/v1/series
     - /api/v1/series/**
