@@ -16,7 +16,8 @@ import java.util.Optional;
 import java.util.UUID;
 
 @Service
-public class ArticleService implements ArticleCreator, ArticleReader, ArticleEditor {
+public class ArticleService
+        implements ArticleCreator, ArticleReader, ArticleEditor, ArticleRemover {
     private static final String SLUG_CONSTRAINT = "uk_content_item_type_slug";
     private final ContentItemJpaRepository contentRepository;
     private final ArticleJpaRepository articleRepository;
@@ -27,12 +28,13 @@ public class ArticleService implements ArticleCreator, ArticleReader, ArticleEdi
     private final LearningContextPort learningContext;
     private final PublicLearningContextPort publicLearning;
     private final ContentRevisionCommands revisions;
+    private final ContentRecordWriter recordWriter;
 
     public ArticleService(ContentItemJpaRepository contentRepository,
                           ArticleJpaRepository articleRepository, ArticlePolicy policy, Clock clock,
                           TopicAssignmentPort topicAssignment, ArticlePlacementPort placementPort,
                           LearningContextPort learningContext, PublicLearningContextPort publicLearning,
-                          ContentRevisionCommands revisions) {
+                          ContentRevisionCommands revisions, ContentRecordWriter recordWriter) {
         this.contentRepository = contentRepository;
         this.articleRepository = articleRepository;
         this.policy = policy;
@@ -42,6 +44,7 @@ public class ArticleService implements ArticleCreator, ArticleReader, ArticleEdi
         this.learningContext = learningContext;
         this.publicLearning = publicLearning;
         this.revisions = revisions;
+        this.recordWriter = recordWriter;
     }
 
     @Override
@@ -234,6 +237,25 @@ public class ArticleService implements ArticleCreator, ArticleReader, ArticleEdi
         return toView(contentItemEntity, articleEntity);
     }
 
+
+    @Override
+    @Transactional
+    public void delete(UUID id, long expectedRevision) {
+        // Ask the Article table, not the common record. A copy of the common record in the
+        // persistence context would hide the fresh row from the locking read below.
+        if (!articleRepository.existsById(id)) {
+            throw notFound(id);
+        }
+        // Parent before child: lock the Module the Article is in, then the Article.
+        placementPort.lockStructure(id, null);
+        DeletableRecord record = recordWriter.lockForDelete(id, ContentType.ARTICLE, expectedRevision);
+
+        PlacementChange change = placementPort.place(id, null);
+        recordWriter.deleteRecord(record);
+        // Last, because this statement clears the persistence context. The deleted Article
+        // is not in the set.
+        revisions.advanceRevisions(change.revisionTargets(), clock.instant());
+    }
 
     private LockedArticle lockArticle(UUID id, long expectedRevision) {
         ContentItemEntity content = contentRepository.findByIdForUpdate(id)
