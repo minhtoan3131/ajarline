@@ -1164,3 +1164,96 @@ a.admin-button {
   flex-basis: 100%;
   margin: 0;
 }
+
+.concept-manager-bar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 12px 16px;
+  margin-bottom: 8px;
+}
+
+.concept-manager-bar h1 { margin: 0; font-size: 1.5rem; }
+
+.concept-table {
+  width: 100%;
+  margin-top: 16px;
+  border-collapse: collapse;
+  background: var(--admin-surface);
+}
+
+.concept-table th,
+.concept-table td {
+  padding: 10px 12px;
+  border-bottom: 1px solid var(--admin-border);
+  text-align: left;
+  vertical-align: top;
+}
+
+.concept-form {
+  max-width: 760px;
+  margin: 16px 0 24px;
+  padding: 20px 24px;
+  border: 1px solid var(--admin-border);
+  border-radius: 4px;
+  background: var(--admin-surface);
+}
+
+.concept-form h2 { margin: 0 0 16px; font-size: 1.125rem; }
+
+.concept-form-actions {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+  margin-top: 16px;
+}
+
+.concept-form-status {
+  margin: 0;
+  color: var(--admin-text-secondary);
+  font-size: 0.875rem;
+}
+
+.concept-expressions {
+  margin: 16px 0 0;
+  padding: 12px 16px;
+  border: 1px solid var(--admin-border);
+  border-radius: 4px;
+}
+
+.concept-expressions legend { padding: 0 6px; font-weight: 600; }
+
+.concept-expression-list {
+  display: grid;
+  gap: 8px;
+  margin: 8px 0;
+  padding: 0;
+  list-style: none;
+}
+
+.concept-expression-row {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(0, 12rem) auto auto;
+  align-items: center;
+  gap: 8px;
+}
+
+.concept-expression-auto {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  white-space: nowrap;
+}
+
+.concept-expression-auto input { width: 18px; height: 18px; }
+
+.concept-expressions-actions {
+  display: flex;
+  align-items: center;
+  gap: 12px;
+}
+
+@media (max-width: 720px) {
+  .concept-expression-row { grid-template-columns: 1fr; }
+}

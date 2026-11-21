@@ -1,8 +1,9 @@
-import { screen } from '@testing-library/react'
+import { screen, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 
 import { givenAnonymousVisitor, givenSignedInAdmin } from '../features/admin-auth/fixture/adminSessionFixture'
+import { activeConcept, CONCEPTS_PATH, conceptList } from '../features/admin-vocabulary/fixture/conceptAdminFixture'
 import { activeTopic, TOPICS_PATH, topicList } from '../features/admin-topics/fixture/topicAdminFixture'
 import { jsonResponse, StubApiServer } from '../shared/api/testsupport/StubApiServer'
 import { renderAppRoute } from './testsupport/renderAppRoute'
@@ -42,5 +43,34 @@ describe('AdminLayout', () => {
     expect(screen.queryByRole('link', { name: 'Series' })).toBeNull()
     expect(screen.queryByRole('link', { name: 'Tin' })).toBeNull()
     expect(screen.getByRole('link', { name: 'Topic' })).toHaveAttribute('href', '/admin/topics')
+  })
+
+  it('render_ShouldPlaceRetrievalVocabularyGroupAfterOrganization_WhenAdminIsSignedIn', async () => {
+    givenSignedInAdmin(new StubApiServer()).install()
+
+    renderAppRoute('/admin/khong-co-trang-nay')
+
+    const nav = await screen.findByRole('navigation', { name: 'Điều hướng quản trị' })
+    const groups = within(nav)
+      .getAllByText(/^(Nội dung|Tổ chức|Từ vựng truy hồi)$/)
+      .map((group) => group.textContent)
+    expect(groups).toEqual(['Nội dung', 'Tổ chức', 'Từ vựng truy hồi'])
+    expect(within(nav).getByRole('link', { name: 'Concept' })).toHaveAttribute('href', '/admin/concepts')
+  })
+
+  it('navigate_ShouldOpenConceptManagement_WhenConceptLinkIsClicked', async () => {
+    givenSignedInAdmin(new StubApiServer())
+      .on('GET', CONCEPTS_PATH, jsonResponse(200, conceptList(activeConcept())))
+      .install()
+    const user = userEvent.setup()
+    renderAppRoute('/admin/khong-co-trang-nay')
+    const link = await screen.findByRole('link', { name: 'Concept' })
+    expect(link).not.toHaveAttribute('aria-current')
+
+    await user.click(link)
+
+    expect(await screen.findByRole('heading', { level: 1, name: 'Concept' })).toBeInTheDocument()
+    expect(screen.getByTestId('location')).toHaveTextContent('/admin/concepts')
+    expect(screen.getByRole('link', { name: 'Concept' })).toHaveAttribute('aria-current', 'page')
   })
 })

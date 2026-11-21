@@ -6,6 +6,7 @@ import { NO_FILTER } from '../features/admin-content/model/contentIndexQuery'
 import { AdminLoginPage } from '../pages/admin/AdminLoginPage'
 import { AdminNotFoundPage } from '../pages/admin/AdminNotFoundPage'
 import { ArticleEditorPage } from '../pages/admin/ArticleEditorPage'
+import { ConceptManagementPage } from '../pages/admin/ConceptManagementPage'
 import { ContentIndexPage } from '../pages/admin/ContentIndexPage'
 import { ModuleEditorPage } from '../pages/admin/ModuleEditorPage'
 import { NewsEditorPage } from '../pages/admin/NewsEditorPage'
@@ -60,6 +61,7 @@ export function AppRoutes() {
           <Route path="modules/new" element={<ModuleEditorPage />} />
           <Route path="modules/:moduleId" element={<ModuleEditorPage />} />
           <Route path="topics" element={<TopicManagementPage />} />
+          <Route path="concepts" element={<ConceptManagementPage />} />
         </Route>
         <Route path="*" element={<AdminNotFoundPage />} />
       </Route>

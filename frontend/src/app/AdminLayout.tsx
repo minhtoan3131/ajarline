@@ -59,7 +59,8 @@ function AdminHeader() {
 
 /**
  * Links to the Admin screens, grouped like the information architecture.
- * The Content group has the Content Index only; the Organization group has Topic.
+ * Content has the Content Index. Organization has Topic.
+ * Retrieval Vocabulary has Concept and is kept apart from Topic.
  */
 function AdminNavigation() {
   return (
@@ -71,6 +72,10 @@ function AdminNavigation() {
       <span className="admin-nav-group">Tổ chức</span>
       <NavLink to="/admin/topics" className="admin-nav-link">
         Topic
+      </NavLink>
+      <span className="admin-nav-group">Từ vựng truy hồi</span>
+      <NavLink to="/admin/concepts" className="admin-nav-link">
+        Concept
       </NavLink>
     </nav>
   )
