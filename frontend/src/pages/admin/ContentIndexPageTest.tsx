@@ -19,6 +19,9 @@ function givenSession(): StubApiServer {
   return givenSignedInAdmin(new StubApiServer())
 }
 
+const NEWS_DELETE_PATH = `/api/admin/v1/news/${ITEM_IDS.news}`
+const SERIES_DELETE_PATH = `/api/admin/v1/series/${ITEM_IDS.series}`
+
 function rowOf(list: HTMLElement, title: string): HTMLElement {
   const row = within(list).getByRole('link', { name: title }).closest('li')
   if (row === null) {
@@ -230,5 +233,131 @@ describe('ContentIndexPage', () => {
     expect(within(menu).getByRole('link', { name: 'Module' })).toHaveAttribute('href', '/admin/modules/new')
     expect(within(menu).getByRole('link', { name: 'Series' })).toHaveAttribute('href', '/admin/series/new')
     expect(within(menu).getByRole('link', { name: 'Tin' })).toHaveAttribute('href', '/admin/news/new')
+  })
+
+  it('render_ShouldShowDeleteOnlyOnDrafts_WhenItemsHaveDifferentStatus', async () => {
+    givenContentIndex(givenSession(), [
+      contentItem({ title: 'Bản nháp A' }),
+      contentItem({ id: OTHER_ITEM_ID, title: 'Đã đăng B', status: 'PUBLISHED' }),
+    ]).install()
+
+    renderAppRoute('/admin/content')
+
+    const list = await screen.findByRole('list', { name: 'Danh sách nội dung' })
+    expect(within(rowOf(list, 'Bản nháp A')).getByRole('button', { name: 'Xóa Bản nháp A' })).toBeInTheDocument()
+    expect(within(rowOf(list, 'Đã đăng B')).queryByRole('button', { name: /^Xóa/ })).toBeNull()
+  })
+
+  it('delete_ShouldSendRowRevisionAndReadListAgain_WhenServerReturnsNoContent', async () => {
+    const published = contentItem({ id: OTHER_ITEM_ID, title: 'Đã đăng B', status: 'PUBLISHED' })
+    const api = givenSession()
+      .on(
+        'GET',
+        contentIndexApiPath(),
+        jsonResponse(200, contentIndexResponse([contentItem({ title: 'Bản nháp A', revision: 4 }), published])),
+        jsonResponse(200, contentIndexResponse([published])),
+      )
+      .on('DELETE', NEWS_DELETE_PATH, { status: 204 })
+      .install()
+    const user = userEvent.setup()
+    renderAppRoute('/admin/content')
+    await user.click(await screen.findByRole('button', { name: 'Xóa Bản nháp A' }))
+    expect(api.requestsTo('DELETE', NEWS_DELETE_PATH)).toHaveLength(0)
+
+    await user.click(screen.getByRole('button', { name: 'Xác nhận xóa' }))
+
+    expect(await screen.findByText('Đã xóa “Bản nháp A”.')).toBeInTheDocument()
+    await waitFor(() => expect(screen.queryByRole('link', { name: 'Bản nháp A' })).toBeNull())
+    expect(screen.getByRole('link', { name: 'Đã đăng B' })).toBeInTheDocument()
+    expect(api.requestsTo('DELETE', NEWS_DELETE_PATH)[0].headers.get('If-Match')).toBe('"4"')
+    expect(api.requestsTo('GET', contentIndexApiPath())).toHaveLength(2)
+  })
+
+  it('delete_ShouldExplainChildrenAndKeepRow_WhenSeriesStillHasModules', async () => {
+    const api = givenContentIndex(givenSession(), [
+      contentItem({ id: ITEM_IDS.series, type: 'series', title: 'Series Java' }),
+    ])
+      .on('DELETE', SERIES_DELETE_PATH, problemResponse(409, 'CONTENT_IN_USE'))
+      .install()
+    const user = userEvent.setup()
+    renderAppRoute('/admin/content')
+    await user.click(await screen.findByRole('button', { name: 'Xóa Series Java' }))
+
+    await user.click(screen.getByRole('button', { name: 'Xác nhận xóa' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('còn Module')
+    expect(screen.getByRole('link', { name: 'Series Java' })).toBeInTheDocument()
+    expect(api.requestsTo('GET', contentIndexApiPath())).toHaveLength(1)
+  })
+
+  it('delete_ShouldReadListAgainAndTellToUnpublish_WhenItemWasPublishedElsewhere', async () => {
+    const api = givenSession()
+      .on(
+        'GET',
+        contentIndexApiPath(),
+        jsonResponse(200, contentIndexResponse([contentItem({ title: 'Bản nháp A' })])),
+        jsonResponse(200, contentIndexResponse([contentItem({ title: 'Bản nháp A', status: 'PUBLISHED', revision: 2 })])),
+      )
+      .on('DELETE', NEWS_DELETE_PATH, problemResponse(409, 'CONTENT_ALREADY_EVER_PUBLISHED'))
+      .install()
+    const user = userEvent.setup()
+    renderAppRoute('/admin/content')
+    await user.click(await screen.findByRole('button', { name: 'Xóa Bản nháp A' }))
+
+    await user.click(screen.getByRole('button', { name: 'Xác nhận xóa' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('gỡ xuất bản')
+    await waitFor(() =>
+      expect(screen.getByRole('link', { name: 'Bản nháp A' }).closest('li')).toHaveTextContent('Đã xuất bản'),
+    )
+    expect(screen.queryByRole('button', { name: 'Xóa Bản nháp A' })).toBeNull()
+    expect(api.requestsTo('GET', contentIndexApiPath())).toHaveLength(2)
+  })
+
+  it('delete_ShouldReadListAgainAndUseNewRevision_WhenRevisionIsStale', async () => {
+    const api = givenSession()
+      .on(
+        'GET',
+        contentIndexApiPath(),
+        jsonResponse(200, contentIndexResponse([contentItem({ title: 'Bản nháp A', revision: 1 })])),
+        jsonResponse(200, contentIndexResponse([contentItem({ title: 'Bản nháp A', revision: 5 })])),
+      )
+      .on('DELETE', NEWS_DELETE_PATH, problemResponse(412, 'REVISION_CONFLICT'), { status: 204 })
+      .install()
+    const user = userEvent.setup()
+    renderAppRoute('/admin/content')
+    await user.click(await screen.findByRole('button', { name: 'Xóa Bản nháp A' }))
+    await user.click(screen.getByRole('button', { name: 'Xác nhận xóa' }))
+    expect(await screen.findByRole('alert')).toHaveTextContent('vừa được thay đổi')
+    await waitFor(() => expect(api.requestsTo('GET', contentIndexApiPath())).toHaveLength(2))
+
+    await user.click(await screen.findByRole('button', { name: 'Xóa Bản nháp A' }))
+    await user.click(screen.getByRole('button', { name: 'Xác nhận xóa' }))
+
+    await waitFor(() => expect(api.requestsTo('DELETE', NEWS_DELETE_PATH)).toHaveLength(2))
+    expect(api.requestsTo('DELETE', NEWS_DELETE_PATH).map((request) => request.headers.get('If-Match'))).toEqual([
+      '"1"',
+      '"5"',
+    ])
+  })
+
+  it('delete_ShouldReadListAgainAndSayItemIsGone_WhenAnotherTabDeletedIt', async () => {
+    givenSession()
+      .on(
+        'GET',
+        contentIndexApiPath(),
+        jsonResponse(200, contentIndexResponse([contentItem({ title: 'Bản nháp A' })])),
+        jsonResponse(200, contentIndexResponse([])),
+      )
+      .on('DELETE', NEWS_DELETE_PATH, problemResponse(404, 'CONTENT_NOT_FOUND'))
+      .install()
+    const user = userEvent.setup()
+    renderAppRoute('/admin/content')
+    await user.click(await screen.findByRole('button', { name: 'Xóa Bản nháp A' }))
+
+    await user.click(screen.getByRole('button', { name: 'Xác nhận xóa' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('không còn nữa')
+    expect(await screen.findByText('Chưa có nội dung nào.')).toBeInTheDocument()
   })
 })
