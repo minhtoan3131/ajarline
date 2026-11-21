@@ -60,6 +60,9 @@ class ApiDocumentationIT {
             Map.entry("/api/admin/v1/topics/{id}", Map.of(
                     "put", "updateTopic",
                     "delete", "deleteTopic")),
+            Map.entry("/api/admin/v1/concepts", Map.of(
+                    "get", "listConcepts",
+                    "post", "createConcept")),
             Map.entry("/api/admin/v1/content", Map.of(
                     "get", "listAdminContent")),
             Map.entry("/api/admin/v1/content/{id}/publish", Map.of(
@@ -384,6 +387,35 @@ class ApiDocumentationIT {
         assertThat(schemas.propertyNames()).contains(
                 "TopicCreatable", "TopicEditable", "TopicAdminItem", "TopicAdminList");
         assertThat(schemas.get("TopicEditable").get("properties").has("slug")).isFalse();
+    }
+
+    @Test
+    void openApi_ShouldExposeConceptMetadata_WhenDocumentIsGenerated()
+            throws Exception {
+        JsonNode document = openApiDocument();
+        JsonNode paths = document.get("paths");
+        JsonNode list = operation(paths, "/api/admin/v1/concepts", "get");
+        JsonNode create = operation(paths, "/api/admin/v1/concepts", "post");
+
+        for (JsonNode conceptOperation : new JsonNode[]{list, create}) {
+            assertThat(hasSecurity(conceptOperation, OpenApiConfiguration.ADMIN_SESSION)).isTrue();
+        }
+        assertThat(parameterNames(create)).contains("X-CSRF-TOKEN");
+        assertThat(parameterNames(create)).doesNotContain("If-Match");
+        assertThat(requestSchemaRef(create)).endsWith("/ConceptCreatable");
+        assertThat(responseSchemaRef(list, "200")).endsWith("/ConceptAdminList");
+        assertThat(create.get("responses").get("201").get("headers").propertyNames())
+                .contains("Location");
+        assertThat(create.get("responses").get("201").get("headers").has("ETag")).isFalse();
+        assertThat(create.get("responses").propertyNames()).contains("409", "422");
+
+        JsonNode schemas = document.get("components").get("schemas");
+        assertThat(schemas.propertyNames()).contains(
+                "ConceptCreatable", "ConceptAdminItem", "ConceptAdminList");
+        assertThat(schemas.get("ConceptAdminItem").get("properties").propertyNames())
+                .containsExactlyInAnyOrder(
+                        "id", "key", "displayName", "description", "active",
+                        "expressions", "createdAt", "updatedAt");
     }
 
     @Test
