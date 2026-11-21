@@ -18,10 +18,10 @@ public class DatabaseMigrationIT {
     private Flyway flyway;
 
     @Test
-    void migration_ShouldReachVersionSix_WhenDatabaseStartsEmpty() {
+    void migration_ShouldReachVersionSeven_WhenDatabaseStartsEmpty() {
         MigrationInfo current = flyway.info().current();
         assertThat(current).isNotNull();
-        assertThat(current.getVersion().getVersion()).isEqualTo("6");
+        assertThat(current.getVersion().getVersion()).isEqualTo("7");
         assertThat(flyway.info().pending()).isEmpty();
     }
 

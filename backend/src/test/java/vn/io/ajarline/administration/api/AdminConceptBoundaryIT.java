@@ -162,6 +162,40 @@ class AdminConceptBoundaryIT extends AbstractAdminAuthenticationIT {
                 400, "INVALID_UUID");
     }
 
+    @Test
+    void delete_ShouldRejectRequest_WhenAdminSessionIsMissing() throws Exception {
+        Browser browser = new Browser();
+        String token = csrf(browser);
+
+        HttpResponse<String> delete = browser.send(
+                "DELETE", CONCEPTS + "/" + MISSING_ID, null, token, null);
+
+        assertProblem(delete, 401, "AUTHENTICATION_REQUIRED");
+    }
+
+    @Test
+    void delete_ShouldRejectRequest_WhenCsrfProofIsMissingOrWrong() throws Exception {
+        Browser browser = authenticatedBrowser();
+        String token = csrf(browser);
+        String id = createConcept(browser, token, "csrf-delete");
+
+        HttpResponse<String> missing = browser.send("DELETE", CONCEPTS + "/" + id, null, null, null);
+        HttpResponse<String> wrong = browser.send("DELETE", CONCEPTS + "/" + id, null, "invalid", null);
+
+        assertProblem(missing, 403, "CSRF_INVALID");
+        assertProblem(wrong, 403, "CSRF_INVALID");
+        assertThat(rowCount()).isEqualTo(1);
+    }
+
+    @Test
+    void delete_ShouldRejectRequest_WhenIdIsNotUuid() throws Exception {
+        Browser browser = authenticatedBrowser();
+        String token = csrf(browser);
+
+        assertProblem(browser.send("DELETE", CONCEPTS + "/not-a-uuid", null, token, null),
+                400, "INVALID_UUID");
+    }
+
     private String createConcept(Browser browser, String token, String key) throws Exception {
         HttpResponse<String> response = browser.post(CONCEPTS, create(key), token);
         assertThat(response.statusCode()).isEqualTo(201);

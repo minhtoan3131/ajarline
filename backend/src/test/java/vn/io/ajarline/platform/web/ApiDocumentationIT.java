@@ -64,7 +64,8 @@ class ApiDocumentationIT {
                     "get", "listConcepts",
                     "post", "createConcept")),
             Map.entry("/api/admin/v1/concepts/{id}", Map.of(
-                    "put", "updateConcept")),
+                    "put", "updateConcept",
+                    "delete", "deleteConcept")),
             Map.entry("/api/admin/v1/content", Map.of(
                     "get", "listAdminContent")),
             Map.entry("/api/admin/v1/content/{id}/publish", Map.of(
@@ -399,11 +400,12 @@ class ApiDocumentationIT {
         JsonNode list = operation(paths, "/api/admin/v1/concepts", "get");
         JsonNode create = operation(paths, "/api/admin/v1/concepts", "post");
         JsonNode update = operation(paths, "/api/admin/v1/concepts/{id}", "put");
+        JsonNode delete = operation(paths, "/api/admin/v1/concepts/{id}", "delete");
 
-        for (JsonNode conceptOperation : new JsonNode[]{list, create, update}) {
+        for (JsonNode conceptOperation : new JsonNode[]{list, create, update, delete}) {
             assertThat(hasSecurity(conceptOperation, OpenApiConfiguration.ADMIN_SESSION)).isTrue();
         }
-        for (JsonNode mutation : new JsonNode[]{create, update}) {
+        for (JsonNode mutation : new JsonNode[]{create, update, delete}) {
             assertThat(parameterNames(mutation)).contains("X-CSRF-TOKEN");
             assertThat(parameterNames(mutation)).doesNotContain("If-Match");
         }
@@ -416,6 +418,8 @@ class ApiDocumentationIT {
         assertThat(create.get("responses").propertyNames()).contains("409", "422");
         assertThat(update.get("responses").get("200").path("headers").has("ETag")).isFalse();
         assertThat(update.get("responses").propertyNames()).contains("404", "422");
+        assertThat(delete.get("responses").has("204")).isTrue();
+        assertThat(delete.get("responses").propertyNames()).contains("404");
 
         JsonNode schemas = document.get("components").get("schemas");
         assertThat(schemas.propertyNames()).contains(

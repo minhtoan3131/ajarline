@@ -13,6 +13,7 @@ import io.swagger.v3.oas.annotations.tags.Tag;
 import org.springframework.http.CacheControl;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,6 +26,7 @@ import vn.io.ajarline.platform.web.OpenApiConfiguration;
 import vn.io.ajarline.retrieval.contract.ConceptCreator;
 import vn.io.ajarline.retrieval.contract.ConceptEditor;
 import vn.io.ajarline.retrieval.contract.ConceptReader;
+import vn.io.ajarline.retrieval.contract.ConceptRemover;
 import vn.io.ajarline.retrieval.contract.ConceptView;
 
 import java.net.URI;
@@ -40,12 +42,15 @@ public class AdminConceptController {
     private final ConceptCreator creator;
     private final ConceptReader reader;
     private final ConceptEditor editor;
+    private final ConceptRemover remover;
 
     public AdminConceptController(
-            ConceptCreator creator, ConceptReader reader, ConceptEditor editor) {
+            ConceptCreator creator, ConceptReader reader, ConceptEditor editor,
+            ConceptRemover remover) {
         this.creator = creator;
         this.reader = reader;
         this.editor = editor;
+        this.remover = remover;
     }
 
     @Operation(
@@ -169,5 +174,38 @@ public class AdminConceptController {
         return ResponseEntity.ok()
                 .cacheControl(CacheControl.noStore())
                 .body(ConceptAdminItem.from(updated));
+    }
+
+    @Operation(
+            operationId = "deleteConcept",
+            summary = "Delete a Concept and its expressions")
+    @Parameter(
+            name = "X-CSRF-TOKEN",
+            in = ParameterIn.HEADER,
+            required = true,
+            description = "Current CSRF token for the authenticated session.")
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "204",
+                    description = "Concept and its expressions deleted"),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Concept id is not a valid UUID"),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required"),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "CSRF proof is missing or invalid"),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Concept was not found")
+    })
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(@PathVariable UUID id) {
+        remover.delete(id);
+        return ResponseEntity.noContent()
+                .cacheControl(CacheControl.noStore())
+                .build();
     }
 }

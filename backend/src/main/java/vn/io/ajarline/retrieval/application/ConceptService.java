@@ -10,6 +10,7 @@ import vn.io.ajarline.retrieval.contract.ConceptExpressionView;
 import vn.io.ajarline.retrieval.contract.ConceptFailureCode;
 import vn.io.ajarline.retrieval.contract.ConceptOperationException;
 import vn.io.ajarline.retrieval.contract.ConceptReader;
+import vn.io.ajarline.retrieval.contract.ConceptRemover;
 import vn.io.ajarline.retrieval.contract.ConceptUpdateInput;
 import vn.io.ajarline.retrieval.contract.ConceptView;
 import vn.io.ajarline.retrieval.infrastructure.persistence.ConceptEntity;
@@ -30,7 +31,8 @@ import java.util.UUID;
  * constraint is the authority for key uniqueness; this service only translates its failure.</p>
  */
 @Service
-public class ConceptService implements ConceptCreator, ConceptReader, ConceptEditor {
+public class ConceptService
+        implements ConceptCreator, ConceptReader, ConceptEditor, ConceptRemover {
     private static final String KEY_CONSTRAINT = "uk_retrieval_concept_key";
     private static final Comparator<ConceptExpressionEntity> EXPRESSION_ORDER =
             Comparator.comparing(ConceptExpressionEntity::getNormalizedExpression)
@@ -90,6 +92,17 @@ public class ConceptService implements ConceptCreator, ConceptReader, ConceptEdi
         concepts.flush();
         vocabularyVersion.advance(now);
         return toView(concept);
+    }
+
+    @Override
+    @Transactional
+    public void delete(UUID id) {
+        ConceptEntity concept = concepts.findByIdForUpdate(id)
+                .orElseThrow(() -> notFound(id));
+
+        concepts.delete(concept);
+        concepts.flush();
+        vocabularyVersion.advance(clock.instant());
     }
 
     @Override
