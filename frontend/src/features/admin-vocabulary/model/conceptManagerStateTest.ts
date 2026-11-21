@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { MAX_EXPRESSIONS } from './concept'
+import { fieldsOf, MAX_EXPRESSIONS } from './concept'
+import { activeConcept } from '../fixture/conceptAdminFixture'
 import {
   conceptManagerReducer,
   INITIAL_CONCEPT_MANAGER_STATE,
@@ -20,6 +21,10 @@ function openedCreate(): ConceptManagerState {
 function openedWithRows(count: number): ConceptManagerState {
   const additions = Array.from({ length: count }, (): ConceptManagerAction => ({ type: 'expression-added' }))
   return reduce(openedCreate(), ...additions)
+}
+
+function openedEdit(): ConceptManagerState {
+  return reduce(INITIAL_CONCEPT_MANAGER_STATE, { type: 'edit-opened', concept: activeConcept() })
 }
 
 describe('conceptManagerReducer', () => {
@@ -143,5 +148,59 @@ describe('conceptManagerReducer', () => {
     ])
     expect(state.pending).toBeNull()
     expect(state.failure).toEqual({ kind: 'duplicate-expression' })
+  })
+
+  it('reduce_ShouldFillFormFromConcept_WhenEditIsOpened', () => {
+    const concept = activeConcept()
+
+    const state = openedEdit()
+
+    expect(state.panel).toEqual({ mode: 'edit', concept })
+    expect(state.fields).toEqual(fieldsOf(concept))
+    expect(state.nextRow).toBe(3)
+    expect(isDirty(state)).toBe(false)
+  })
+
+  it('reduce_ShouldGiveNewRowAKeyAfterTheExistingOnes_WhenRowIsAddedToAnOpenedConcept', () => {
+    const state = reduce(openedEdit(), { type: 'expression-added' })
+
+    expect(state.fields.expressions.map((row) => row.rowKey)).toEqual(['row-0', 'row-1', 'row-2', 'row-3'])
+  })
+
+  it('reduce_ShouldCloseFormAndKeepFailure_WhenConceptIsNotFound', () => {
+    const state = reduce(
+      openedEdit(),
+      { type: 'mutation-started', pending: 'saving' },
+      { type: 'mutation-failed', failure: { kind: 'not-found' } },
+    )
+
+    expect(state.panel).toEqual({ mode: 'closed' })
+    expect(state.failure).toEqual({ kind: 'not-found' })
+    expect(state.pending).toBeNull()
+  })
+
+  it('reduce_ShouldKeepEditFormAndTypedValues_WhenDeleteFails', () => {
+    const state = reduce(
+      openedEdit(),
+      { type: 'fields-changed', changes: { displayName: 'Luồng' } },
+      { type: 'mutation-started', pending: 'deleting' },
+      { type: 'mutation-failed', failure: { kind: 'general', message: 'Lỗi' } },
+    )
+
+    expect(state.panel.mode).toBe('edit')
+    expect(state.fields.displayName).toBe('Luồng')
+    expect(state.pending).toBeNull()
+  })
+
+  it.each(['saved', 'deleted'] as const)('reduce_ShouldCloseFormAndShowNotice_WhenNoticeIs%s', (notice) => {
+    const state = reduce(
+      openedEdit(),
+      { type: 'mutation-started', pending: notice === 'saved' ? 'saving' : 'deleting' },
+      { type: 'mutation-succeeded', notice },
+    )
+
+    expect(state.panel).toEqual({ mode: 'closed' })
+    expect(state.notice).toBe(notice)
+    expect(state.pending).toBeNull()
   })
 })

@@ -114,3 +114,36 @@ export function sameConceptFields(left: ConceptFields, right: ConceptFields): bo
     left.expressions.every((row, index) => sameRow(row, right.expressions[index]))
   )
 }
+
+/** Form values of an existing Concept. The rows are numbered in the order the server sent them. */
+export function fieldsOf(concept: ConceptAdminItem): ConceptFields {
+  return {
+    key: concept.key,
+    displayName: concept.displayName,
+    description: concept.description ?? '',
+    active: concept.active,
+    expressions: concept.expressions.map((item, index) => ({
+      rowKey: `row-${index}`,
+      expression: item.expression,
+      languageHint: item.languageHint ?? '',
+      autoExpand: item.autoExpand,
+    })),
+  }
+}
+
+/** Full request body of update. It has no key: a Concept key never changes. */
+export interface ConceptEditable {
+  displayName: string
+  description: string | null
+  active: boolean
+  expressions: ConceptExpressionItem[]
+}
+
+export function toEditable(fields: ConceptFields): ConceptEditable {
+  return {
+    displayName: fields.displayName,
+    description: fields.description === '' ? null : fields.description,
+    active: fields.active,
+    expressions: fields.expressions.map(toExpressionItem),
+  }
+}

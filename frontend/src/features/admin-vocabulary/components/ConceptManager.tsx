@@ -1,3 +1,4 @@
+import type { ConceptAdminItem } from '../model/concept'
 import { useConceptList, type ConceptListLoad } from '../useConceptList'
 import { useConceptManager } from '../useConceptManager'
 import { ConceptForm } from './ConceptForm'
@@ -29,6 +30,8 @@ export function ConceptManager() {
       <ConceptMessages failure={state.failure} notice={state.notice} />
       {state.panel.mode !== 'closed' && (
         <ConceptForm
+          key={state.panel.mode === 'edit' ? state.panel.concept.id : 'create'}
+          concept={state.panel.mode === 'edit' ? state.panel.concept : null}
           fields={state.fields}
           failure={state.failure}
           pending={state.pending}
@@ -39,9 +42,10 @@ export function ConceptManager() {
           onRemoveExpression={manager.removeExpression}
           onSubmit={() => void manager.save()}
           onCancel={manager.close}
+          onDelete={() => void manager.remove()}
         />
       )}
-      <ConceptListSection load={load} onRetry={reload} />
+      <ConceptListSection load={load} onRetry={reload} onEdit={manager.openEdit} editDisabled={locked} />
     </section>
   )
 }
@@ -49,9 +53,11 @@ export function ConceptManager() {
 interface ConceptListSectionProps {
   load: ConceptListLoad
   onRetry: () => void
+  onEdit: (concept: ConceptAdminItem) => void
+  editDisabled: boolean
 }
 
-function ConceptListSection({ load, onRetry }: ConceptListSectionProps) {
+function ConceptListSection({ load, onRetry, onEdit, editDisabled }: ConceptListSectionProps) {
   switch (load.status) {
     case 'loading':
       return (
@@ -69,6 +75,6 @@ function ConceptListSection({ load, onRetry }: ConceptListSectionProps) {
         </div>
       )
     case 'ready':
-      return <ConceptList concepts={load.concepts} />
+      return <ConceptList concepts={load.concepts} editDisabled={editDisabled} onEdit={onEdit} />
   }
 }

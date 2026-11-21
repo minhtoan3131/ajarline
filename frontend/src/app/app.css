@@ -1257,3 +1257,21 @@ a.admin-button {
 @media (max-width: 720px) {
   .concept-expression-row { grid-template-columns: 1fr; }
 }
+
+.concept-form-danger {
+  margin-top: 24px;
+  padding-top: 16px;
+  border-top: 1px solid var(--admin-border);
+}
+
+.concept-delete-confirm {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 8px 12px;
+}
+
+.concept-delete-confirm p {
+  flex-basis: 100%;
+  margin: 0;
+}

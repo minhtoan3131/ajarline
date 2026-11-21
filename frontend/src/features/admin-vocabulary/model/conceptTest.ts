@@ -1,6 +1,7 @@
 import { describe, expect, it } from 'vitest'
 
-import { EMPTY_CONCEPT_FIELDS, sameConceptFields, toCreatable, type ConceptFields } from './concept'
+import { activeConcept, inactiveConcept } from '../fixture/conceptAdminFixture'
+import { EMPTY_CONCEPT_FIELDS, fieldsOf, sameConceptFields, toCreatable, toEditable, type ConceptFields } from './concept'
 
 function threadFields(): ConceptFields {
   return {
@@ -77,5 +78,64 @@ describe('sameConceptFields', () => {
     const fewer = { ...threadFields(), expressions: threadFields().expressions.slice(0, 1) }
 
     expect(sameConceptFields(threadFields(), fewer)).toBe(false)
+  })
+})
+
+describe('fieldsOf', () => {
+  it('fieldsOf_ShouldNumberRowsInServerOrder_WhenConceptHasExpressions', () => {
+    const fields = fieldsOf(activeConcept())
+
+    expect(fields.expressions.map((row) => [row.rowKey, row.expression])).toEqual([
+      ['row-0', 'multithreading'],
+      ['row-1', 'thread'],
+      ['row-2', 'đa luồng'],
+    ])
+    expect(fields.expressions[0]).toMatchObject({ languageHint: 'en', autoExpand: true })
+  })
+
+  it('fieldsOf_ShouldUseEmptyTextAndNoRows_WhenDescriptionIsNullAndThereIsNoExpression', () => {
+    const fields = fieldsOf(inactiveConcept())
+
+    expect(fields).toEqual({ key: 'spring-boot', displayName: 'Spring Boot', description: '', active: false, expressions: [] })
+  })
+
+  it('fieldsOf_ShouldUseEmptyLanguage_WhenLanguageHintIsNull', () => {
+    const concept = activeConcept({ expressions: [{ expression: 'thread', languageHint: null, autoExpand: false }] })
+
+    expect(fieldsOf(concept).expressions[0].languageHint).toBe('')
+  })
+})
+
+describe('toEditable', () => {
+  it('toEditable_ShouldOmitKey_WhenFieldsAreConverted', () => {
+    const editable = toEditable(fieldsOf(activeConcept()))
+
+    expect(Object.keys(editable).sort()).toEqual(['active', 'description', 'displayName', 'expressions'])
+  })
+
+  it('toEditable_ShouldOmitRowKeys_WhenExpressionsAreConverted', () => {
+    const editable = toEditable(fieldsOf(activeConcept()))
+
+    for (const expression of editable.expressions) {
+      expect(Object.keys(expression).sort()).toEqual(['autoExpand', 'expression', 'languageHint'])
+    }
+  })
+
+  it('toEditable_ShouldSendNullDescriptionAndNullLanguage_WhenTheyAreEmpty', () => {
+    const fields = { ...fieldsOf(activeConcept()), description: '' }
+    fields.expressions[0] = { ...fields.expressions[0], languageHint: '' }
+
+    const editable = toEditable(fields)
+
+    expect(editable.description).toBeNull()
+    expect(editable.expressions[0].languageHint).toBeNull()
+  })
+
+  it('toEditable_ShouldKeepEveryExpressionInOrder_WhenConceptIsOpenedAndSavedUntouched', () => {
+    const concept = activeConcept()
+
+    const editable = toEditable(fieldsOf(concept))
+
+    expect(editable.expressions).toEqual(concept.expressions)
   })
 })

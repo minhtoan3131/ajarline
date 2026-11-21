@@ -1,4 +1,4 @@
-import { screen, within } from '@testing-library/react'
+import { screen, waitFor, within } from '@testing-library/react'
 import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 
@@ -6,6 +6,7 @@ import { renderAppRoute } from '../../app/testsupport/renderAppRoute'
 import { CSRF_TOKEN, givenAnonymousVisitor, givenSignedInAdmin } from '../../features/admin-auth/fixture/adminSessionFixture'
 import {
   activeConcept,
+  CONCEPT_ID,
   CONCEPTS_PATH,
   conceptList,
   conceptPath,
@@ -393,5 +394,298 @@ describe('ConceptManagementPage expression rows', () => {
 
     expect(screen.getByLabelText('Ngôn ngữ của expression 1')).toHaveValue('')
     expect(screen.getByLabelText('Tự mở rộng expression 1')).not.toBeChecked()
+  })
+})
+
+describe('ConceptManagementPage edit form', () => {
+  it('edit_ShouldOpenFormWithCurrentValuesAndReadOnlyKey_WhenEditIsClicked', async () => {
+    givenSignedInAdmin(new StubApiServer())
+      .on('GET', CONCEPTS_PATH, jsonResponse(200, conceptList(activeConcept(), inactiveConcept())))
+      .install()
+    const user = userEvent.setup()
+    renderAppRoute(ROUTE)
+
+    await user.click(await screen.findByRole('button', { name: 'Sửa Concept Thread' }))
+
+    expect(screen.getByRole('heading', { level: 2, name: 'Sửa Concept' })).toBeInTheDocument()
+    expect(screen.getByLabelText('Key')).toHaveValue('thread')
+    expect(screen.getByLabelText('Key')).toHaveAttribute('readonly')
+    expect(screen.getByText('Key đã cố định từ lúc tạo.')).toBeInTheDocument()
+    expect(screen.getByLabelText('Tên')).toHaveValue('Thread')
+    expect(screen.getByLabelText('Mô tả')).toHaveValue('Luồng thực thi trong chương trình.')
+    expect(screen.getByLabelText('Concept đang bật')).toBeChecked()
+    expect(expressionTexts()).toEqual(['multithreading', 'thread', 'đa luồng'])
+    expect(screen.getByLabelText('Ngôn ngữ của expression 1')).toHaveValue('en')
+    expect(screen.getByLabelText('Tự mở rộng expression 1')).toBeChecked()
+    expect(screen.getByLabelText('Tự mở rộng expression 2')).not.toBeChecked()
+  })
+
+  it('save_ShouldSendOnlyEditableFieldsAndWholeExpressionSet_WhenConceptIsEdited', async () => {
+    const renamed = activeConcept({ displayName: 'Luồng', active: false })
+    const api = givenSignedInAdmin(new StubApiServer())
+      .on(
+        'GET',
+        CONCEPTS_PATH,
+        jsonResponse(200, conceptList(activeConcept(), inactiveConcept())),
+        jsonResponse(200, conceptList(renamed, inactiveConcept())),
+      )
+      .on('PUT', conceptPath(CONCEPT_ID), jsonResponse(200, renamed))
+      .install()
+    const user = userEvent.setup()
+    renderAppRoute(ROUTE)
+    await user.click(await screen.findByRole('button', { name: 'Sửa Concept Thread' }))
+    await user.clear(screen.getByLabelText('Tên'))
+    await user.type(screen.getByLabelText('Tên'), 'Luồng')
+    await user.click(screen.getByLabelText('Concept đang bật'))
+    await user.click(screen.getByLabelText('Tự mở rộng expression 2'))
+    await user.click(screen.getByRole('button', { name: 'Bỏ expression 3' }))
+
+    await user.click(screen.getByRole('button', { name: 'Lưu' }))
+
+    expect(await screen.findByText('Đã lưu Concept.')).toBeInTheDocument()
+    const [update] = api.requestsTo('PUT', conceptPath(CONCEPT_ID))
+    expect(Object.keys(update.body as Record<string, unknown>).sort()).toEqual([
+      'active',
+      'description',
+      'displayName',
+      'expressions',
+    ])
+    expect(update.body).toEqual({
+      displayName: 'Luồng',
+      description: 'Luồng thực thi trong chương trình.',
+      active: false,
+      expressions: [
+        { expression: 'multithreading', languageHint: 'en', autoExpand: true },
+        { expression: 'thread', languageHint: 'technical', autoExpand: true },
+      ],
+    })
+    expect(update.headers.get('X-CSRF-TOKEN')).toBe(CSRF_TOKEN.token)
+    expect(await screen.findByRole('button', { name: 'Sửa Concept Luồng' })).toBeInTheDocument()
+    expect(screen.queryByLabelText('Key')).toBeNull()
+    expect(api.requestsTo('GET', CONCEPTS_PATH)).toHaveLength(2)
+  })
+
+  it('save_ShouldSendNullDescriptionAndNullLanguage_WhenTheyAreCleared', async () => {
+    const api = givenSignedInAdmin(new StubApiServer())
+      .on('GET', CONCEPTS_PATH, jsonResponse(200, conceptList(activeConcept())))
+      .on('PUT', conceptPath(CONCEPT_ID), jsonResponse(200, activeConcept({ description: null })))
+      .install()
+    const user = userEvent.setup()
+    renderAppRoute(ROUTE)
+    await user.click(await screen.findByRole('button', { name: 'Sửa Concept Thread' }))
+    await user.clear(screen.getByLabelText('Mô tả'))
+    await user.selectOptions(screen.getByLabelText('Ngôn ngữ của expression 1'), '')
+
+    await user.click(screen.getByRole('button', { name: 'Lưu' }))
+
+    await screen.findByText('Đã lưu Concept.')
+    expect(api.requestsTo('PUT', conceptPath(CONCEPT_ID))[0].body).toMatchObject({
+      description: null,
+      expressions: [{ languageHint: null }, {}, {}],
+    })
+  })
+
+  it('save_ShouldShowNoNoticeAndLockButtons_WhileRequestIsRunning', async () => {
+    const api = givenSignedInAdmin(new StubApiServer())
+      .on('GET', CONCEPTS_PATH, jsonResponse(200, conceptList(activeConcept())))
+      .on('PUT', conceptPath(CONCEPT_ID), jsonResponse(200, activeConcept()))
+      .install()
+    const release = holdRequestsTo('PUT')
+    const user = userEvent.setup()
+    renderAppRoute(ROUTE)
+    await user.click(await screen.findByRole('button', { name: 'Sửa Concept Thread' }))
+
+    await user.click(screen.getByRole('button', { name: 'Lưu' }))
+
+    expect(await screen.findByRole('button', { name: 'Đang lưu…' })).toBeDisabled()
+    expect(screen.queryByText('Đã lưu Concept.')).toBeNull()
+    release()
+    expect(await screen.findByText('Đã lưu Concept.')).toBeInTheDocument()
+    expect(api.requestsTo('PUT', conceptPath(CONCEPT_ID))).toHaveLength(1)
+  })
+
+  it('save_ShouldKeepFormAndOldListValues_WhenServerRejectsTheEdit', async () => {
+    givenSignedInAdmin(new StubApiServer())
+      .on('GET', CONCEPTS_PATH, jsonResponse(200, conceptList(activeConcept())))
+      .on('PUT', conceptPath(CONCEPT_ID), problemResponse(422, 'DUPLICATE_CONCEPT_EXPRESSION'))
+      .install()
+    const user = userEvent.setup()
+    renderAppRoute(ROUTE)
+    await user.click(await screen.findByRole('button', { name: 'Sửa Concept Thread' }))
+    await user.clear(screen.getByLabelText('Tên'))
+    await user.type(screen.getByLabelText('Tên'), 'Tên mới')
+
+    await user.click(screen.getByRole('button', { name: 'Lưu' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('trùng nhau sau khi chuẩn hoá')
+    expect(screen.getByLabelText('Tên')).toHaveValue('Tên mới')
+    expect(expressionTexts()).toEqual(['multithreading', 'thread', 'đa luồng'])
+    const table = screen.getByRole('table', { name: 'Danh sách Concept' })
+    expect(table).toHaveTextContent('Thread')
+    expect(table).not.toHaveTextContent('Tên mới')
+  })
+
+  it('save_ShouldCloseFormAndReloadList_WhenConceptNoLongerExists', async () => {
+    const api = givenSignedInAdmin(new StubApiServer())
+      .on('GET', CONCEPTS_PATH, jsonResponse(200, conceptList(activeConcept())), jsonResponse(200, conceptList()))
+      .on('PUT', conceptPath(CONCEPT_ID), problemResponse(404, 'CONCEPT_NOT_FOUND'))
+      .install()
+    const user = userEvent.setup()
+    renderAppRoute(ROUTE)
+    await user.click(await screen.findByRole('button', { name: 'Sửa Concept Thread' }))
+    await user.type(screen.getByLabelText('Tên'), ' mới')
+
+    await user.click(screen.getByRole('button', { name: 'Lưu' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('không còn tồn tại')
+    expect(screen.queryByLabelText('Key')).toBeNull()
+    expect(await screen.findByText(/Chưa có Concept nào/)).toBeInTheDocument()
+    expect(api.requestsTo('GET', CONCEPTS_PATH)).toHaveLength(2)
+  })
+
+  it('save_ShouldAskToRepeatAndRenewToken_WhenCsrfProofIsInvalid', async () => {
+    const api = givenSignedInAdmin(new StubApiServer())
+      .on('GET', CONCEPTS_PATH, jsonResponse(200, conceptList(activeConcept())))
+      .on('PUT', conceptPath(CONCEPT_ID), problemResponse(403, 'CSRF_INVALID'))
+      .install()
+    const user = userEvent.setup()
+    renderAppRoute(ROUTE)
+    await user.click(await screen.findByRole('button', { name: 'Sửa Concept Thread' }))
+    await user.type(screen.getByLabelText('Tên'), ' mới')
+
+    await user.click(screen.getByRole('button', { name: 'Lưu' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Phiên làm việc vừa được làm mới')
+    await waitFor(() => expect(api.requestsTo('GET', '/api/auth/v1/csrf')).toHaveLength(2))
+    expect(screen.getByLabelText('Tên')).toHaveValue('Thread mới')
+  })
+
+  it('edit_ShouldLockRowButtonsUntilCancel_WhenFormHasUnsavedChanges', async () => {
+    givenSignedInAdmin(new StubApiServer())
+      .on('GET', CONCEPTS_PATH, jsonResponse(200, conceptList(activeConcept(), inactiveConcept())))
+      .install()
+    const user = userEvent.setup()
+    renderAppRoute(ROUTE)
+    await user.click(await screen.findByRole('button', { name: 'Sửa Concept Thread' }))
+    expect(screen.getByRole('button', { name: 'Sửa Concept Spring Boot' })).toBeEnabled()
+
+    await user.type(screen.getByLabelText('Tên'), ' mới')
+
+    expect(screen.getByRole('button', { name: 'Sửa Concept Spring Boot' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: 'Tạo Concept' })).toBeDisabled()
+
+    await user.click(screen.getByRole('button', { name: 'Hủy' }))
+
+    expect(screen.getByRole('button', { name: 'Sửa Concept Spring Boot' })).toBeEnabled()
+    expect(screen.getByRole('button', { name: 'Tạo Concept' })).toBeEnabled()
+  })
+})
+
+describe('ConceptManagementPage delete', () => {
+  it('delete_ShouldAskForConfirmationBeforeSending_WhenDeleteIsClicked', async () => {
+    const api = givenSignedInAdmin(new StubApiServer())
+      .on('GET', CONCEPTS_PATH, jsonResponse(200, conceptList(activeConcept())))
+      .install()
+    const user = userEvent.setup()
+    renderAppRoute(ROUTE)
+    await user.click(await screen.findByRole('button', { name: 'Sửa Concept Thread' }))
+
+    await user.click(screen.getByRole('button', { name: 'Xóa Concept' }))
+
+    const question = screen.getByRole('group', { name: 'Xác nhận xóa Concept' })
+    expect(question).toHaveTextContent('Xóa Concept “Thread”?')
+    expect(question).toHaveTextContent('expression')
+    expect(api.requestsTo('DELETE', conceptPath(CONCEPT_ID))).toHaveLength(0)
+
+    await user.click(screen.getByRole('button', { name: 'Giữ lại' }))
+
+    expect(screen.getByRole('button', { name: 'Xóa Concept' })).toBeInTheDocument()
+    expect(api.requestsTo('DELETE', conceptPath(CONCEPT_ID))).toHaveLength(0)
+  })
+
+  it('delete_ShouldRemoveConceptFromList_WhenServerReturnsNoContent', async () => {
+    const api = givenSignedInAdmin(new StubApiServer())
+      .on(
+        'GET',
+        CONCEPTS_PATH,
+        jsonResponse(200, conceptList(activeConcept(), inactiveConcept())),
+        jsonResponse(200, conceptList(inactiveConcept())),
+      )
+      .on('DELETE', conceptPath(CONCEPT_ID), { status: 204 })
+      .install()
+    const user = userEvent.setup()
+    renderAppRoute(ROUTE)
+    await user.click(await screen.findByRole('button', { name: 'Sửa Concept Thread' }))
+    await user.click(screen.getByRole('button', { name: 'Xóa Concept' }))
+
+    await user.click(screen.getByRole('button', { name: 'Xác nhận xóa' }))
+
+    expect(await screen.findByText('Đã xóa Concept.')).toBeInTheDocument()
+    const [removal] = api.requestsTo('DELETE', conceptPath(CONCEPT_ID))
+    expect(removal.headers.get('X-CSRF-TOKEN')).toBe(CSRF_TOKEN.token)
+    expect(removal.body).toBeUndefined()
+    await waitFor(() => expect(screen.queryByRole('button', { name: 'Sửa Concept Thread' })).toBeNull())
+    expect(screen.getByRole('button', { name: 'Sửa Concept Spring Boot' })).toBeInTheDocument()
+    expect(screen.queryByLabelText('Key')).toBeNull()
+    expect(api.requestsTo('GET', CONCEPTS_PATH)).toHaveLength(2)
+  })
+
+  it('delete_ShouldDisableButtonAndSendOnce_WhileRequestIsRunning', async () => {
+    const api = givenSignedInAdmin(new StubApiServer())
+      .on('GET', CONCEPTS_PATH, jsonResponse(200, conceptList(activeConcept())))
+      .on('DELETE', conceptPath(CONCEPT_ID), { status: 204 })
+      .install()
+    const release = holdRequestsTo('DELETE')
+    const user = userEvent.setup()
+    renderAppRoute(ROUTE)
+    await user.click(await screen.findByRole('button', { name: 'Sửa Concept Thread' }))
+    await user.click(screen.getByRole('button', { name: 'Xóa Concept' }))
+
+    await user.click(screen.getByRole('button', { name: 'Xác nhận xóa' }))
+
+    expect(await screen.findByRole('button', { name: 'Đang xóa…' })).toBeDisabled()
+    expect(screen.queryByRole('button', { name: 'Xác nhận xóa' })).toBeNull()
+    expect(screen.queryByText('Đã xóa Concept.')).toBeNull()
+    release()
+    expect(await screen.findByText('Đã xóa Concept.')).toBeInTheDocument()
+    expect(api.requestsTo('DELETE', conceptPath(CONCEPT_ID))).toHaveLength(1)
+  })
+
+  it('delete_ShouldCloseFormAndReloadList_WhenConceptNoLongerExists', async () => {
+    const api = givenSignedInAdmin(new StubApiServer())
+      .on('GET', CONCEPTS_PATH, jsonResponse(200, conceptList(activeConcept())), jsonResponse(200, conceptList()))
+      .on('DELETE', conceptPath(CONCEPT_ID), problemResponse(404, 'CONCEPT_NOT_FOUND'))
+      .install()
+    const user = userEvent.setup()
+    renderAppRoute(ROUTE)
+    await user.click(await screen.findByRole('button', { name: 'Sửa Concept Thread' }))
+    await user.click(screen.getByRole('button', { name: 'Xóa Concept' }))
+
+    await user.click(screen.getByRole('button', { name: 'Xác nhận xóa' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('không còn tồn tại')
+    expect(screen.queryByLabelText('Key')).toBeNull()
+    expect(await screen.findByText(/Chưa có Concept nào/)).toBeInTheDocument()
+    expect(api.requestsTo('GET', CONCEPTS_PATH)).toHaveLength(2)
+  })
+
+  it('delete_ShouldKeepFormAndNotSayDeleted_WhenServerFails', async () => {
+    const api = givenSignedInAdmin(new StubApiServer())
+      .on('GET', CONCEPTS_PATH, jsonResponse(200, conceptList(activeConcept())))
+      .on('DELETE', conceptPath(CONCEPT_ID), problemResponse(500, 'INTERNAL_ERROR'))
+      .install()
+    const user = userEvent.setup()
+    renderAppRoute(ROUTE)
+    await user.click(await screen.findByRole('button', { name: 'Sửa Concept Thread' }))
+    await user.click(screen.getByRole('button', { name: 'Xóa Concept' }))
+
+    await user.click(screen.getByRole('button', { name: 'Xác nhận xóa' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('Không kết nối được máy chủ')
+    expect(screen.queryByText('Đã xóa Concept.')).toBeNull()
+    expect(screen.getByLabelText('Key')).toHaveValue('thread')
+    expect(screen.getByRole('button', { name: 'Xóa Concept' })).toBeEnabled()
+    expect(screen.getByRole('table', { name: 'Danh sách Concept' })).toHaveTextContent('Thread')
+    expect(api.requestsTo('GET', CONCEPTS_PATH)).toHaveLength(1)
   })
 })

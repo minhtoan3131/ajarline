@@ -53,4 +53,19 @@ describe('toConceptFailure', () => {
       message: expect.stringContaining('Không kết nối được máy chủ'),
     })
   })
+
+  it('toConceptFailure_ShouldAskToRepeat_WhenCsrfProofIsInvalid', () => {
+    expect(toConceptFailure(apiError(403, 'CSRF_INVALID'))).toEqual({ kind: 'session-renewed' })
+  })
+
+  it('toConceptFailure_ShouldReportNotAllowed_WhenForbiddenForAnotherReason', () => {
+    expect(toConceptFailure(apiError(403, 'ACCESS_DENIED'))).toMatchObject({
+      kind: 'general',
+      message: expect.stringContaining('không được phép'),
+    })
+  })
+
+  it('toConceptFailure_ShouldReportMissingConcept_WhenServerAnswersNotFound', () => {
+    expect(toConceptFailure(apiError(404, 'CONCEPT_NOT_FOUND'))).toEqual({ kind: 'not-found' })
+  })
 })

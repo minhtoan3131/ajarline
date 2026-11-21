@@ -3,6 +3,8 @@ import type { ConceptNotice } from '../model/conceptManagerState'
 
 const NOTICE_TEXT: Record<ConceptNotice, string> = {
   created: 'Đã tạo Concept.',
+  saved: 'Đã lưu Concept.',
+  deleted: 'Đã xóa Concept.',
 }
 
 /** Success notice and failure message of the last action. */
@@ -34,7 +36,11 @@ function failureText(failure: ConceptFailure): string {
       )
     case 'general':
       return failure.message
+    case 'not-found':
+      return 'Concept này không còn tồn tại. Danh sách đã được tải lại.'
     case 'session-expired':
       return 'Phiên đăng nhập đã hết nên thao tác chưa được thực hiện.'
+    case 'session-renewed':
+      return 'Phiên làm việc vừa được làm mới. Hãy thực hiện lại thao tác.'
   }
 }

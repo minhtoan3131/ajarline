@@ -5,7 +5,9 @@ export type ConceptFailure =
   | { kind: 'field'; field: keyof ConceptFields; message: string }
   | { kind: 'duplicate-expression' }
   | { kind: 'general'; message: string }
+  | { kind: 'not-found' }
   | { kind: 'session-expired' }
+  | { kind: 'session-renewed' }
 
 const TECHNICAL = 'Không kết nối được máy chủ hoặc máy chủ đang lỗi. Nội dung vẫn còn trên màn hình; hãy thử lại.'
 
@@ -24,6 +26,12 @@ export function toConceptFailure(error: unknown): ConceptFailure {
   switch (error.status) {
     case 401:
       return { kind: 'session-expired' }
+    case 403:
+      return error.code === 'CSRF_INVALID'
+        ? { kind: 'session-renewed' }
+        : general('Phiên hiện tại không được phép thực hiện thao tác này.', error)
+    case 404:
+      return { kind: 'not-found' }
     case 409:
       return conflictFailure(error)
     case 422:

@@ -1,7 +1,9 @@
 import {
   EMPTY_CONCEPT_FIELDS,
+  fieldsOf,
   MAX_EXPRESSIONS,
   sameConceptFields,
+  type ConceptAdminItem,
   type ConceptFieldChanges,
   type ConceptFields,
   type ExpressionChanges,
@@ -10,11 +12,11 @@ import {
 import type { ConceptFailure } from './conceptFailure'
 
 /** Which form is open. There is at most one at a time. */
-export type ConceptPanel = { mode: 'closed' } | { mode: 'create' }
+export type ConceptPanel = { mode: 'closed' } | { mode: 'create' } | { mode: 'edit'; concept: ConceptAdminItem }
 
-export type PendingConceptAction = 'saving'
+export type PendingConceptAction = 'saving' | 'deleting'
 
-export type ConceptNotice = 'created'
+export type ConceptNotice = 'created' | 'saved' | 'deleted'
 
 /**
  * Screen state: the open form (`panel`), the typed values (`fields`) against
@@ -34,6 +36,7 @@ export interface ConceptManagerState {
 
 export type ConceptManagerAction =
   | { type: 'create-opened' }
+  | { type: 'edit-opened'; concept: ConceptAdminItem }
   | { type: 'panel-closed' }
   | { type: 'fields-changed'; changes: ConceptFieldChanges }
   | { type: 'expression-added' }
@@ -65,6 +68,16 @@ export function conceptManagerReducer(state: ConceptManagerState, action: Concep
   switch (action.type) {
     case 'create-opened':
       return { ...INITIAL_CONCEPT_MANAGER_STATE, panel: { mode: 'create' } }
+    case 'edit-opened': {
+      const fields = fieldsOf(action.concept)
+      return {
+        ...INITIAL_CONCEPT_MANAGER_STATE,
+        panel: { mode: 'edit', concept: action.concept },
+        baseline: fields,
+        fields,
+        nextRow: fields.expressions.length,
+      }
+    }
     case 'panel-closed':
       return INITIAL_CONCEPT_MANAGER_STATE
     case 'fields-changed': {
@@ -101,6 +114,10 @@ export function conceptManagerReducer(state: ConceptManagerState, action: Concep
       // Success closes the form. The next list load shows the stored values.
       return { ...INITIAL_CONCEPT_MANAGER_STATE, notice: action.notice }
     case 'mutation-failed':
+      // A Concept that no longer exists cannot be edited, so the form closes.
+      if (action.failure.kind === 'not-found') {
+        return { ...INITIAL_CONCEPT_MANAGER_STATE, failure: action.failure }
+      }
       return { ...state, pending: null, failure: action.failure }
   }
 }

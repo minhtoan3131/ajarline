@@ -1,11 +1,14 @@
 import { useId, type ChangeEvent } from 'react'
 
-import type { ConceptFields, ConceptFieldChanges, ExpressionChanges } from '../model/concept'
+import type { ConceptAdminItem, ConceptFieldChanges, ConceptFields, ExpressionChanges } from '../model/concept'
 import type { ConceptFailure } from '../model/conceptFailure'
 import type { PendingConceptAction } from '../model/conceptManagerState'
+import { ConceptDeleteControl } from './ConceptDeleteControl'
 import { ExpressionRows } from './ExpressionRows'
 
 export interface ConceptFormProps {
+  /** The Concept being edited, or null when the form creates a new one. */
+  concept: ConceptAdminItem | null
   fields: ConceptFields
   failure: ConceptFailure | null
   pending: PendingConceptAction | null
@@ -16,10 +19,12 @@ export interface ConceptFormProps {
   onRemoveExpression: (rowKey: string) => void
   onSubmit: () => void
   onCancel: () => void
+  onDelete: () => void
 }
 
 /** Form for one Concept. It keeps the typed text on every failure. */
 export function ConceptForm({
+  concept,
   fields,
   failure,
   pending,
@@ -30,8 +35,10 @@ export function ConceptForm({
   onRemoveExpression,
   onSubmit,
   onCancel,
+  onDelete,
 }: ConceptFormProps) {
   const idPrefix = useId()
+  const editing = concept !== null
   const saving = pending === 'saving'
   const busy = pending !== null
   const keyError = failure?.kind === 'field' && failure.field === 'key' ? failure.message : null
@@ -45,14 +52,19 @@ export function ConceptForm({
         onSubmit()
       }}
     >
-      <h2>Concept mới</h2>
+      <h2>{editing ? 'Sửa Concept' : 'Concept mới'}</h2>
       <ConceptField
         id={`${idPrefix}-key`}
         label="Key"
         value={fields.key}
         error={keyError}
         maxLength={160}
-        hint="Chữ thường, chữ số, ngăn cách bằng dấu gạch ngang, gạch dưới hoặc dấu chấm. Không đổi được sau khi tạo."
+        readOnly={editing}
+        hint={
+          editing
+            ? 'Key đã cố định từ lúc tạo.'
+            : 'Chữ thường, chữ số, ngăn cách bằng dấu gạch ngang, gạch dưới hoặc dấu chấm. Không đổi được sau khi tạo.'
+        }
         onChange={(key) => onChange({ key })}
       />
       <ConceptField
@@ -91,7 +103,7 @@ export function ConceptForm({
       />
       <div className="concept-form-actions">
         <button type="submit" className="admin-button admin-button-primary" disabled={busy}>
-          {saving ? 'Đang tạo…' : 'Tạo'}
+          {submitLabel(editing, saving)}
         </button>
         <button type="button" className="admin-button" disabled={busy} onClick={onCancel}>
           Hủy
@@ -100,8 +112,25 @@ export function ConceptForm({
           {dirty ? 'Có thay đổi chưa lưu' : ''}
         </p>
       </div>
+      {concept !== null && (
+        <div className="concept-form-danger">
+          <ConceptDeleteControl
+            conceptName={concept.displayName}
+            deleting={pending === 'deleting'}
+            disabled={busy}
+            onDelete={onDelete}
+          />
+        </div>
+      )}
     </form>
   )
+}
+
+function submitLabel(editing: boolean, saving: boolean): string {
+  if (saving) {
+    return editing ? 'Đang lưu…' : 'Đang tạo…'
+  }
+  return editing ? 'Lưu' : 'Tạo'
 }
 
 interface ConceptFieldProps {
@@ -112,10 +141,11 @@ interface ConceptFieldProps {
   onChange: (value: string) => void
   maxLength: number
   hint?: string
+  readOnly?: boolean
   rows?: number
 }
 
-function ConceptField({ id, label, value, error, onChange, maxLength, hint, rows }: ConceptFieldProps) {
+function ConceptField({ id, label, value, error, onChange, maxLength, hint, readOnly = false, rows }: ConceptFieldProps) {
   const hintId = `${id}-hint`
   const errorId = `${id}-error`
   const describedBy = [hint === undefined ? null : hintId, error === null ? null : errorId]
@@ -124,6 +154,7 @@ function ConceptField({ id, label, value, error, onChange, maxLength, hint, rows
   const control = {
     id,
     value,
+    readOnly,
     maxLength,
     className: 'admin-input',
     'aria-invalid': error !== null,
