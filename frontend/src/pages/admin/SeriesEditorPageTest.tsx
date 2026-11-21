@@ -4,10 +4,11 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { renderAppRoute } from '../../app/testsupport/renderAppRoute'
 import { CSRF_TOKEN } from '../../features/admin-auth/fixture/adminSessionFixture'
+import { CONTENT_INDEX_PATH } from '../../features/admin-content/contentRoutes'
+import { givenContentIndex } from '../../features/admin-content/fixture/contentIndexFixture'
 import {
   draftSeries,
   givenSeriesEditorSession,
-  givenSeriesList,
   MODULE_ID,
   moduleChild,
   OTHER_MODULE_ID,
@@ -53,14 +54,14 @@ function holdRequests(method: string): () => void {
 describe('SeriesEditorPage', () => {
   it('save_ShouldCreateDraftAndReplaceUrl_WhenNewSeriesIsSaved', async () => {
     const created = draftSeries()
-    const api = givenSeriesList(
+    const api = givenContentIndex(
       givenSeriesEditorSession(new StubApiServer())
         .on('POST', SERIES_API_PATH, jsonResponse(201, created, { ...seriesHeaders(created), Location: SERIES_PATH }))
         .on('GET', SERIES_PATH, jsonResponse(200, created, seriesHeaders(created))),
       [],
     ).install()
     const user = userEvent.setup()
-    renderAppRoute('/admin/series/new', { previous: '/admin/series' })
+    renderAppRoute('/admin/series/new', { previous: CONTENT_INDEX_PATH })
     await user.type(await screen.findByLabelText('Tiêu đề'), 'Học Spring Boot')
     await user.type(screen.getByLabelText('Slug'), 'hoc-spring-boot')
 
@@ -78,8 +79,8 @@ describe('SeriesEditorPage', () => {
     })
     expect(create.headers.get('X-CSRF-TOKEN')).toBe(CSRF_TOKEN.token)
     await user.click(screen.getByRole('button', { name: 'Back (test)' }))
-    expect(await screen.findByRole('heading', { level: 1, name: 'Series' })).toBeInTheDocument()
-    expect(screen.getByTestId('location')).toHaveTextContent(/^\/admin\/series$/)
+    expect(await screen.findByRole('heading', { level: 1, name: 'Nội dung' })).toBeInTheDocument()
+    expect(screen.getByTestId('location')).toHaveTextContent(/^\/admin\/content$/)
   })
 
   it('render_ShouldLoadSeriesAndListModulesInOrder_WhenEditorIsOpenedDirectly', async () => {

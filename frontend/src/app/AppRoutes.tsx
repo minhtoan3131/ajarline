@@ -1,15 +1,15 @@
-import { Route, Routes } from 'react-router'
+import { Navigate, Route, Routes } from 'react-router'
 
 import { RequireAdminSession } from '../features/admin-auth/components/RequireAdminSession'
+import { CONTENT_INDEX_PATH, contentIndexPath } from '../features/admin-content/contentRoutes'
+import { NO_FILTER } from '../features/admin-content/model/contentIndexQuery'
 import { AdminLoginPage } from '../pages/admin/AdminLoginPage'
 import { AdminNotFoundPage } from '../pages/admin/AdminNotFoundPage'
 import { ArticleEditorPage } from '../pages/admin/ArticleEditorPage'
 import { ContentIndexPage } from '../pages/admin/ContentIndexPage'
 import { ModuleEditorPage } from '../pages/admin/ModuleEditorPage'
 import { NewsEditorPage } from '../pages/admin/NewsEditorPage'
-import { NewsListPage } from '../pages/admin/NewsListPage'
 import { SeriesEditorPage } from '../pages/admin/SeriesEditorPage'
-import { SeriesListPage } from '../pages/admin/SeriesListPage'
 import { TopicManagementPage } from '../pages/admin/TopicManagementPage'
 import { AboutPage } from '../pages/AboutPage'
 import { ArticlePage } from '../pages/ArticlePage'
@@ -47,13 +47,14 @@ export function AppRoutes() {
       <Route path="admin" element={<AdminLayout />}>
         <Route path="login" element={<AdminLoginPage />} />
         <Route element={<RequireAdminSession />}>
+          <Route index element={<Navigate to={CONTENT_INDEX_PATH} replace />} />
           <Route path="content" element={<ContentIndexPage />} />
           <Route path="articles/new" element={<ArticleEditorPage />} />
           <Route path="articles/:articleId" element={<ArticleEditorPage />} />
-          <Route path="series" element={<SeriesListPage />} />
+          <Route path="series" element={<Navigate to={contentIndexPath({ ...NO_FILTER, types: ['series'] })} replace />} />
           <Route path="series/new" element={<SeriesEditorPage />} />
           <Route path="series/:seriesId" element={<SeriesEditorPage />} />
-          <Route path="news" element={<NewsListPage />} />
+          <Route path="news" element={<Navigate to={contentIndexPath({ ...NO_FILTER, types: ['news'] })} replace />} />
           <Route path="news/new" element={<NewsEditorPage />} />
           <Route path="news/:newsId" element={<NewsEditorPage />} />
           <Route path="modules/new" element={<ModuleEditorPage />} />

@@ -33,19 +33,14 @@ describe('AdminLayout', () => {
     expect(screen.queryByRole('navigation', { name: 'Điều hướng quản trị' })).toBeNull()
   })
 
-  it('render_ShouldShowSeriesLink_WhenAdminIsSignedIn', async () => {
+  it('render_ShouldShowOnlyContentLinkInContentGroup_WhenAdminIsSignedIn', async () => {
     givenSignedInAdmin(new StubApiServer()).install()
 
     renderAppRoute('/admin/khong-co-trang-nay')
 
-    expect(await screen.findByRole('link', { name: 'Series' })).toHaveAttribute('href', '/admin/series')
-  })
-
-  it('render_ShouldShowNewsLink_WhenAdminIsSignedIn', async () => {
-    givenSignedInAdmin(new StubApiServer()).install()
-
-    renderAppRoute('/admin/khong-co-trang-nay')
-
-    expect(await screen.findByRole('link', { name: 'Tin' })).toHaveAttribute('href', '/admin/news')
+    expect(await screen.findByRole('link', { name: 'Content' })).toHaveAttribute('href', '/admin/content')
+    expect(screen.queryByRole('link', { name: 'Series' })).toBeNull()
+    expect(screen.queryByRole('link', { name: 'Tin' })).toBeNull()
+    expect(screen.getByRole('link', { name: 'Topic' })).toHaveAttribute('href', '/admin/topics')
   })
 })

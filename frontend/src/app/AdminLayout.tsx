@@ -2,6 +2,7 @@ import { useState } from 'react'
 import { Link, NavLink, Outlet, useNavigate } from 'react-router'
 
 import { AdminSessionProvider, useAdminSession } from '../features/admin-auth/AdminSessionContext'
+import { CONTENT_INDEX_PATH } from '../features/admin-content/contentRoutes'
 
 /** Admin frame. The session provider only exists inside this route tree. */
 export function AdminLayout() {
@@ -58,17 +59,14 @@ function AdminHeader() {
 
 /**
  * Links to the Admin screens, grouped like the information architecture.
- * The Content group has Series and News so far; the Organization group has Topic.
+ * The Content group has the Content Index only; the Organization group has Topic.
  */
 function AdminNavigation() {
   return (
     <nav className="admin-nav" aria-label="Điều hướng quản trị">
       <span className="admin-nav-group">Nội dung</span>
-      <NavLink to="/admin/series" className="admin-nav-link">
-        Series
-      </NavLink>
-      <NavLink to="/admin/news" className="admin-nav-link">
-        Tin
+      <NavLink to={CONTENT_INDEX_PATH} className="admin-nav-link">
+        Content
       </NavLink>
       <span className="admin-nav-group">Tổ chức</span>
       <NavLink to="/admin/topics" className="admin-nav-link">
