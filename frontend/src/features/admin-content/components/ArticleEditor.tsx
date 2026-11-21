@@ -2,6 +2,7 @@ import { useDeferredValue, useId, useState, type ReactNode } from 'react'
 import { Link } from 'react-router'
 
 import { ArticlePreview } from './ArticlePreview'
+import { EditorDeleteControl } from './EditorDeleteControl'
 import { EditorField } from './EditorField'
 import { FullPreviewOverlay } from './FullPreviewOverlay'
 import { PublicationBadge, PublicationControls, PublicationHint } from './PublicationControls'
@@ -12,6 +13,7 @@ import { useTopicList } from '../../admin-topics/useTopicList'
 import type { ArticleAdminDetail, ArticleTextField, Placement, Versioned } from '../model/article'
 import type { EditorNotice } from '../model/articleEditorState'
 import type { EditorFailure } from '../model/editorFailure'
+import type { CarriedNotice } from '../model/indexNotice'
 import { useArticleEditor } from '../useArticleEditor'
 
 /** What the editor hands to the control that chooses the Module of the Article. */
@@ -31,6 +33,8 @@ export interface ArticleEditorProps {
   onCreated?: (articleId: string) => void
   /** Draws the control for the Module and position. The editor does not know Series or Module. */
   renderPlacement?: (slot: PlacementSlot) => ReactNode
+  /** Called after the Article was deleted or found gone. The page then leaves the editor. */
+  onRemoved?: (notice: CarriedNotice) => void
 }
 
 /**
@@ -39,7 +43,7 @@ export interface ArticleEditorProps {
  * Save and publication are separate actions. The form never reports success
  * before the server answers, and it keeps the typed text on every failure.
  */
-export function ArticleEditor({ initial, initialNotice, onCreated, renderPlacement }: ArticleEditorProps) {
+export function ArticleEditor({ initial, initialNotice, onCreated, renderPlacement, onRemoved }: ArticleEditorProps) {
   const editor = useArticleEditor(initial, initialNotice, onCreated)
   const { state, dirty } = editor
   const topicList = useTopicList()
@@ -102,6 +106,12 @@ export function ArticleEditor({ initial, initialNotice, onCreated, renderPlaceme
                 Mở trang công khai
               </Link>
             )}
+            <EditorDeleteControl
+              type="article"
+              current={state.current}
+              disabled={state.pending !== null}
+              onRemoved={onRemoved}
+            />
           </div>
         </div>
         <PublicationHint id={publishHintId} status={article?.status ?? null} dirty={dirty} />

@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useParams } from 'react-router'
 import { SeriesEditor } from '../../features/admin-learning/components/SeriesEditor'
 import { seriesEditorPath } from '../../features/admin-learning/learningRoutes'
 import type { LearningNotice } from '../../features/admin-learning/model/learningEditorState'
+import { useLeaveToIndex } from '../../features/admin-content/useLeaveToIndex'
 import { useAdminSeries } from '../../features/admin-learning/useAdminSeries'
 import { AdminNotFoundPage } from './AdminNotFoundPage'
 
@@ -28,6 +29,7 @@ export function SeriesEditorPage() {
 
 function ExistingSeriesEditor({ seriesId, initialNotice }: { seriesId: string; initialNotice: LearningNotice | null }) {
   const { load, retry } = useAdminSeries(seriesId)
+  const leaveToIndex = useLeaveToIndex()
 
   switch (load.status) {
     case 'loading':
@@ -48,7 +50,7 @@ function ExistingSeriesEditor({ seriesId, initialNotice }: { seriesId: string; i
         </div>
       )
     case 'ready':
-      return <SeriesEditor initial={load.series} initialNotice={initialNotice} />
+      return <SeriesEditor initial={load.series} initialNotice={initialNotice} onRemoved={leaveToIndex} />
   }
 }
 

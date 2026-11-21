@@ -1,5 +1,6 @@
 import { useId } from 'react'
 
+import { EditorDeleteControl } from '../../admin-content/components/EditorDeleteControl'
 import { EditorField } from '../../admin-content/components/EditorField'
 import {
   PublicationBadge,
@@ -9,6 +10,7 @@ import {
 import { SaveStatus } from '../../admin-content/components/SaveStatus'
 import { TopicPicker } from '../../admin-content/components/TopicPicker'
 import type { Versioned } from '../../admin-content/model/article'
+import type { CarriedNotice } from '../../admin-content/model/indexNotice'
 import { useTopicList } from '../../admin-topics/useTopicList'
 import type { LearningFields, LearningTextField, ParentFields } from '../model/learning'
 import { listFailureOf } from '../model/learningEditorFailure'
@@ -27,6 +29,8 @@ export interface ModuleEditorProps {
   /** Form values of a new Module, for example with the Series chosen on entry. */
   blank?: LearningFields
   onCreated?: (moduleId: string) => void
+  /** Called after the Module was deleted or found gone. The page then leaves the editor. */
+  onRemoved?: (notice: CarriedNotice) => void
 }
 
 const NO_PARENT: ParentFields = { seriesId: '', position: '' }
@@ -35,7 +39,7 @@ const NO_PARENT: ParentFields = { seriesId: '', position: '' }
  * Editor for one Module. Besides the text fields it has a parent: the Series
  * and the position in it. Save, order and publication are separate actions.
  */
-export function ModuleEditor({ initial, initialNotice, blank, onCreated }: ModuleEditorProps) {
+export function ModuleEditor({ initial, initialNotice, blank, onCreated, onRemoved }: ModuleEditorProps) {
   const editor = useModuleEditor(initial, initialNotice, { blank, onCreated })
   const { state, dirty } = editor
   const topicList = useTopicList()
@@ -84,6 +88,12 @@ export function ModuleEditor({ initial, initialNotice, blank, onCreated }: Modul
               onPublish={() => void editor.publish()}
               onUnpublish={() => void editor.unpublish()}
               confirmUnpublish={unpublishWarning.confirm}
+            />
+            <EditorDeleteControl
+              type="module"
+              current={state.current}
+              disabled={state.pending !== null}
+              onRemoved={onRemoved}
             />
           </div>
         </div>

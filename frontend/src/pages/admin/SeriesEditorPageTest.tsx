@@ -365,4 +365,32 @@ describe('SeriesEditorPage', () => {
     release()
     expect(await screen.findByText('Đã lưu thứ tự.')).toBeInTheDocument()
   })
+
+  it('delete_ShouldSendEtagAndOpenIndexWithNotice_WhenDraftSeriesIsDeleted', async () => {
+    const series = draftSeries()
+    const api = givenContentIndex(givenLoaded(series).on('DELETE', SERIES_PATH, { status: 204 }), []).install()
+    const user = userEvent.setup()
+    renderAppRoute(EDIT_ROUTE)
+    await user.click(await screen.findByRole('button', { name: `Xóa ${series.title}` }))
+
+    await user.click(screen.getByRole('button', { name: 'Xác nhận xóa' }))
+
+    expect(await screen.findByText(`Đã xóa “${series.title}”.`)).toBeInTheDocument()
+    expect(screen.getByTestId('location')).toHaveTextContent(/^\/admin\/content$/)
+    expect(api.requestsTo('DELETE', SERIES_PATH)[0].headers.get('If-Match')).toBe(`"${series.revision}"`)
+  })
+
+  it('delete_ShouldExplainChildrenAndStayInEditor_WhenSeriesStillHasModules', async () => {
+    const series = draftSeries({ modules: [moduleChild()] })
+    givenLoaded(series).on('DELETE', SERIES_PATH, problemResponse(409, 'CONTENT_IN_USE')).install()
+    const user = userEvent.setup()
+    renderAppRoute(EDIT_ROUTE)
+    await user.click(await screen.findByRole('button', { name: `Xóa ${series.title}` }))
+
+    await user.click(screen.getByRole('button', { name: 'Xác nhận xóa' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('còn Module')
+    expect(screen.getByTestId('location')).toHaveTextContent(EDIT_ROUTE)
+    expect(screen.getByRole('button', { name: `Xóa ${series.title}` })).toBeEnabled()
+  })
 })

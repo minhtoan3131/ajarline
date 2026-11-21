@@ -3,6 +3,7 @@ import { useLocation, useNavigate, useParams } from 'react-router'
 import type { EditorNotice } from '../../features/admin-content/model/articleEditorState'
 import { NewsEditor } from '../../features/admin-news/components/NewsEditor'
 import { newsEditorPath } from '../../features/admin-news/newsRoutes'
+import { useLeaveToIndex } from '../../features/admin-content/useLeaveToIndex'
 import { useAdminNews } from '../../features/admin-news/useAdminNews'
 import { AdminNotFoundPage } from './AdminNotFoundPage'
 
@@ -28,6 +29,7 @@ export function NewsEditorPage() {
 
 function ExistingNewsEditor({ newsId, initialNotice }: { newsId: string; initialNotice: EditorNotice | null }) {
   const { load, retry } = useAdminNews(newsId)
+  const leaveToIndex = useLeaveToIndex()
 
   switch (load.status) {
     case 'loading':
@@ -48,7 +50,7 @@ function ExistingNewsEditor({ newsId, initialNotice }: { newsId: string; initial
         </div>
       )
     case 'ready':
-      return <NewsEditor initial={load.news} initialNotice={initialNotice} />
+      return <NewsEditor initial={load.news} initialNotice={initialNotice} onRemoved={leaveToIndex} />
   }
 }
 

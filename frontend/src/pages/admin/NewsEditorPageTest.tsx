@@ -272,4 +272,32 @@ describe('NewsEditorPage', () => {
     expect(await screen.findByLabelText('Tiêu đề')).toHaveValue('Spring Boot 4.1 ra mắt')
     expect(api.requestsTo('GET', NEWS_PATH)).toHaveLength(2)
   })
+
+  it('delete_ShouldSendEtagAndOpenIndexWithNotice_WhenDraftNewsIsDeleted', async () => {
+    const news = draftNews()
+    const api = givenContentIndex(givenLoadedDraft(news).on('DELETE', NEWS_PATH, { status: 204 }), []).install()
+    const user = userEvent.setup()
+    renderAppRoute(EDIT_ROUTE)
+    await user.click(await screen.findByRole('button', { name: `Xóa ${news.title}` }))
+
+    await user.click(screen.getByRole('button', { name: 'Xác nhận xóa' }))
+
+    expect(await screen.findByText(`Đã xóa “${news.title}”.`)).toBeInTheDocument()
+    expect(screen.getByTestId('location')).toHaveTextContent(/^\/admin\/content$/)
+    expect(api.requestsTo('DELETE', NEWS_PATH)[0].headers.get('If-Match')).toBe(`"${news.revision}"`)
+  })
+
+  it('delete_ShouldTellToUnpublish_WhenNewsWasPublishedElsewhere', async () => {
+    const news = draftNews()
+    givenLoadedDraft(news).on('DELETE', NEWS_PATH, problemResponse(409, 'CONTENT_ALREADY_EVER_PUBLISHED')).install()
+    const user = userEvent.setup()
+    renderAppRoute(EDIT_ROUTE)
+    await user.click(await screen.findByRole('button', { name: `Xóa ${news.title}` }))
+
+    await user.click(screen.getByRole('button', { name: 'Xác nhận xóa' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('gỡ xuất bản')
+    expect(screen.getByTestId('location')).toHaveTextContent(EDIT_ROUTE)
+    expect(screen.queryByRole('button', { name: `Xóa ${news.title}` })).toBeNull()
+  })
 })
