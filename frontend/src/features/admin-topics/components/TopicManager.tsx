@@ -5,7 +5,7 @@ import { TopicForm } from './TopicForm'
 import { TopicList } from './TopicList'
 import { TopicMessages } from './TopicMessages'
 
-/** Topic Management screen (ADM-07): the catalog of Topics. */
+/** Topic Management screen: the catalog of Topics. */
 export function TopicManager() {
   const { load, reload } = useTopicList()
   const manager = useTopicManager(reload)

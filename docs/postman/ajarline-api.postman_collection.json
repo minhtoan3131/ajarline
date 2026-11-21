@@ -14711,6 +14711,982 @@
               }
             }
           ]
+        },
+        {
+          "name": "V06 · Maintain the corpus",
+          "item": [
+            {
+              "name": "01 · Get CSRF token",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/auth/v1/csrf",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "v1",
+                    "csrf"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "02 · Login",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"username\":\"{{username}}\",\"password\":\"{{password}}\"}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/auth/v1/login",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "v1",
+                    "login"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "03 · Get new CSRF token",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/auth/v1/csrf",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "v1",
+                    "csrf"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "04 · Create article (draft)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"title\":\"Bài demo V06\",\"slug\":\"{{corpusSlug}}-draft\",\"summary\":\"Bài dùng để demo xóa bản nháp và bài đã từng publish.\",\"bodyMarkdown\":\"# Xin chào\\n\\nĐây là bài demo.\",\"moduleId\":null,\"position\":null,\"topicIds\":[]}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/articles",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "articles"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "05 · List content (find the draft)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/content?types=article&statuses=DRAFT&q={{corpusSlug}}-draft",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "content"
+                  ],
+                  "query": [
+                    {
+                      "key": "types",
+                      "value": "article"
+                    },
+                    {
+                      "key": "statuses",
+                      "value": "DRAFT"
+                    },
+                    {
+                      "key": "q",
+                      "value": "{{corpusSlug}}-draft"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "06 · List content (unknown type)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/content?types=video",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "content"
+                  ],
+                  "query": [
+                    {
+                      "key": "types",
+                      "value": "video"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "07 · Delete article (old revision)",
+              "request": {
+                "method": "DELETE",
+                "header": [
+                  {
+                    "key": "If-Match",
+                    "value": "\"99\""
+                  }
+                ],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/articles/{{articleId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "articles",
+                    "{{articleId}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "08 · Delete article",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/articles/{{articleId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "articles",
+                    "{{articleId}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "09 · List content (draft is gone)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/content?types=article&statuses=DRAFT&q={{corpusSlug}}-draft",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "content"
+                  ],
+                  "query": [
+                    {
+                      "key": "types",
+                      "value": "article"
+                    },
+                    {
+                      "key": "statuses",
+                      "value": "DRAFT"
+                    },
+                    {
+                      "key": "q",
+                      "value": "{{corpusSlug}}-draft"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "10 · Create article (to publish)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"title\":\"Bài demo V06\",\"slug\":\"{{corpusSlug}}\",\"summary\":\"Bài dùng để demo xóa bản nháp và bài đã từng publish.\",\"bodyMarkdown\":\"# Xin chào\\n\\nĐây là bài demo.\",\"moduleId\":null,\"position\":null,\"topicIds\":[]}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/articles",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "articles"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "11 · Publish",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/content/{{articleId}}/publish",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "content",
+                    "{{articleId}}",
+                    "publish"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "12 · Unpublish",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/content/{{articleId}}/unpublish",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "content",
+                    "{{articleId}}",
+                    "unpublish"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "13 · Delete article (was published)",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/articles/{{articleId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "articles",
+                    "{{articleId}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "14 · List content (still stored)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/content?statuses=UNPUBLISHED&q={{corpusSlug}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "content"
+                  ],
+                  "query": [
+                    {
+                      "key": "statuses",
+                      "value": "UNPUBLISHED"
+                    },
+                    {
+                      "key": "q",
+                      "value": "{{corpusSlug}}"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "15 · Create series",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"title\":\"Series demo V06\",\"slug\":\"{{corpusSlug}}-s\",\"summary\":\"Series dùng để demo xóa Series còn Module.\",\"overviewMarkdown\":\"Tổng quan.\",\"topicIds\":[]}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/series",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "series"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "16 · Create module",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"seriesId\":\"{{seriesId}}\",\"position\":1,\"title\":\"Module demo V06\",\"slug\":\"{{corpusSlug}}-m\",\"summary\":\"Module dùng để chặn việc xóa Series.\",\"overviewMarkdown\":\"Tổng quan Module.\",\"topicIds\":[]}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/modules",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "modules"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "17 · Get series",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/series/{{seriesId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "series",
+                    "{{seriesId}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "18 · Delete series (has a module)",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/series/{{seriesId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "series",
+                    "{{seriesId}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "19 · Get module",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/modules/{{moduleId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "modules",
+                    "{{moduleId}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "20 · Delete module",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/modules/{{moduleId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "modules",
+                    "{{moduleId}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "21 · Get series",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/series/{{seriesId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "series",
+                    "{{seriesId}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "22 · Delete series",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/series/{{seriesId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "series",
+                    "{{seriesId}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "23 · List concepts",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/concepts",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "concepts"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "24 · Create concept",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"key\":\"{{conceptKey}}\",\"displayName\":\"Spring Boot\",\"description\":\"Khung ứng dụng Java dùng trong nhiều bài của Ajarline.\",\"active\":true,\"expressions\":[{\"expression\":\"Spring Boot\",\"languageHint\":\"en\",\"autoExpand\":true},{\"expression\":\"khung Spring\",\"languageHint\":\"vi\",\"autoExpand\":true},{\"expression\":\"SpringBoot\",\"languageHint\":null,\"autoExpand\":false}]}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/concepts",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "concepts"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "25 · Create concept (key taken)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"key\":\"{{conceptKey}}\",\"displayName\":\"Spring Boot\",\"description\":\"Khung ứng dụng Java dùng trong nhiều bài của Ajarline.\",\"active\":true,\"expressions\":[{\"expression\":\"Spring Boot\",\"languageHint\":\"en\",\"autoExpand\":true},{\"expression\":\"khung Spring\",\"languageHint\":\"vi\",\"autoExpand\":true},{\"expression\":\"SpringBoot\",\"languageHint\":null,\"autoExpand\":false}]}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/concepts",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "concepts"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "26 · Create concept (same expression)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"key\":\"{{conceptKey}}-b\",\"displayName\":\"Spring Boot (trùng)\",\"description\":null,\"active\":true,\"expressions\":[{\"expression\":\"Spring Boot\",\"languageHint\":\"en\",\"autoExpand\":true},{\"expression\":\"  spring   BOOT \",\"languageHint\":\"en\",\"autoExpand\":false}]}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/concepts",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "concepts"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "27 · Create concept (invalid key)",
+              "request": {
+                "method": "POST",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"key\":\"Bad Key\",\"displayName\":\"Spring Boot (trùng)\",\"description\":null,\"active\":true,\"expressions\":[{\"expression\":\"Spring Boot\",\"languageHint\":\"en\",\"autoExpand\":true},{\"expression\":\"Boot\",\"languageHint\":\"en\",\"autoExpand\":false}]}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/concepts",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "concepts"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "28 · Update concept (turn off)",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"displayName\":\"Spring Boot\",\"description\":null,\"active\":false,\"expressions\":[{\"expression\":\"Spring Boot\",\"languageHint\":\"en\",\"autoExpand\":true},{\"expression\":\"Spring Framework\",\"languageHint\":\"technical\",\"autoExpand\":false}]}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/concepts/{{conceptId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "concepts",
+                    "{{conceptId}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "29 · Update concept (no change)",
+              "request": {
+                "method": "PUT",
+                "header": [
+                  {
+                    "key": "Content-Type",
+                    "value": "application/json"
+                  }
+                ],
+                "body": {
+                  "mode": "raw",
+                  "raw": "{\"displayName\":\"Spring Boot\",\"description\":null,\"active\":false,\"expressions\":[{\"expression\":\"Spring Boot\",\"languageHint\":\"en\",\"autoExpand\":true},{\"expression\":\"Spring Framework\",\"languageHint\":\"technical\",\"autoExpand\":false}]}",
+                  "options": {
+                    "raw": {
+                      "language": "json"
+                    }
+                  }
+                },
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/concepts/{{conceptId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "concepts",
+                    "{{conceptId}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "30 · List concepts",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/concepts",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "concepts"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "31 · List topics",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/topics",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "topics"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "32 · Delete concept",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/concepts/{{conceptId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "concepts",
+                    "{{conceptId}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "33 · Delete concept (again)",
+              "request": {
+                "method": "DELETE",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/concepts/{{conceptId}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "concepts",
+                    "{{conceptId}}"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "34 · Logout",
+              "request": {
+                "method": "POST",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/auth/v1/logout",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "auth",
+                    "v1",
+                    "logout"
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "35 · List content (after logout)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/content?q={{corpusSlug}}",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "content"
+                  ],
+                  "query": [
+                    {
+                      "key": "q",
+                      "value": "{{corpusSlug}}"
+                    }
+                  ]
+                }
+              },
+              "response": []
+            },
+            {
+              "name": "36 · List concepts (after logout)",
+              "request": {
+                "method": "GET",
+                "header": [],
+                "url": {
+                  "raw": "{{baseUrl}}/api/admin/v1/concepts",
+                  "host": [
+                    "{{baseUrl}}"
+                  ],
+                  "path": [
+                    "api",
+                    "admin",
+                    "v1",
+                    "concepts"
+                  ]
+                }
+              },
+              "response": []
+            }
+          ],
+          "event": [
+            {
+              "listen": "test",
+              "script": {
+                "type": "text/javascript",
+                "exec": [
+                  "// Check each step against the status code that the demo expects.",
+                  "const expected = {",
+                  "  '01': 200, '02': 200, '03': 200, '04': 201, '05': 200, '06': 400, '07': 412,",
+                  "  '08': 204, '09': 200, '10': 201, '11': 200, '12': 200, '13': 409, '14': 200,",
+                  "  '15': 201, '16': 201, '17': 200, '18': 409, '19': 200, '20': 204, '21': 200,",
+                  "  '22': 204, '23': 200, '24': 201, '25': 409, '26': 422, '27': 422, '28': 200,",
+                  "  '29': 200, '30': 200, '31': 200, '32': 204, '33': 404, '34': 204, '35': 401,",
+                  "  '36': 401,",
+                  "};",
+                  "const step = pm.info.requestName.slice(0, 2);",
+                  "if (expected[step] !== undefined) {",
+                  "  pm.test(`${pm.info.requestName} → ${expected[step]}`, () => {",
+                  "    pm.response.to.have.status(expected[step]);",
+                  "  });",
+                  "}"
+                ]
+              }
+            }
+          ]
         }
       ]
     }
@@ -14758,6 +15734,8 @@
           "    '/admin/v1/topics': 'topicId',",
           "    '/admin/v1/series': 'seriesId',",
           "    '/admin/v1/modules': 'moduleId',",
+          "    '/admin/v1/news': 'newsId',",
+          "    '/admin/v1/concepts': 'conceptId'",
           "  };",
           "  const suffix = Object.keys(names).find((p) => path.endsWith(p));",
           "  pm.environment.set(suffix ? names[suffix] : 'articleId', pm.response.json().id);",

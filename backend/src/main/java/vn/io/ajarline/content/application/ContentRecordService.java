@@ -14,6 +14,7 @@ import vn.io.ajarline.content.contract.ContentRecordSummary;
 import vn.io.ajarline.content.contract.ContentRecordView;
 import vn.io.ajarline.content.contract.ContentRecordWriter;
 import vn.io.ajarline.content.contract.ContentType;
+import vn.io.ajarline.content.contract.DeletableRecord;
 import vn.io.ajarline.content.contract.EditableRecord;
 import vn.io.ajarline.content.contract.PublicationStatus;
 import vn.io.ajarline.content.contract.TopicAssignmentPort;
@@ -154,6 +155,26 @@ public class ContentRecordService
             policy.requirePublishableSummary(input.summary());
         }
         return new EditableRecord(toView(item));
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public DeletableRecord lockForDelete(UUID id, ContentType type, long expectedRevision) {
+        ContentItemEntity item = lockAtRevision(id, type, expectedRevision);
+        // After the revision check, so a stale revision is reported first.
+        if (item.hasEverBeenPublished()) {
+            throw new ContentOperationException(
+                    ContentFailureCode.CONTENT_ALREADY_EVER_PUBLISHED,
+                    "Content that was published once cannot be deleted.");
+        }
+        return new DeletableRecord(toView(item));
+    }
+
+    @Override
+    @Transactional(propagation = Propagation.MANDATORY)
+    public void deleteRecord(DeletableRecord record) {
+        contentRepository.deleteById(record.current().id());
+        contentRepository.flush();
     }
 
     /**

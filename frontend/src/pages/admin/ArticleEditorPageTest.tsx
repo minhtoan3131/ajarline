@@ -11,6 +11,7 @@ import {
   draftArticle,
   revisionHeaders,
 } from '../../features/admin-content/fixture/articleAdminFixture'
+import { givenContentIndex, holdRequestsTo } from '../../features/admin-content/fixture/contentIndexFixture'
 import { givenSeriesList } from '../../features/admin-learning/fixture/learningAdminFixture'
 import { activeTopic, givenTopicCatalog, inactiveTopic } from '../../features/admin-topics/fixture/topicAdminFixture'
 import { jsonResponse, problemResponse, StubApiServer } from '../../shared/api/testsupport/StubApiServer'
@@ -246,5 +247,102 @@ describe('ArticleEditorPage', () => {
     expect(await screen.findByLabelText('Slug')).toHaveAttribute('readonly')
     expect(screen.getByText('Slug đã cố định từ lần xuất bản đầu tiên.')).toBeInTheDocument()
     expect(screen.getByText('Trạng thái: Đã gỡ xuất bản')).toBeInTheDocument()
+  })
+
+  it('delete_ShouldSendEtagAndOpenIndexWithNotice_WhenDraftIsDeleted', async () => {
+    const article = draftArticle()
+    const api = givenContentIndex(
+      givenLoadedDraft(new StubApiServer(), article).on('DELETE', ARTICLE_PATH, { status: 204 }),
+      [],
+    ).install()
+    const user = userEvent.setup()
+    renderAppRoute(EDIT_ROUTE)
+    await user.click(await screen.findByRole('button', { name: `Xóa ${article.title}` }))
+
+    await user.click(screen.getByRole('button', { name: 'Xác nhận xóa' }))
+
+    expect(await screen.findByText(`Đã xóa “${article.title}”.`)).toBeInTheDocument()
+    expect(screen.getByTestId('location')).toHaveTextContent(/^\/admin\/content$/)
+    expect(api.requestsTo('DELETE', ARTICLE_PATH)[0].headers.get('If-Match')).toBe(`"${article.revision}"`)
+  })
+
+  it('delete_ShouldSendNewEtag_WhenArticleWasSavedBeforeDelete', async () => {
+    const saved = draftArticle({ title: 'Tiêu đề mới', revision: 2 })
+    const api = givenContentIndex(
+      givenLoadedDraft(new StubApiServer())
+        .on('PUT', ARTICLE_PATH, jsonResponse(200, saved, revisionHeaders(saved)))
+        .on('DELETE', ARTICLE_PATH, { status: 204 }),
+      [],
+    ).install()
+    const user = userEvent.setup()
+    renderAppRoute(EDIT_ROUTE)
+    const title = await screen.findByLabelText('Tiêu đề')
+    await user.clear(title)
+    await user.type(title, 'Tiêu đề mới')
+    await user.click(screen.getByRole('button', { name: 'Lưu' }))
+    await user.click(await screen.findByRole('button', { name: 'Xóa Tiêu đề mới' }))
+
+    await user.click(screen.getByRole('button', { name: 'Xác nhận xóa' }))
+
+    expect(await screen.findByText('Đã xóa “Tiêu đề mới”.')).toBeInTheDocument()
+    expect(api.requestsTo('DELETE', ARTICLE_PATH)[0].headers.get('If-Match')).toBe('"2"')
+  })
+
+  it('delete_ShouldBeDisabled_WhileEditorIsSaving', async () => {
+    const article = draftArticle()
+    const saved = draftArticle({ title: 'Tiêu đề mới', revision: 2 })
+    givenLoadedDraft(new StubApiServer(), article)
+      .on('PUT', ARTICLE_PATH, jsonResponse(200, saved, revisionHeaders(saved)))
+      .install()
+    const release = holdRequestsTo('PUT')
+    const user = userEvent.setup()
+    renderAppRoute(EDIT_ROUTE)
+    const title = await screen.findByLabelText('Tiêu đề')
+    await user.clear(title)
+    await user.type(title, 'Tiêu đề mới')
+
+    await user.click(screen.getByRole('button', { name: 'Lưu' }))
+
+    expect(await screen.findByRole('button', { name: 'Đang lưu…' })).toBeDisabled()
+    expect(screen.getByRole('button', { name: `Xóa ${article.title}` })).toBeDisabled()
+    release()
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Xóa Tiêu đề mới' })).toBeEnabled())
+  })
+
+  it('render_ShouldHideDelete_WhenArticleIsPublished', async () => {
+    givenLoadedDraft(
+      new StubApiServer(),
+      draftArticle({ status: 'PUBLISHED', revision: 3, publishedAt: '2026-11-18T03:00:00Z' }),
+    ).install()
+
+    renderAppRoute(EDIT_ROUTE)
+
+    await screen.findByLabelText('Tiêu đề')
+    expect(screen.queryByRole('button', { name: /^Xóa/ })).toBeNull()
+  })
+
+  it('render_ShouldHideDelete_WhenArticleWasNeverSaved', async () => {
+    givenSignedInEditor(new StubApiServer()).install()
+
+    renderAppRoute('/admin/articles/new')
+
+    await screen.findByLabelText('Tiêu đề')
+    expect(screen.queryByRole('button', { name: /^Xóa/ })).toBeNull()
+  })
+
+  it('delete_ShouldOpenIndexWithGoneNotice_WhenArticleIsAlreadyDeleted', async () => {
+    const article = draftArticle()
+    givenContentIndex(
+      givenLoadedDraft(new StubApiServer(), article).on('DELETE', ARTICLE_PATH, problemResponse(404, 'CONTENT_NOT_FOUND')),
+      [],
+    ).install()
+    const user = userEvent.setup()
+    renderAppRoute(EDIT_ROUTE)
+    await user.click(await screen.findByRole('button', { name: `Xóa ${article.title}` }))
+
+    await user.click(screen.getByRole('button', { name: 'Xác nhận xóa' }))
+
+    await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent(/^\/admin\/content$/))
+    expect(await screen.findByRole('alert')).toHaveTextContent('không còn nữa')
   })
 })

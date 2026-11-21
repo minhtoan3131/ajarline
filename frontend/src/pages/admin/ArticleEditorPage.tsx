@@ -1,8 +1,10 @@
 import { useLocation, useNavigate, useParams } from 'react-router'
 
 import { ArticleEditor, type PlacementSlot } from '../../features/admin-content/components/ArticleEditor'
+import { editorPathOf } from '../../features/admin-content/contentRoutes'
 import type { EditorNotice } from '../../features/admin-content/model/articleEditorState'
 import { useAdminArticle } from '../../features/admin-content/useAdminArticle'
+import { useLeaveToIndex } from '../../features/admin-content/useLeaveToIndex'
 import { ModulePlacementPicker } from '../../features/admin-learning/components/ModulePlacementPicker'
 
 /** Draws the Module picker for the slot of the Article editor. A new Article has no id yet. */
@@ -23,7 +25,7 @@ export function ArticleEditorPage() {
         renderPlacement={placementPicker(null)}
         onCreated={(id) => {
           // Replace the create URL, so Back does not reopen an empty form.
-          void navigate(`/admin/articles/${id}`, { replace: true, state: { notice: 'created' } })
+          void navigate(editorPathOf('article', id), { replace: true, state: { notice: 'created' } })
         }}
       />
     )
@@ -33,6 +35,7 @@ export function ArticleEditorPage() {
 
 function ExistingArticleEditor({ articleId, initialNotice }: { articleId: string; initialNotice: EditorNotice | null }) {
   const { load, retry } = useAdminArticle(articleId)
+  const leaveToIndex = useLeaveToIndex()
 
   switch (load.status) {
     case 'loading':
@@ -58,7 +61,12 @@ function ExistingArticleEditor({ articleId, initialNotice }: { articleId: string
       )
     case 'ready':
       return (
-        <ArticleEditor initial={load.article} initialNotice={initialNotice} renderPlacement={placementPicker(articleId)} />
+        <ArticleEditor
+          initial={load.article}
+          initialNotice={initialNotice}
+          renderPlacement={placementPicker(articleId)}
+          onRemoved={leaveToIndex}
+        />
       )
   }
 }

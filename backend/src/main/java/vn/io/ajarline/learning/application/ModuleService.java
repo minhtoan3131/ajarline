@@ -1,5 +1,6 @@
 package vn.io.ajarline.learning.application;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.io.ajarline.content.contract.ContentFailureCode;
@@ -11,14 +12,18 @@ import vn.io.ajarline.content.contract.ContentRecordView;
 import vn.io.ajarline.content.contract.ContentRecordWriter;
 import vn.io.ajarline.content.contract.ContentRevisionCommands;
 import vn.io.ajarline.content.contract.ContentType;
+import vn.io.ajarline.content.contract.DeletableRecord;
 import vn.io.ajarline.content.contract.EditableRecord;
 import vn.io.ajarline.content.contract.PlacementChange;
 import vn.io.ajarline.content.contract.PublicationStatus;
 import vn.io.ajarline.learning.contract.LearningChild;
+import vn.io.ajarline.learning.contract.LearningFailureCode;
+import vn.io.ajarline.learning.contract.LearningOperationException;
 import vn.io.ajarline.learning.contract.ModuleContentInput;
 import vn.io.ajarline.learning.contract.ModuleCreator;
 import vn.io.ajarline.learning.contract.ModuleEditor;
 import vn.io.ajarline.learning.contract.ModuleReader;
+import vn.io.ajarline.learning.contract.ModuleRemover;
 import vn.io.ajarline.learning.contract.ModuleView;
 import vn.io.ajarline.learning.infrastructure.persistence.ModuleArticleEntity;
 import vn.io.ajarline.learning.infrastructure.persistence.ModuleArticleJpaRepository;
@@ -37,7 +42,9 @@ import java.util.UUID;
  * Series first, writes everything, and raises the other revisions last.</p>
  */
 @Service
-public class ModuleService implements ModuleCreator, ModuleReader, ModuleEditor {
+public class ModuleService implements ModuleCreator, ModuleReader, ModuleEditor, ModuleRemover {
+    private static final String MEMBER_MODULE_CONSTRAINT = "fk_module_article_module_id";
+
     private final ContentRecordReader recordReader;
     private final ContentRecordWriter recordWriter;
     private final ContentRevisionCommands revisions;
@@ -119,6 +126,53 @@ public class ModuleService implements ModuleCreator, ModuleReader, ModuleEditor 
         // is not in the set: `replace` already raised its revision.
         revisions.advanceRevisions(change.revisionTargets(), clock.instant());
         return toView(saved, module);
+    }
+
+    @Override
+    @Transactional
+    public void delete(UUID id, long expectedRevision) {
+        // Read the Module row, not the common record. A copy of the common record in the
+        // persistence context would hide the fresh row from the locking read below.
+        ModuleEntity module = moduleRepository.findById(id)
+                .orElseThrow(() -> new ContentOperationException(
+                        ContentFailureCode.CONTENT_NOT_FOUND, "MODULE was not found: " + id));
+        // Parent before child: lock the Series, then the Module.
+        placement.lockStructure(module.getSeriesId(), null);
+        DeletableRecord record = recordWriter.lockForDelete(id, ContentType.MODULE, expectedRevision);
+
+        // Check before any write. Everyone who adds an Article locks the Module first.
+        if (moduleArticleRepository.existsByModuleId(id)) {
+            throw stillInUse();
+        }
+        PlacementChange change = placement.detachModule(id);
+        try {
+            recordWriter.deleteRecord(record);
+        } catch (DataIntegrityViolationException exception) {
+            // The foreign key is the last guard. Other violations are not hidden.
+            if (containsConstraint(exception, MEMBER_MODULE_CONSTRAINT)) {
+                throw stillInUse();
+            }
+            throw exception;
+        }
+        // Last, because this statement clears the persistence context. The deleted Module is
+        // not in the set.
+        revisions.advanceRevisions(change.revisionTargets(), clock.instant());
+    }
+
+    private LearningOperationException stillInUse() {
+        return new LearningOperationException(
+                LearningFailureCode.CONTENT_IN_USE, "The Module still has Articles.");
+    }
+
+    private boolean containsConstraint(Throwable failure, String constraint) {
+        Throwable current = failure;
+        while (current != null) {
+            if (current.getMessage() != null && current.getMessage().contains(constraint)) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 
     private ModuleEntity requireModuleRow(UUID id) {

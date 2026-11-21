@@ -7,11 +7,13 @@ import vn.io.ajarline.content.contract.ContentRecordReader;
 import vn.io.ajarline.content.contract.ContentRecordView;
 import vn.io.ajarline.content.contract.ContentRecordWriter;
 import vn.io.ajarline.content.contract.ContentType;
+import vn.io.ajarline.content.contract.DeletableRecord;
 import vn.io.ajarline.content.contract.EditableRecord;
 import vn.io.ajarline.content.contract.NewsContentInput;
 import vn.io.ajarline.content.contract.NewsCreator;
 import vn.io.ajarline.content.contract.NewsEditor;
 import vn.io.ajarline.content.contract.NewsReader;
+import vn.io.ajarline.content.contract.NewsRemover;
 import vn.io.ajarline.content.contract.NewsSource;
 import vn.io.ajarline.content.contract.NewsView;
 import vn.io.ajarline.content.contract.PublicNewsView;
@@ -31,7 +33,7 @@ import java.util.UUID;
  * here. Both are written in one transaction. It also reads a published News item for the public.</p>
  */
 @Service
-public class NewsService implements NewsCreator, NewsReader, NewsEditor {
+public class NewsService implements NewsCreator, NewsReader, NewsEditor, NewsRemover {
     private final ContentRecordReader recordReader;
     private final ContentRecordWriter recordWriter;
     private final NewsPolicy policy;
@@ -127,6 +129,14 @@ public class NewsService implements NewsCreator, NewsReader, NewsEditor {
             news.replaceSource(source.name(), source.url(), source.publishedAt());
         }
         return toView(saved, news);
+    }
+
+    @Override
+    @Transactional
+    public void delete(UUID id, long expectedRevision) {
+        DeletableRecord record = recordWriter.lockForDelete(id, ContentType.NEWS, expectedRevision);
+        // The database removes the news row and the Topic links. The Topics stay.
+        recordWriter.deleteRecord(record);
     }
 
     private NewsEntity requireNews(UUID id) {

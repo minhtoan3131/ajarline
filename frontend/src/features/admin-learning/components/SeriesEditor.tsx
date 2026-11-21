@@ -1,6 +1,7 @@
 import { useId } from 'react'
 import { Link } from 'react-router'
 
+import { EditorDeleteControl } from '../../admin-content/components/EditorDeleteControl'
 import { EditorField } from '../../admin-content/components/EditorField'
 import {
   PublicationBadge,
@@ -10,6 +11,7 @@ import {
 import { SaveStatus } from '../../admin-content/components/SaveStatus'
 import { TopicPicker } from '../../admin-content/components/TopicPicker'
 import type { Versioned } from '../../admin-content/model/article'
+import type { CarriedNotice } from '../../admin-content/model/indexNotice'
 import { useTopicList } from '../../admin-topics/useTopicList'
 import { moduleEditorPath, newModulePath } from '../learningRoutes'
 import type { LearningTextField } from '../model/learning'
@@ -26,13 +28,15 @@ export interface SeriesEditorProps {
   initial: Versioned<SeriesAdminDetail> | null
   initialNotice: LearningNotice | null
   onCreated?: (seriesId: string) => void
+  /** Called after the Series was deleted or found gone. The page then leaves the editor. */
+  onRemoved?: (notice: CarriedNotice) => void
 }
 
 /**
  * Editor for one Series. Save, order and publication are separate actions.
  * The form keeps the typed text on every failure.
  */
-export function SeriesEditor({ initial, initialNotice, onCreated }: SeriesEditorProps) {
+export function SeriesEditor({ initial, initialNotice, onCreated, onRemoved }: SeriesEditorProps) {
   const editor = useSeriesEditor(initial, initialNotice, onCreated)
   const { state, dirty } = editor
   const topicList = useTopicList()
@@ -80,6 +84,12 @@ export function SeriesEditor({ initial, initialNotice, onCreated }: SeriesEditor
               onPublish={() => void editor.publish()}
               onUnpublish={() => void editor.unpublish()}
               confirmUnpublish={unpublishWarning.confirm}
+            />
+            <EditorDeleteControl
+              type="series"
+              current={state.current}
+              disabled={state.pending !== null}
+              onRemoved={onRemoved}
             />
           </div>
         </div>

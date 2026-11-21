@@ -4,6 +4,7 @@ import { ModuleEditor } from '../../features/admin-learning/components/ModuleEdi
 import { moduleEditorPath } from '../../features/admin-learning/learningRoutes'
 import type { LearningNotice } from '../../features/admin-learning/model/learningEditorState'
 import { blankModuleFields } from '../../features/admin-learning/model/module'
+import { useLeaveToIndex } from '../../features/admin-content/useLeaveToIndex'
 import { useAdminModule } from '../../features/admin-learning/useAdminModule'
 import { useNewModuleParent } from '../../features/admin-learning/useNewModuleParent'
 import { AdminNotFoundPage } from './AdminNotFoundPage'
@@ -45,6 +46,7 @@ function NewModuleEditor() {
 
 function ExistingModuleEditor({ moduleId, initialNotice }: { moduleId: string; initialNotice: LearningNotice | null }) {
   const { load, retry } = useAdminModule(moduleId)
+  const leaveToIndex = useLeaveToIndex()
 
   switch (load.status) {
     case 'loading':
@@ -65,7 +67,7 @@ function ExistingModuleEditor({ moduleId, initialNotice }: { moduleId: string; i
         </div>
       )
     case 'ready':
-      return <ModuleEditor initial={load.module} initialNotice={initialNotice} />
+      return <ModuleEditor initial={load.module} initialNotice={initialNotice} onRemoved={leaveToIndex} />
   }
 }
 

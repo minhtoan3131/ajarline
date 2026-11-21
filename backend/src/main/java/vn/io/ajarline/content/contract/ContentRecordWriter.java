@@ -66,4 +66,23 @@ public interface ContentRecordWriter {
      * @return true when the item exists with this type and is now locked
      */
     boolean lockStructure(UUID id, ContentType type);
+
+    /**
+     * Locks one item for deletion and checks it in this order: the item exists with this type,
+     * the revision matches, and the item was never published.
+     *
+     * @throws ContentOperationException with {@link ContentFailureCode#CONTENT_NOT_FOUND}
+     *         when the id is unknown or the item has another type, with
+     *         {@link ContentFailureCode#REVISION_CONFLICT} when the revision is not current,
+     *         or with {@link ContentFailureCode#CONTENT_ALREADY_EVER_PUBLISHED} when the item
+     *         was published once, even if it is unpublished now
+     */
+    DeletableRecord lockForDelete(UUID id, ContentType type, long expectedRevision);
+
+    /**
+     * Deletes the row of a locked item and writes the change to the database at once. The
+     * database removes the rows of the item's own parts and its Topic links. A database failure
+     * is raised here.
+     */
+    void deleteRecord(DeletableRecord record);
 }

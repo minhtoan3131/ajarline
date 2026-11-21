@@ -94,7 +94,7 @@ function validationFailure(error: ApiError): EditorFailure {
 }
 
 /** A message for the whole editor. The request id lets the owner find the server log line. */
-export function generalFailure(message: string, error?: ApiError): CommonEditorFailure {
+export function generalFailure(message: string, error?: ApiError): Extract<CommonEditorFailure, { kind: 'general' }> {
   const reference = error?.requestId ? ` Mã tra cứu: ${error.requestId}.` : ''
   return { kind: 'general', message: message + reference }
 }

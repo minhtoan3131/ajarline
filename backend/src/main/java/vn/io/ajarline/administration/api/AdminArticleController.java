@@ -19,6 +19,7 @@ import tools.jackson.databind.JsonNode;
 import vn.io.ajarline.content.contract.ArticleCreator;
 import vn.io.ajarline.content.contract.ArticleEditor;
 import vn.io.ajarline.content.contract.ArticleReader;
+import vn.io.ajarline.content.contract.ArticleRemover;
 import vn.io.ajarline.content.contract.ArticleView;
 import vn.io.ajarline.platform.web.OpenApiConfiguration;
 
@@ -34,11 +35,14 @@ public class AdminArticleController {
     private final ArticleCreator creator;
     private final ArticleReader reader;
     private final ArticleEditor editor;
+    private final ArticleRemover remover;
 
-    public AdminArticleController(ArticleCreator creator, ArticleReader reader, ArticleEditor editor) {
+    public AdminArticleController(ArticleCreator creator, ArticleReader reader, ArticleEditor editor,
+                                  ArticleRemover remover) {
         this.creator = creator;
         this.reader = reader;
         this.editor = editor;
+        this.remover = remover;
     }
 
 
@@ -200,5 +204,55 @@ public class AdminArticleController {
                 .eTag(RevisionHttpHeaders.etag(updated.revision()))
                 .cacheControl(CacheControl.noStore())
                 .body(ArticleAdminDetail.from(updated));
+    }
+
+    @Operation(
+            operationId = "deleteArticle",
+            summary = "Hard-delete a never-published Draft Article")
+    @Parameter(
+            name = "X-CSRF-TOKEN",
+            in = ParameterIn.HEADER,
+            required = true,
+            description = "Current CSRF token for the authenticated session.")
+    @Parameter(
+            name = "If-Match",
+            in = ParameterIn.HEADER,
+            required = true,
+            description = "Strong decimal revision returned in ETag, for example \"3\".")
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "204",
+                    description = "Article hard-deleted"),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Article id is not a valid UUID, or If-Match syntax is invalid"),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required"),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "CSRF proof is missing or invalid"),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Article was not found"),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "Article was published once, so it cannot be deleted"),
+            @ApiResponse(
+                    responseCode = "412",
+                    description = "If-Match revision is stale"),
+            @ApiResponse(
+                    responseCode = "428",
+                    description = "If-Match is required")
+    })
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(
+            @PathVariable UUID id,
+            @Parameter(hidden = true) HttpServletRequest request) {
+        long expectedRevision = RevisionHttpHeaders.requiredExpectedRevision(request);
+        remover.delete(id, expectedRevision);
+        return ResponseEntity.noContent()
+                .cacheControl(CacheControl.noStore())
+                .build();
     }
 }

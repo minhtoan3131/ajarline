@@ -14,6 +14,7 @@ import jakarta.servlet.http.HttpServletRequest;
 import org.springframework.http.CacheControl;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
+import org.springframework.web.bind.annotation.DeleteMapping;
 import org.springframework.web.bind.annotation.GetMapping;
 import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
@@ -25,6 +26,7 @@ import tools.jackson.databind.JsonNode;
 import vn.io.ajarline.learning.contract.SeriesCreator;
 import vn.io.ajarline.learning.contract.SeriesEditor;
 import vn.io.ajarline.learning.contract.SeriesReader;
+import vn.io.ajarline.learning.contract.SeriesRemover;
 import vn.io.ajarline.learning.contract.ChildOrderView;
 import vn.io.ajarline.learning.contract.ModuleOrderEditor;
 import vn.io.ajarline.learning.contract.SeriesView;
@@ -43,13 +45,15 @@ public class AdminSeriesController {
     private final SeriesReader reader;
     private final SeriesEditor editor;
     private final ModuleOrderEditor orderEditor;
+    private final SeriesRemover remover;
 
     public AdminSeriesController(SeriesCreator creator, SeriesReader reader, SeriesEditor editor,
-                                 ModuleOrderEditor orderEditor) {
+                                 ModuleOrderEditor orderEditor, SeriesRemover remover) {
         this.creator = creator;
         this.reader = reader;
         this.editor = editor;
         this.orderEditor = orderEditor;
+        this.remover = remover;
     }
 
     @Operation(
@@ -208,6 +212,57 @@ public class AdminSeriesController {
                 .eTag(RevisionHttpHeaders.etag(updated.record().revision()))
                 .cacheControl(CacheControl.noStore())
                 .body(SeriesAdminDetail.from(updated));
+    }
+
+    @Operation(
+            operationId = "deleteSeries",
+            summary = "Hard-delete a never-published Draft Series that has no Module")
+    @Parameter(
+            name = "X-CSRF-TOKEN",
+            in = ParameterIn.HEADER,
+            required = true,
+            description = "Current CSRF token for the authenticated session.")
+    @Parameter(
+            name = "If-Match",
+            in = ParameterIn.HEADER,
+            required = true,
+            description = "Strong decimal revision returned in ETag, for example \"3\".")
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "204",
+                    description = "Series hard-deleted"),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Series id is not a valid UUID, or If-Match syntax is invalid"),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required"),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "CSRF proof is missing or invalid"),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Series was not found"),
+            @ApiResponse(
+                    responseCode = "409",
+                    description = "Series was published once (CONTENT_ALREADY_EVER_PUBLISHED), "
+                            + "or still has a Module (CONTENT_IN_USE)"),
+            @ApiResponse(
+                    responseCode = "412",
+                    description = "If-Match revision is stale"),
+            @ApiResponse(
+                    responseCode = "428",
+                    description = "If-Match is required")
+    })
+    @DeleteMapping("/{id}")
+    public ResponseEntity<Void> delete(
+            @PathVariable UUID id,
+            @Parameter(hidden = true) HttpServletRequest request) {
+        long expectedRevision = RevisionHttpHeaders.requiredExpectedRevision(request);
+        remover.delete(id, expectedRevision);
+        return ResponseEntity.noContent()
+                .cacheControl(CacheControl.noStore())
+                .build();
     }
 
     @Operation(

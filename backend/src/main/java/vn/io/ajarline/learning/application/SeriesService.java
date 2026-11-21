@@ -1,5 +1,6 @@
 package vn.io.ajarline.learning.application;
 
+import org.springframework.dao.DataIntegrityViolationException;
 import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.io.ajarline.content.contract.ContentRecordInput;
@@ -8,13 +9,17 @@ import vn.io.ajarline.content.contract.ContentRecordSummary;
 import vn.io.ajarline.content.contract.ContentRecordView;
 import vn.io.ajarline.content.contract.ContentRecordWriter;
 import vn.io.ajarline.content.contract.ContentType;
+import vn.io.ajarline.content.contract.DeletableRecord;
 import vn.io.ajarline.content.contract.EditableRecord;
 import vn.io.ajarline.content.contract.PublicationStatus;
 import vn.io.ajarline.learning.contract.LearningChild;
+import vn.io.ajarline.learning.contract.LearningFailureCode;
+import vn.io.ajarline.learning.contract.LearningOperationException;
 import vn.io.ajarline.learning.contract.SeriesContentInput;
 import vn.io.ajarline.learning.contract.SeriesCreator;
 import vn.io.ajarline.learning.contract.SeriesEditor;
 import vn.io.ajarline.learning.contract.SeriesReader;
+import vn.io.ajarline.learning.contract.SeriesRemover;
 import vn.io.ajarline.learning.contract.SeriesView;
 import vn.io.ajarline.learning.infrastructure.persistence.ModuleEntity;
 import vn.io.ajarline.learning.infrastructure.persistence.ModuleJpaRepository;
@@ -32,7 +37,9 @@ import java.util.UUID;
  * to learning. Both are written in one transaction.</p>
  */
 @Service
-public class SeriesService implements SeriesCreator, SeriesReader, SeriesEditor {
+public class SeriesService implements SeriesCreator, SeriesReader, SeriesEditor, SeriesRemover {
+    private static final String MODULE_SERIES_CONSTRAINT = "fk_module_series_id";
+
     private final ContentRecordReader recordReader;
     private final ContentRecordWriter recordWriter;
     private final LearningContentPolicy policy;
@@ -91,6 +98,41 @@ public class SeriesService implements SeriesCreator, SeriesReader, SeriesEditor 
             series.replaceOverview(input.overviewMarkdown());
         }
         return toView(saved, series);
+    }
+
+    @Override
+    @Transactional
+    public void delete(UUID id, long expectedRevision) {
+        // Everyone who adds a Module locks the Series first, so none can appear after the check.
+        DeletableRecord record = recordWriter.lockForDelete(id, ContentType.SERIES, expectedRevision);
+        if (moduleRepository.existsBySeriesId(id)) {
+            throw stillInUse();
+        }
+        try {
+            recordWriter.deleteRecord(record);
+        } catch (DataIntegrityViolationException exception) {
+            // The foreign key is the last guard. Other violations are not hidden.
+            if (containsConstraint(exception, MODULE_SERIES_CONSTRAINT)) {
+                throw stillInUse();
+            }
+            throw exception;
+        }
+    }
+
+    private LearningOperationException stillInUse() {
+        return new LearningOperationException(
+                LearningFailureCode.CONTENT_IN_USE, "The Series still has Modules.");
+    }
+
+    private boolean containsConstraint(Throwable failure, String constraint) {
+        Throwable current = failure;
+        while (current != null) {
+            if (current.getMessage() != null && current.getMessage().contains(constraint)) {
+                return true;
+            }
+            current = current.getCause();
+        }
+        return false;
     }
 
     private SeriesEntity requireSeries(UUID id) {

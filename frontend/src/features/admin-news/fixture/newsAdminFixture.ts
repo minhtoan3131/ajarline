@@ -1,9 +1,8 @@
 import type { PublicationState } from '../../admin-content/model/article'
 import { givenSignedInAdmin } from '../../admin-auth/fixture/adminSessionFixture'
 import { givenTopicCatalog } from '../../admin-topics/fixture/topicAdminFixture'
-import { jsonResponse, type StubApiServer } from '../../../shared/api/testsupport/StubApiServer'
+import type { StubApiServer } from '../../../shared/api/testsupport/StubApiServer'
 import type { NewsAdminDetail } from '../model/news'
-import type { AdminNewsItem } from '../model/newsList'
 import { vi } from 'vitest'
 
 export const NEWS_ID = '6e4b2c90-1d7a-4f35-8b02-9c3a5d7e1f48'
@@ -51,25 +50,6 @@ export function publicationOfNews(news: NewsAdminDetail, changes: Partial<Public
     updatedAt: news.updatedAt,
     ...changes,
   }
-}
-
-/** Request path of the News list at one page. The page size is the one the app sends. */
-export function newsListApiPath(page = 0): string {
-  return `/api/admin/v1/content?types=news&page=${page}&size=20`
-}
-
-export function newsItem(changes: Partial<AdminNewsItem> = {}): AdminNewsItem {
-  return { id: NEWS_ID, slug: 'spring-boot-4-1-ra-mat', title: 'Spring Boot 4.1 ra mắt', status: 'DRAFT', ...changes }
-}
-
-/** Body of the list endpoint. */
-export function newsListResponse(items: AdminNewsItem[], options: { page?: number; hasMore?: boolean } = {}) {
-  return { page: options.page ?? 0, size: 20, hasMore: options.hasMore ?? false, items }
-}
-
-/** Stubs the News list at one page. */
-export function givenNewsList(api: StubApiServer, items: AdminNewsItem[], page = 0, hasMore = false): StubApiServer {
-  return api.on('GET', newsListApiPath(page), jsonResponse(200, newsListResponse(items, { page, hasMore })))
 }
 
 /** Session plus the Topic list that every News editor loads for its Topic picker. */

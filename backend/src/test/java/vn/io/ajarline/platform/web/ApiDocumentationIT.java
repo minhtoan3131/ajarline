@@ -33,19 +33,23 @@ class ApiDocumentationIT {
             Map.entry("/api/admin/v1/articles", Map.of("post", "createArticle")),
             Map.entry("/api/admin/v1/articles/{id}", Map.of(
                     "get", "getAdminArticle",
-                    "put", "updateArticle")),
+                    "put", "updateArticle",
+                    "delete", "deleteArticle")),
             Map.entry("/api/admin/v1/news", Map.of("post", "createNews")),
             Map.entry("/api/admin/v1/news/{id}", Map.of(
                     "get", "getAdminNews",
-                    "put", "updateNews")),
+                    "put", "updateNews",
+                    "delete", "deleteNews")),
             Map.entry("/api/admin/v1/series", Map.of("post", "createSeries")),
             Map.entry("/api/admin/v1/series/{id}", Map.of(
                     "get", "getAdminSeries",
-                    "put", "updateSeries")),
+                    "put", "updateSeries",
+                    "delete", "deleteSeries")),
             Map.entry("/api/admin/v1/modules", Map.of("post", "createModule")),
             Map.entry("/api/admin/v1/modules/{id}", Map.of(
                     "get", "getAdminModule",
-                    "put", "updateModule")),
+                    "put", "updateModule",
+                    "delete", "deleteModule")),
             Map.entry("/api/admin/v1/series/{seriesId}/module-order", Map.of(
                     "put", "reorderModules")),
             Map.entry("/api/admin/v1/modules/{moduleId}/article-order", Map.of(
@@ -56,6 +60,12 @@ class ApiDocumentationIT {
             Map.entry("/api/admin/v1/topics/{id}", Map.of(
                     "put", "updateTopic",
                     "delete", "deleteTopic")),
+            Map.entry("/api/admin/v1/concepts", Map.of(
+                    "get", "listConcepts",
+                    "post", "createConcept")),
+            Map.entry("/api/admin/v1/concepts/{id}", Map.of(
+                    "put", "updateConcept",
+                    "delete", "deleteConcept")),
             Map.entry("/api/admin/v1/content", Map.of(
                     "get", "listAdminContent")),
             Map.entry("/api/admin/v1/content/{id}/publish", Map.of(
@@ -380,6 +390,45 @@ class ApiDocumentationIT {
         assertThat(schemas.propertyNames()).contains(
                 "TopicCreatable", "TopicEditable", "TopicAdminItem", "TopicAdminList");
         assertThat(schemas.get("TopicEditable").get("properties").has("slug")).isFalse();
+    }
+
+    @Test
+    void openApi_ShouldExposeConceptMetadata_WhenDocumentIsGenerated()
+            throws Exception {
+        JsonNode document = openApiDocument();
+        JsonNode paths = document.get("paths");
+        JsonNode list = operation(paths, "/api/admin/v1/concepts", "get");
+        JsonNode create = operation(paths, "/api/admin/v1/concepts", "post");
+        JsonNode update = operation(paths, "/api/admin/v1/concepts/{id}", "put");
+        JsonNode delete = operation(paths, "/api/admin/v1/concepts/{id}", "delete");
+
+        for (JsonNode conceptOperation : new JsonNode[]{list, create, update, delete}) {
+            assertThat(hasSecurity(conceptOperation, OpenApiConfiguration.ADMIN_SESSION)).isTrue();
+        }
+        for (JsonNode mutation : new JsonNode[]{create, update, delete}) {
+            assertThat(parameterNames(mutation)).contains("X-CSRF-TOKEN");
+            assertThat(parameterNames(mutation)).doesNotContain("If-Match");
+        }
+        assertThat(requestSchemaRef(create)).endsWith("/ConceptCreatable");
+        assertThat(requestSchemaRef(update)).endsWith("/ConceptEditable");
+        assertThat(responseSchemaRef(list, "200")).endsWith("/ConceptAdminList");
+        assertThat(create.get("responses").get("201").get("headers").propertyNames())
+                .contains("Location");
+        assertThat(create.get("responses").get("201").get("headers").has("ETag")).isFalse();
+        assertThat(create.get("responses").propertyNames()).contains("409", "422");
+        assertThat(update.get("responses").get("200").path("headers").has("ETag")).isFalse();
+        assertThat(update.get("responses").propertyNames()).contains("404", "422");
+        assertThat(delete.get("responses").has("204")).isTrue();
+        assertThat(delete.get("responses").propertyNames()).contains("404");
+
+        JsonNode schemas = document.get("components").get("schemas");
+        assertThat(schemas.propertyNames()).contains(
+                "ConceptCreatable", "ConceptEditable", "ConceptAdminItem", "ConceptAdminList");
+        assertThat(schemas.get("ConceptEditable").get("properties").has("key")).isFalse();
+        assertThat(schemas.get("ConceptAdminItem").get("properties").propertyNames())
+                .containsExactlyInAnyOrder(
+                        "id", "key", "displayName", "description", "active",
+                        "expressions", "createdAt", "updatedAt");
     }
 
     @Test

@@ -4,10 +4,11 @@ import { describe, expect, it } from 'vitest'
 
 import { renderAppRoute } from '../../app/testsupport/renderAppRoute'
 import { CSRF_TOKEN } from '../../features/admin-auth/fixture/adminSessionFixture'
+import { CONTENT_INDEX_PATH } from '../../features/admin-content/contentRoutes'
+import { givenContentIndex } from '../../features/admin-content/fixture/contentIndexFixture'
 import {
   draftNews,
   givenNewsEditorSession,
-  givenNewsList,
   holdRequests,
   newsHeaders,
   NEWS_API_PATH,
@@ -26,14 +27,12 @@ function givenLoadedDraft(news = draftNews()): StubApiServer {
 describe('NewsEditorPage', () => {
   it('save_ShouldCreateDraftAndReplaceUrl_WhenNewNewsIsSaved', async () => {
     const created = draftNews()
-    const api = givenNewsList(
-      givenNewsEditorSession(new StubApiServer())
-        .on('POST', NEWS_API_PATH, jsonResponse(201, created, { ...newsHeaders(created), Location: NEWS_PATH }))
-        .on('GET', NEWS_PATH, jsonResponse(200, created, newsHeaders(created))),
-      [],
-    ).install()
+    const api = givenNewsEditorSession(new StubApiServer())
+      .on('POST', NEWS_API_PATH, jsonResponse(201, created, { ...newsHeaders(created), Location: NEWS_PATH }))
+      .on('GET', NEWS_PATH, jsonResponse(200, created, newsHeaders(created)))
+      .install()
     const user = userEvent.setup()
-    renderAppRoute('/admin/news/new', { previous: '/admin/news' })
+    renderAppRoute('/admin/news/new', { previous: CONTENT_INDEX_PATH })
     await user.type(await screen.findByLabelText('Tiêu đề'), 'Spring Boot 4.1 ra mắt')
     await user.type(screen.getByLabelText('Slug'), 'spring-boot-4-1-ra-mat')
     await user.type(screen.getByLabelText('Tóm tắt'), 'Bản phát hành mới của Spring Boot.')
@@ -63,22 +62,22 @@ describe('NewsEditorPage', () => {
 
   it('save_ShouldLeaveNoCreateUrlInHistory_WhenNewNewsIsSaved', async () => {
     const created = draftNews()
-    givenNewsList(
+    givenContentIndex(
       givenNewsEditorSession(new StubApiServer())
         .on('POST', NEWS_API_PATH, jsonResponse(201, created, newsHeaders(created)))
         .on('GET', NEWS_PATH, jsonResponse(200, created, newsHeaders(created))),
       [],
     ).install()
     const user = userEvent.setup()
-    renderAppRoute('/admin/news/new', { previous: '/admin/news' })
+    renderAppRoute('/admin/news/new', { previous: CONTENT_INDEX_PATH })
     await user.type(await screen.findByLabelText('Tiêu đề'), 'Tin mới')
     await user.click(screen.getByRole('button', { name: 'Lưu' }))
     await waitFor(() => expect(screen.getByTestId('location')).toHaveTextContent(EDIT_ROUTE))
 
     await user.click(screen.getByRole('button', { name: 'Back (test)' }))
 
-    expect(screen.getByTestId('location')).toHaveTextContent('/admin/news')
-    expect(screen.getByTestId('location')).not.toHaveTextContent('/admin/news/new')
+    expect(await screen.findByRole('heading', { level: 1, name: 'Nội dung' })).toBeInTheDocument()
+    expect(screen.getByTestId('location')).toHaveTextContent(/^\/admin\/content$/)
   })
 
   it('render_ShouldLoadNewsById_WhenEditorIsOpenedDirectly', async () => {
@@ -272,5 +271,33 @@ describe('NewsEditorPage', () => {
 
     expect(await screen.findByLabelText('Tiêu đề')).toHaveValue('Spring Boot 4.1 ra mắt')
     expect(api.requestsTo('GET', NEWS_PATH)).toHaveLength(2)
+  })
+
+  it('delete_ShouldSendEtagAndOpenIndexWithNotice_WhenDraftNewsIsDeleted', async () => {
+    const news = draftNews()
+    const api = givenContentIndex(givenLoadedDraft(news).on('DELETE', NEWS_PATH, { status: 204 }), []).install()
+    const user = userEvent.setup()
+    renderAppRoute(EDIT_ROUTE)
+    await user.click(await screen.findByRole('button', { name: `Xóa ${news.title}` }))
+
+    await user.click(screen.getByRole('button', { name: 'Xác nhận xóa' }))
+
+    expect(await screen.findByText(`Đã xóa “${news.title}”.`)).toBeInTheDocument()
+    expect(screen.getByTestId('location')).toHaveTextContent(/^\/admin\/content$/)
+    expect(api.requestsTo('DELETE', NEWS_PATH)[0].headers.get('If-Match')).toBe(`"${news.revision}"`)
+  })
+
+  it('delete_ShouldTellToUnpublish_WhenNewsWasPublishedElsewhere', async () => {
+    const news = draftNews()
+    givenLoadedDraft(news).on('DELETE', NEWS_PATH, problemResponse(409, 'CONTENT_ALREADY_EVER_PUBLISHED')).install()
+    const user = userEvent.setup()
+    renderAppRoute(EDIT_ROUTE)
+    await user.click(await screen.findByRole('button', { name: `Xóa ${news.title}` }))
+
+    await user.click(screen.getByRole('button', { name: 'Xác nhận xóa' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('gỡ xuất bản')
+    expect(screen.getByTestId('location')).toHaveTextContent(EDIT_ROUTE)
+    expect(screen.queryByRole('button', { name: `Xóa ${news.title}` })).toBeNull()
   })
 })

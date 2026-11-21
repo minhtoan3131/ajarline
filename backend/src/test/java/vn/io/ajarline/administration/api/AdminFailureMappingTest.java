@@ -7,6 +7,7 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.mock.web.MockHttpServletRequest;
 import tools.jackson.databind.json.JsonMapper;
 import vn.io.ajarline.content.contract.ContentFailureCode;
+import vn.io.ajarline.learning.contract.LearningFailureCode;
 import vn.io.ajarline.platform.web.ApiProblem;
 import vn.io.ajarline.platform.web.ApiProblemWriter;
 
@@ -33,10 +34,32 @@ class AdminFailureMappingTest {
     }
 
     @Test
+    void response_ShouldBeConflict_WhenContentWasPublishedOnce() {
+        ResponseEntity<ApiProblem> response = map(ContentFailureCode.CONTENT_ALREADY_EVER_PUBLISHED.name());
+
+        assertThat(response.getStatusCode().value()).isEqualTo(409);
+    }
+
+    @Test
     void response_ShouldBeInternalError_WhenCodeIsUnknown() {
         ResponseEntity<ApiProblem> response = map("NOT_A_REAL_CODE");
 
         assertThat(response.getStatusCode().value()).isEqualTo(500);
+    }
+
+    @ParameterizedTest(name = "[{index}] maps {0}")
+    @EnumSource(LearningFailureCode.class)
+    void response_ShouldNotBeInternalError_WhenLearningFailureHasACode(LearningFailureCode code) {
+        ResponseEntity<ApiProblem> response = map(code.name());
+
+        assertThat(response.getStatusCode().value()).isNotEqualTo(500);
+    }
+
+    @Test
+    void response_ShouldBeConflict_WhenContentIsStillInUse() {
+        ResponseEntity<ApiProblem> response = map(LearningFailureCode.CONTENT_IN_USE.name());
+
+        assertThat(response.getStatusCode().value()).isEqualTo(409);
     }
 
     private ResponseEntity<ApiProblem> map(String code) {

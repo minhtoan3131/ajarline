@@ -1,5 +1,6 @@
 import { useDeferredValue, useId, useState } from 'react'
 
+import { EditorDeleteControl } from '../../admin-content/components/EditorDeleteControl'
 import { EditorField } from '../../admin-content/components/EditorField'
 import { FullPreviewOverlay } from '../../admin-content/components/FullPreviewOverlay'
 import { PublicationBadge, PublicationControls, PublicationHint } from '../../admin-content/components/PublicationControls'
@@ -7,6 +8,7 @@ import { SaveStatus } from '../../admin-content/components/SaveStatus'
 import { TopicPicker } from '../../admin-content/components/TopicPicker'
 import type { Versioned } from '../../admin-content/model/article'
 import type { EditorNotice } from '../../admin-content/model/articleEditorState'
+import type { CarriedNotice } from '../../admin-content/model/indexNotice'
 import { useTopicList } from '../../admin-topics/useTopicList'
 import type { NewsAdminDetail, NewsTextField } from '../model/news'
 import type { NewsEditorFailure } from '../model/newsEditorFailure'
@@ -19,6 +21,8 @@ export interface NewsEditorProps {
   initial: Versioned<NewsAdminDetail> | null
   initialNotice: EditorNotice | null
   onCreated?: (newsId: string) => void
+  /** Called after the News item was deleted or found gone. The page then leaves the editor. */
+  onRemoved?: (notice: CarriedNotice) => void
 }
 
 /**
@@ -27,7 +31,7 @@ export interface NewsEditorProps {
  * Save and publication are separate actions. The form never reports success
  * before the server answers, and it keeps the typed text on every failure.
  */
-export function NewsEditor({ initial, initialNotice, onCreated }: NewsEditorProps) {
+export function NewsEditor({ initial, initialNotice, onCreated, onRemoved }: NewsEditorProps) {
   const editor = useNewsEditor(initial, initialNotice, onCreated)
   const { state, dirty } = editor
   const topicList = useTopicList()
@@ -81,6 +85,12 @@ export function NewsEditor({ initial, initialNotice, onCreated }: NewsEditorProp
               hintId={publishHintId}
               onPublish={() => void editor.publish()}
               onUnpublish={() => void editor.unpublish()}
+            />
+            <EditorDeleteControl
+              type="news"
+              current={state.current}
+              disabled={state.pending !== null}
+              onRemoved={onRemoved}
             />
           </div>
         </div>

@@ -57,6 +57,8 @@ springdoc:
     - /api/admin/v1/modules/**
     - /api/admin/v1/topics
     - /api/admin/v1/topics/**
+    - /api/admin/v1/concepts
+    - /api/admin/v1/concepts/**
     - /api/admin/v1/content
     - /api/admin/v1/content/**
     - /api/v1/articles/**

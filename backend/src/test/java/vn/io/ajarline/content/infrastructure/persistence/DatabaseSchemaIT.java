@@ -36,7 +36,10 @@ public class DatabaseSchemaIT {
                 "series",
                 "module",
                 "module_article",
-                "news"
+                "news",
+                "retrieval_concept",
+                "retrieval_concept_expression",
+                "retrieval_vocabulary_state"
         );
     }
 

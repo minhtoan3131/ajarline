@@ -4,10 +4,11 @@ import { describe, expect, it, vi } from 'vitest'
 
 import { renderAppRoute } from '../../app/testsupport/renderAppRoute'
 import { CSRF_TOKEN } from '../../features/admin-auth/fixture/adminSessionFixture'
+import { CONTENT_INDEX_PATH } from '../../features/admin-content/contentRoutes'
+import { givenContentIndex } from '../../features/admin-content/fixture/contentIndexFixture'
 import {
   draftSeries,
   givenSeriesEditorSession,
-  givenSeriesList,
   MODULE_ID,
   moduleChild,
   OTHER_MODULE_ID,
@@ -53,14 +54,14 @@ function holdRequests(method: string): () => void {
 describe('SeriesEditorPage', () => {
   it('save_ShouldCreateDraftAndReplaceUrl_WhenNewSeriesIsSaved', async () => {
     const created = draftSeries()
-    const api = givenSeriesList(
+    const api = givenContentIndex(
       givenSeriesEditorSession(new StubApiServer())
         .on('POST', SERIES_API_PATH, jsonResponse(201, created, { ...seriesHeaders(created), Location: SERIES_PATH }))
         .on('GET', SERIES_PATH, jsonResponse(200, created, seriesHeaders(created))),
       [],
     ).install()
     const user = userEvent.setup()
-    renderAppRoute('/admin/series/new', { previous: '/admin/series' })
+    renderAppRoute('/admin/series/new', { previous: CONTENT_INDEX_PATH })
     await user.type(await screen.findByLabelText('Tiêu đề'), 'Học Spring Boot')
     await user.type(screen.getByLabelText('Slug'), 'hoc-spring-boot')
 
@@ -78,8 +79,8 @@ describe('SeriesEditorPage', () => {
     })
     expect(create.headers.get('X-CSRF-TOKEN')).toBe(CSRF_TOKEN.token)
     await user.click(screen.getByRole('button', { name: 'Back (test)' }))
-    expect(await screen.findByRole('heading', { level: 1, name: 'Series' })).toBeInTheDocument()
-    expect(screen.getByTestId('location')).toHaveTextContent(/^\/admin\/series$/)
+    expect(await screen.findByRole('heading', { level: 1, name: 'Nội dung' })).toBeInTheDocument()
+    expect(screen.getByTestId('location')).toHaveTextContent(/^\/admin\/content$/)
   })
 
   it('render_ShouldLoadSeriesAndListModulesInOrder_WhenEditorIsOpenedDirectly', async () => {
@@ -363,5 +364,33 @@ describe('SeriesEditorPage', () => {
     expect(screen.getByRole('button', { name: 'Đưa lên: Nâng cao' })).toBeDisabled()
     release()
     expect(await screen.findByText('Đã lưu thứ tự.')).toBeInTheDocument()
+  })
+
+  it('delete_ShouldSendEtagAndOpenIndexWithNotice_WhenDraftSeriesIsDeleted', async () => {
+    const series = draftSeries()
+    const api = givenContentIndex(givenLoaded(series).on('DELETE', SERIES_PATH, { status: 204 }), []).install()
+    const user = userEvent.setup()
+    renderAppRoute(EDIT_ROUTE)
+    await user.click(await screen.findByRole('button', { name: `Xóa ${series.title}` }))
+
+    await user.click(screen.getByRole('button', { name: 'Xác nhận xóa' }))
+
+    expect(await screen.findByText(`Đã xóa “${series.title}”.`)).toBeInTheDocument()
+    expect(screen.getByTestId('location')).toHaveTextContent(/^\/admin\/content$/)
+    expect(api.requestsTo('DELETE', SERIES_PATH)[0].headers.get('If-Match')).toBe(`"${series.revision}"`)
+  })
+
+  it('delete_ShouldExplainChildrenAndStayInEditor_WhenSeriesStillHasModules', async () => {
+    const series = draftSeries({ modules: [moduleChild()] })
+    givenLoaded(series).on('DELETE', SERIES_PATH, problemResponse(409, 'CONTENT_IN_USE')).install()
+    const user = userEvent.setup()
+    renderAppRoute(EDIT_ROUTE)
+    await user.click(await screen.findByRole('button', { name: `Xóa ${series.title}` }))
+
+    await user.click(screen.getByRole('button', { name: 'Xác nhận xóa' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('còn Module')
+    expect(screen.getByTestId('location')).toHaveTextContent(EDIT_ROUTE)
+    expect(screen.getByRole('button', { name: `Xóa ${series.title}` })).toBeEnabled()
   })
 })

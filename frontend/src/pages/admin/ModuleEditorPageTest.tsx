@@ -3,6 +3,7 @@ import userEvent from '@testing-library/user-event'
 import { describe, expect, it } from 'vitest'
 
 import { renderAppRoute } from '../../app/testsupport/renderAppRoute'
+import { givenContentIndex } from '../../features/admin-content/fixture/contentIndexFixture'
 import {
   ARTICLE_ONE_ID,
   ARTICLE_TWO_ID,
@@ -228,5 +229,32 @@ describe('ModuleEditorPage', () => {
     renderAppRoute(EDIT_ROUTE)
 
     expect(await screen.findByRole('heading', { name: 'Không tìm thấy trang quản trị' })).toBeInTheDocument()
+  })
+
+  it('delete_ShouldSendEtagAndOpenIndexWithNotice_WhenDraftModuleIsDeleted', async () => {
+    const module = draftModule()
+    const api = givenContentIndex(givenLoaded(module).on('DELETE', MODULE_PATH, { status: 204 }), []).install()
+    const user = userEvent.setup()
+    renderAppRoute(EDIT_ROUTE)
+    await user.click(await screen.findByRole('button', { name: `Xóa ${module.title}` }))
+
+    await user.click(screen.getByRole('button', { name: 'Xác nhận xóa' }))
+
+    expect(await screen.findByText(`Đã xóa “${module.title}”.`)).toBeInTheDocument()
+    expect(screen.getByTestId('location')).toHaveTextContent(/^\/admin\/content$/)
+    expect(api.requestsTo('DELETE', MODULE_PATH)[0].headers.get('If-Match')).toBe(`"${module.revision}"`)
+  })
+
+  it('delete_ShouldExplainChildrenAndStayInEditor_WhenModuleStillHasArticles', async () => {
+    const module = draftModule({ articles: [articleChild()] })
+    givenLoaded(module).on('DELETE', MODULE_PATH, problemResponse(409, 'CONTENT_IN_USE')).install()
+    const user = userEvent.setup()
+    renderAppRoute(EDIT_ROUTE)
+    await user.click(await screen.findByRole('button', { name: `Xóa ${module.title}` }))
+
+    await user.click(screen.getByRole('button', { name: 'Xác nhận xóa' }))
+
+    expect(await screen.findByRole('alert')).toHaveTextContent('còn bài viết')
+    expect(screen.getByTestId('location')).toHaveTextContent(EDIT_ROUTE)
   })
 })

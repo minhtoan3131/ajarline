@@ -37,7 +37,8 @@ class CapabilityBoundaryTest {
             ROOT + ".publication..",
             ROOT + ".administration..",
             ROOT + ".topic..",
-            ROOT + ".learning.."
+            ROOT + ".learning..",
+            ROOT + ".retrieval.."
     };
 
     // Importing classes is slow, so all rules share one import.
@@ -75,7 +76,17 @@ class CapabilityBoundaryTest {
             "learning,       content",
             "learning,       publication",
             "learning,       administration",
-            "learning,       topic"
+            "learning,       topic",
+            "administration, retrieval",
+            "publication,    retrieval",
+            "content,        retrieval",
+            "topic,          retrieval",
+            "learning,       retrieval",
+            "retrieval,      administration",
+            "retrieval,      publication",
+            "retrieval,      content",
+            "retrieval,      topic",
+            "retrieval,      learning"
     })
     void access_ShouldUseOnlyContract_WhenCapabilityUsesAnotherCapability(
             String consumer, String provider) {
@@ -131,6 +142,33 @@ class CapabilityBoundaryTest {
                 .should().onlyBeAccessed().byAnyPackage(
                         ROOT + ".topic.application..",
                         ROOT + ".topic.infrastructure..");
+
+        rule.check(PRODUCTION_CLASSES);
+    }
+
+    @Test
+    void retrievalInfrastructure_ShouldBeUsedOnlyByRetrieval_WhenOtherPackagesNeedVocabulary() {
+        // Contracts and API types are not in the allowed list, so an entity
+        // can never leak through them.
+        ArchRule rule = classes()
+                .that().resideInAPackage(ROOT + ".retrieval.infrastructure..")
+                .should().onlyBeAccessed().byAnyPackage(
+                        ROOT + ".retrieval.application..",
+                        ROOT + ".retrieval.infrastructure..");
+
+        rule.check(PRODUCTION_CLASSES);
+    }
+
+    @Test
+    void retrieval_ShouldNotDependOnAdministrationPublicationOrTopic_WhenRetrievalNeedsData() {
+        // Retrieval reads content and learning only through their contracts.
+        // It never needs Topic, publication workflow or the Admin surface.
+        ArchRule rule = noClasses()
+                .that().resideInAPackage(ROOT + ".retrieval..")
+                .should().dependOnClassesThat().resideInAnyPackage(
+                        ROOT + ".administration..",
+                        ROOT + ".publication..",
+                        ROOT + ".topic..");
 
         rule.check(PRODUCTION_CLASSES);
     }

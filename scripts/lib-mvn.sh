@@ -5,7 +5,7 @@
 #   - Runs ./mvnw in backend/ and redirects the full output to backend/target/mvn-last.log
 #   - On success, prints a short summary; on failure, prints a compact error report
 #   - Colors and clickable file paths are enabled only when stdout is a terminal, so
-#     captured output (CI, AI tools) stays plain and small.
+#     captured output (for example in CI) stays plain and small.
 #     Disable with NO_COLOR=1, force with FORCE_COLOR=1.
 #
 # Tuning for the compact error report (environment variables):
