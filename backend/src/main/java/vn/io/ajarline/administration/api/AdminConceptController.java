@@ -14,17 +14,21 @@ import org.springframework.http.CacheControl;
 import org.springframework.http.MediaType;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.GetMapping;
+import org.springframework.web.bind.annotation.PathVariable;
 import org.springframework.web.bind.annotation.PostMapping;
+import org.springframework.web.bind.annotation.PutMapping;
 import org.springframework.web.bind.annotation.RequestBody;
 import org.springframework.web.bind.annotation.RequestMapping;
 import org.springframework.web.bind.annotation.RestController;
 import tools.jackson.databind.JsonNode;
 import vn.io.ajarline.platform.web.OpenApiConfiguration;
 import vn.io.ajarline.retrieval.contract.ConceptCreator;
+import vn.io.ajarline.retrieval.contract.ConceptEditor;
 import vn.io.ajarline.retrieval.contract.ConceptReader;
 import vn.io.ajarline.retrieval.contract.ConceptView;
 
 import java.net.URI;
+import java.util.UUID;
 
 @Tag(name = "Admin Retrieval Vocabulary",
         description = "Authenticated retrieval vocabulary operations. A Concept is not a Topic.")
@@ -35,10 +39,13 @@ public class AdminConceptController {
     private static final String BASE_PATH = "/api/admin/v1/concepts";
     private final ConceptCreator creator;
     private final ConceptReader reader;
+    private final ConceptEditor editor;
 
-    public AdminConceptController(ConceptCreator creator, ConceptReader reader) {
+    public AdminConceptController(
+            ConceptCreator creator, ConceptReader reader, ConceptEditor editor) {
         this.creator = creator;
         this.reader = reader;
+        this.editor = editor;
     }
 
     @Operation(
@@ -110,5 +117,57 @@ public class AdminConceptController {
         return ResponseEntity.created(location)
                 .cacheControl(CacheControl.noStore())
                 .body(ConceptAdminItem.from(created));
+    }
+
+    @Operation(
+            operationId = "updateConcept",
+            summary = "Replace the editable state and the whole expression set of a Concept")
+    @Parameter(
+            name = "X-CSRF-TOKEN",
+            in = ParameterIn.HEADER,
+            required = true,
+            description = "Current CSRF token for the authenticated session.")
+    @ApiResponses({
+            @ApiResponse(
+                    responseCode = "200",
+                    description = "Concept updated, or returned unchanged when no value differs",
+                    useReturnTypeSchema = true),
+            @ApiResponse(
+                    responseCode = "400",
+                    description = "Request shape, JSON or UUID is invalid"),
+            @ApiResponse(
+                    responseCode = "401",
+                    description = "Authentication is required"),
+            @ApiResponse(
+                    responseCode = "403",
+                    description = "CSRF proof is missing or invalid"),
+            @ApiResponse(
+                    responseCode = "404",
+                    description = "Concept was not found"),
+            @ApiResponse(
+                    responseCode = "415",
+                    description = "Content type is not supported"),
+            @ApiResponse(
+                    responseCode = "422",
+                    description = "Concept validation failed or two expressions are the same after normalization")
+    })
+    @PutMapping(
+            value = "/{id}",
+            consumes = MediaType.APPLICATION_JSON_VALUE,
+            produces = MediaType.APPLICATION_JSON_VALUE
+    )
+    public ResponseEntity<ConceptAdminItem> update(
+            @PathVariable UUID id,
+            @io.swagger.v3.oas.annotations.parameters.RequestBody(
+                    required = true,
+                    content = @Content(
+                            mediaType = MediaType.APPLICATION_JSON_VALUE,
+                            schema = @Schema(implementation = ConceptEditable.class)))
+            @RequestBody(required = false) JsonNode body) {
+        ConceptEditable editable = ConceptEditable.parse(body);
+        ConceptView updated = editor.replace(id, editable.toInput());
+        return ResponseEntity.ok()
+                .cacheControl(CacheControl.noStore())
+                .body(ConceptAdminItem.from(updated));
     }
 }

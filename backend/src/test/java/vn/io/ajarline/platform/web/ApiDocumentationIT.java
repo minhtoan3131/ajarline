@@ -63,6 +63,8 @@ class ApiDocumentationIT {
             Map.entry("/api/admin/v1/concepts", Map.of(
                     "get", "listConcepts",
                     "post", "createConcept")),
+            Map.entry("/api/admin/v1/concepts/{id}", Map.of(
+                    "put", "updateConcept")),
             Map.entry("/api/admin/v1/content", Map.of(
                     "get", "listAdminContent")),
             Map.entry("/api/admin/v1/content/{id}/publish", Map.of(
@@ -396,22 +398,29 @@ class ApiDocumentationIT {
         JsonNode paths = document.get("paths");
         JsonNode list = operation(paths, "/api/admin/v1/concepts", "get");
         JsonNode create = operation(paths, "/api/admin/v1/concepts", "post");
+        JsonNode update = operation(paths, "/api/admin/v1/concepts/{id}", "put");
 
-        for (JsonNode conceptOperation : new JsonNode[]{list, create}) {
+        for (JsonNode conceptOperation : new JsonNode[]{list, create, update}) {
             assertThat(hasSecurity(conceptOperation, OpenApiConfiguration.ADMIN_SESSION)).isTrue();
         }
-        assertThat(parameterNames(create)).contains("X-CSRF-TOKEN");
-        assertThat(parameterNames(create)).doesNotContain("If-Match");
+        for (JsonNode mutation : new JsonNode[]{create, update}) {
+            assertThat(parameterNames(mutation)).contains("X-CSRF-TOKEN");
+            assertThat(parameterNames(mutation)).doesNotContain("If-Match");
+        }
         assertThat(requestSchemaRef(create)).endsWith("/ConceptCreatable");
+        assertThat(requestSchemaRef(update)).endsWith("/ConceptEditable");
         assertThat(responseSchemaRef(list, "200")).endsWith("/ConceptAdminList");
         assertThat(create.get("responses").get("201").get("headers").propertyNames())
                 .contains("Location");
         assertThat(create.get("responses").get("201").get("headers").has("ETag")).isFalse();
         assertThat(create.get("responses").propertyNames()).contains("409", "422");
+        assertThat(update.get("responses").get("200").path("headers").has("ETag")).isFalse();
+        assertThat(update.get("responses").propertyNames()).contains("404", "422");
 
         JsonNode schemas = document.get("components").get("schemas");
         assertThat(schemas.propertyNames()).contains(
-                "ConceptCreatable", "ConceptAdminItem", "ConceptAdminList");
+                "ConceptCreatable", "ConceptEditable", "ConceptAdminItem", "ConceptAdminList");
+        assertThat(schemas.get("ConceptEditable").get("properties").has("key")).isFalse();
         assertThat(schemas.get("ConceptAdminItem").get("properties").propertyNames())
                 .containsExactlyInAnyOrder(
                         "id", "key", "displayName", "description", "active",

@@ -5,10 +5,12 @@ import org.springframework.stereotype.Service;
 import org.springframework.transaction.annotation.Transactional;
 import vn.io.ajarline.retrieval.contract.ConceptCreateInput;
 import vn.io.ajarline.retrieval.contract.ConceptCreator;
+import vn.io.ajarline.retrieval.contract.ConceptEditor;
 import vn.io.ajarline.retrieval.contract.ConceptExpressionView;
 import vn.io.ajarline.retrieval.contract.ConceptFailureCode;
 import vn.io.ajarline.retrieval.contract.ConceptOperationException;
 import vn.io.ajarline.retrieval.contract.ConceptReader;
+import vn.io.ajarline.retrieval.contract.ConceptUpdateInput;
 import vn.io.ajarline.retrieval.contract.ConceptView;
 import vn.io.ajarline.retrieval.infrastructure.persistence.ConceptEntity;
 import vn.io.ajarline.retrieval.infrastructure.persistence.ConceptExpressionEntity;
@@ -28,7 +30,7 @@ import java.util.UUID;
  * constraint is the authority for key uniqueness; this service only translates its failure.</p>
  */
 @Service
-public class ConceptService implements ConceptCreator, ConceptReader {
+public class ConceptService implements ConceptCreator, ConceptReader, ConceptEditor {
     private static final String KEY_CONSTRAINT = "uk_retrieval_concept_key";
     private static final Comparator<ConceptExpressionEntity> EXPRESSION_ORDER =
             Comparator.comparing(ConceptExpressionEntity::getNormalizedExpression)
@@ -72,6 +74,25 @@ public class ConceptService implements ConceptCreator, ConceptReader {
     }
 
     @Override
+    @Transactional
+    public ConceptView replace(UUID id, ConceptUpdateInput input) {
+        EditableConcept editable = policy.normalizeUpdate(input);
+        ConceptEntity concept = concepts.findByIdForUpdate(id)
+                .orElseThrow(() -> notFound(id));
+
+        if (concept.hasSameEditableState(editable)) {
+            return toView(concept);
+        }
+
+        Instant now = clock.instant();
+        concept.replaceEditableState(editable, now, UUID::randomUUID);
+        // Write the changes first. Then the version row is locked only for the last step.
+        concepts.flush();
+        vocabularyVersion.advance(now);
+        return toView(concept);
+    }
+
+    @Override
     @Transactional(readOnly = true)
     public List<ConceptView> list() {
         return concepts.findAllWithExpressions().stream()
@@ -88,6 +109,12 @@ public class ConceptService implements ConceptCreator, ConceptReader {
             current = current.getCause();
         }
         return false;
+    }
+
+    private ConceptOperationException notFound(UUID id) {
+        return new ConceptOperationException(
+                ConceptFailureCode.CONCEPT_NOT_FOUND,
+                "Concept was not found: " + id);
     }
 
     private ConceptView toView(ConceptEntity concept) {

@@ -5,6 +5,7 @@ import vn.io.ajarline.retrieval.contract.ConceptCreateInput;
 import vn.io.ajarline.retrieval.contract.ConceptExpressionInput;
 import vn.io.ajarline.retrieval.contract.ConceptFailureCode;
 import vn.io.ajarline.retrieval.contract.ConceptOperationException;
+import vn.io.ajarline.retrieval.contract.ConceptUpdateInput;
 
 import java.util.ArrayList;
 import java.util.HashSet;
@@ -49,6 +50,20 @@ public class ConceptPolicy {
         }
         return new NewConcept(key, normalizeEditable(
                 input.displayName(), input.description(), input.active(), input.expressions()));
+    }
+
+    /**
+     * Returns the editable values that the update operation may save.
+     *
+     * @throws ConceptOperationException when a value violates the limits, or when two
+     *         expressions have the same normalized text
+     */
+    public EditableConcept normalizeUpdate(ConceptUpdateInput input) {
+        if (input == null) {
+            throw failure("Concept content is required.");
+        }
+        return normalizeEditable(
+                input.displayName(), input.description(), input.active(), input.expressions());
     }
 
     private EditableConcept normalizeEditable(

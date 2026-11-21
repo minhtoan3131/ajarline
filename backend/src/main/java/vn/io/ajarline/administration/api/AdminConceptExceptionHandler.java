@@ -87,6 +87,8 @@ public class AdminConceptExceptionHandler {
                     "Two expressions are the same after normalization. Keep each expression once.");
             case CONCEPT_KEY_CONFLICT -> new ProblemMapping(409, "Concept key conflicts with an existing Concept",
                     "A Concept with this key already exists.");
+            case CONCEPT_NOT_FOUND -> new ProblemMapping(404, "Concept was not found",
+                    "Concept was not found.");
         };
     }
 }

@@ -20,6 +20,7 @@ import vn.io.ajarline.support.PostgreSqlTestConfiguration;
 class AdminConceptBoundaryIT extends AbstractAdminAuthenticationIT {
 
     private static final String CONCEPTS = "/api/admin/v1/concepts";
+    private static final String MISSING_ID = "00000000-0000-0000-0000-000000000404";
 
     @Autowired
     private JdbcTemplate jdbcTemplate;
@@ -100,6 +101,89 @@ class AdminConceptBoundaryIT extends AbstractAdminAuthenticationIT {
         assertProblem(browser.send("POST", CONCEPTS, create("plain-text"), token, "text/plain"),
                 415, "UNSUPPORTED_MEDIA_TYPE");
         assertThat(rowCount()).isZero();
+    }
+
+    @Test
+    void update_ShouldRejectRequest_WhenAdminSessionIsMissing() throws Exception {
+        Browser browser = new Browser();
+        String token = csrf(browser);
+
+        HttpResponse<String> update = browser.put(
+                CONCEPTS + "/" + MISSING_ID, edit("Name"), token, null);
+
+        assertProblem(update, 401, "AUTHENTICATION_REQUIRED");
+    }
+
+    @Test
+    void update_ShouldRejectRequest_WhenCsrfProofIsMissingOrWrong() throws Exception {
+        Browser browser = authenticatedBrowser();
+        String token = csrf(browser);
+        String id = createConcept(browser, token, "csrf-update");
+
+        HttpResponse<String> missing = browser.put(CONCEPTS + "/" + id, edit("Changed"), null, null);
+        HttpResponse<String> wrong = browser.put(CONCEPTS + "/" + id, edit("Changed"), "invalid", null);
+
+        assertProblem(missing, 403, "CSRF_INVALID");
+        assertProblem(wrong, 403, "CSRF_INVALID");
+        assertThat(storedDisplayName(id)).isEqualTo("Original");
+    }
+
+    @Test
+    void update_ShouldRejectRequest_WhenJsonShapeIsInvalid() throws Exception {
+        Browser browser = authenticatedBrowser();
+        String token = csrf(browser);
+        String id = createConcept(browser, token, "shape-update");
+        ObjectNode missingField = editNode("Changed");
+        missingField.remove("active");
+        ObjectNode withKey = editNode("Changed");
+        withKey.put("key", "new-key");
+        ObjectNode absentExpressions = editNode("Changed");
+        absentExpressions.remove("expressions");
+        ObjectNode expressionNotObject = editNode("Changed");
+        expressionNotObject.putArray("expressions").add("thread");
+
+        assertProblem(browser.put(CONCEPTS + "/" + id, "{", token, null), 400, "MALFORMED_JSON");
+        for (ObjectNode body : new ObjectNode[]{
+                missingField, withKey, absentExpressions, expressionNotObject}) {
+            assertProblem(browser.put(CONCEPTS + "/" + id, JSON.writeValueAsString(body), token, null),
+                    400, "INVALID_REQUEST");
+        }
+        assertProblem(browser.send("PUT", CONCEPTS + "/" + id, edit("Changed"), token, "text/plain"),
+                415, "UNSUPPORTED_MEDIA_TYPE");
+        assertThat(storedDisplayName(id)).isEqualTo("Original");
+    }
+
+    @Test
+    void update_ShouldRejectRequest_WhenIdIsNotUuid() throws Exception {
+        Browser browser = authenticatedBrowser();
+        String token = csrf(browser);
+
+        assertProblem(browser.put(CONCEPTS + "/not-a-uuid", edit("Name"), token, null),
+                400, "INVALID_UUID");
+    }
+
+    private String createConcept(Browser browser, String token, String key) throws Exception {
+        HttpResponse<String> response = browser.post(CONCEPTS, create(key), token);
+        assertThat(response.statusCode()).isEqualTo(201);
+        return JSON.readTree(response.body()).get("id").asString();
+    }
+
+    private ObjectNode editNode(String displayName) {
+        ObjectNode body = JSON.createObjectNode();
+        body.put("displayName", displayName);
+        body.putNull("description");
+        body.put("active", true);
+        body.putArray("expressions").add(expressionNode("thread"));
+        return body;
+    }
+
+    private String edit(String displayName) throws Exception {
+        return JSON.writeValueAsString(editNode(displayName));
+    }
+
+    private String storedDisplayName(String id) {
+        return jdbcTemplate.queryForObject(
+                "SELECT display_name FROM retrieval_concept WHERE id = ?::uuid", String.class, id);
     }
 
     private ObjectNode expressionNode(String text) {

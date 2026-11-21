@@ -8,6 +8,7 @@ import vn.io.ajarline.retrieval.contract.ConceptCreateInput;
 import vn.io.ajarline.retrieval.contract.ConceptExpressionInput;
 import vn.io.ajarline.retrieval.contract.ConceptFailureCode;
 import vn.io.ajarline.retrieval.contract.ConceptOperationException;
+import vn.io.ajarline.retrieval.contract.ConceptUpdateInput;
 
 import java.util.List;
 import java.util.stream.IntStream;
@@ -195,6 +196,47 @@ class ConceptPolicyTest {
     @Test
     void normalizeCreate_ShouldRejectInput_WhenInputIsMissing() {
         assertValidationFailure(() -> policy.normalizeCreate(null));
+    }
+
+    @Test
+    void normalizeUpdate_ShouldReturnEditableValues_WhenInputIsValid() {
+        EditableConcept result = policy.normalizeUpdate(new ConceptUpdateInput(
+                "Threading", "", false,
+                List.of(new ConceptExpressionInput(" Thread ", "en", true))));
+
+        assertThat(result.displayName()).isEqualTo("Threading");
+        assertThat(result.description()).isNull();
+        assertThat(result.active()).isFalse();
+        assertThat(result.expressions()).hasSize(1);
+        assertThat(result.expressions().get(0).normalizedExpression()).isEqualTo("thread");
+    }
+
+    @Test
+    void normalizeUpdate_ShouldRejectDisplayName_WhenNameIsBlank() {
+        assertValidationFailure(() -> policy.normalizeUpdate(
+                new ConceptUpdateInput("   ", null, true, List.of())));
+    }
+
+    @Test
+    void normalizeUpdate_ShouldRejectMoreThanFiftyExpressions_WhenSetIsTooBig() {
+        assertValidationFailure(() -> policy.normalizeUpdate(
+                new ConceptUpdateInput("Thread", null, true, manyExpressions(51))));
+    }
+
+    @Test
+    void normalizeUpdate_ShouldRejectDuplicate_WhenExpressionsAreTheSameAfterNormalization() {
+        assertThatThrownBy(() -> policy.normalizeUpdate(new ConceptUpdateInput(
+                "Thread", null, true,
+                List.of(new ConceptExpressionInput("Thread", "en", true),
+                        new ConceptExpressionInput("THREAD", "en", true)))))
+                .isInstanceOfSatisfying(ConceptOperationException.class,
+                        exception -> assertThat(exception.code())
+                                .isEqualTo(ConceptFailureCode.DUPLICATE_CONCEPT_EXPRESSION));
+    }
+
+    @Test
+    void normalizeUpdate_ShouldRejectInput_WhenInputIsMissing() {
+        assertValidationFailure(() -> policy.normalizeUpdate(null));
     }
 
     private static ConceptCreateInput withKey(String key) {
